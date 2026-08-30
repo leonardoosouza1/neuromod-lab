@@ -19,7 +19,17 @@ python src/rodar.py --bateria    # bateria completa (~1h em T4)
 
 # ajustando escala
 python src/rodar.py --bateria -P 8192 -G 100 -R 8
+
+# sementes da EVOLUÇÃO (I4): rode 0/1/2 e compare — efeito entre arquiteturas
+# menor que a amplitude entre sementes é ruído, não efeito
+python src/rodar.py --bateria --seed-evo 1
 ```
+
+## Colab
+
+`notebooks/colab.ipynb` é **auto-contido**: escreve o código sozinho via
+`%%writefile`, sem zip nem Drive. Abra no Colab (T4), rode as células em ordem.
+Roda 3 sementes e salva os JSONs no Drive ao final.
 
 O resultado sai em `resultados/resultado-taxi-AAAAMMDD-HHMM.json`.
 
