@@ -195,7 +195,7 @@ def bateria(P, GER, R, T_EVO, T, n_treino, n_teste, seeds, saida_dir, seed_evo=0
         dispositivo=(torch.cuda.get_device_name(0)
                      if torch.cuda.is_available() else 'cpu'),
         resultados=res)
-    cam = os.path.join(saida_dir, f'resultado-taxi-{datetime.now():%Y%m%d-%H%M}.json')
+    cam = os.path.join(saida_dir, f'resultado-taxi-s{seed_evo}-{datetime.now():%Y%m%d-%H%M}.json')
     with open(cam, 'w') as f:
         json.dump(out, f)
     print('salvo:', cam, '|', round(os.path.getsize(cam)/1e6, 2), 'MB')
