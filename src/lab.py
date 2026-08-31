@@ -45,7 +45,14 @@ def gerar_cidade(seed, n=26):
     return dict(n=n, A=A, W=W, DI=DI, serv=serv, grp=grp, tem=tem)
 
 class Cfg:
-    def __init__(s, d=1.0, trafego=.35, imposto=.18):
+    def __init__(s, d=1.0, trafego=.35, imposto=.18, mundo='base', raio=4.,
+                 deriva=.02, per_mare=128):
+        # mundo: o que fica OCULTO do taxi.
+        #   base    visao global, spawn uniforme      -> memoria nao tem o que pagar
+        #   cego    visao raio R, spawn uniforme      -> CONTROLE: oculto sem estrutura
+        #   hotspot visao raio R, polo que DERIVA     -> memoria de onde apareceu paga
+        #   mare    visao raio R, 2 polos alternando  -> estrutura PERIODICA (fase oculta)
+        s.mundo=mundo; s.raio=raio; s.deriva=deriva; s.per_mare=per_mare
         s.fuel=.70+1.4*d; s.pneu=.18+.9*d; s.temp=1.6+4.*d; s.fome=.07+.25*d
         s.fadiga=.45+1.2*d; s.risco=.02+.12*d; s.oleo=.25+.7*d
         s.per=max(int(round(16-6*d)),6); s.base=6.; s.km=2.6
@@ -92,6 +99,24 @@ class Lote:
         s.fase=ri(2,(B,n)).float(); s.tsem=ri(cfg.per,(B,n)).float()
         s.npc=torch.rand(B,n,generator=g,device=DEV)*cfg.trafego*2
         s.po=ri(n,(B,NPX)); s.pd=ri(n,(B,NPX)); s.t=0
+        # estado OCULTO do mundo (o taxi nunca ve estes tensores)
+        if cfg.mundo in ('hotspot','mare'):
+            s.hot = ri(n,(B,))                      # polo atual
+            if cfg.mundo == 'mare':
+                s.polo2 = ri(n,(B,))                # segundo polo
+                s.tmare = ri(cfg.per_mare,(B,)).float()
+            # respawn ja concentrado no polo desde o inicio
+            for k in range(NPX):
+                s.po[:,k] = s._spawn_polo(torch.arange(B, device=DEV))
+    def _spawn_polo(s, ib):
+        """sorteia no de nascimento ~ exp(-dist ao polo): perto do polo e provavel,
+        longe e raro. O polo em si nunca aparece nas features."""
+        d = s.DIa[s.cidx[ib][:,None].expand(-1,s.n),
+                  s.hot[ib][:,None].expand(-1,s.n),
+                  torch.arange(s.n, device=DEV)[None,:].expand(len(ib),-1)]
+        pz = torch.softmax(-d/3., dim=1)
+        return torch.multinomial(pz, 1, generator=s.gsim).squeeze(1)
+
     # resolve "qual cidade" por mundo
     def A_(s):    return s.Aa[s.cidx, s.no]
     def W_(s):    return s.Wa[s.cidx, s.no]
@@ -119,10 +144,19 @@ class Lote:
         ce = s.cidx[:,None].expand(-1,G)
         # passageiro livre mais proximo
         dpo = s.DIa[s.cidx[:,None].expand(-1,NPX), s.no[:,None].expand(-1,NPX), s.po]
+        if s.cfg.mundo != 'base':
+            # VISAO LIMITADA: passageiro alem do raio nao existe para o taxi.
+            dpo = torch.where(dpo <= s.cfg.raio, dpo, torch.full_like(dpo, 1e6))
         kb = dpo.argmin(1)
         po_alvo = s.po.gather(1, kb[:,None]).squeeze(1)
         alvo = torch.where(s.pd_>=0, s.pd_, po_alvo)
         dal = s.DIa[ce, vz, alvo[:,None].expand(-1,G)]
+        if s.cfg.mundo != 'base':
+            # sem passageiro visivel e sem corrida: distancia CONSTANTE em todos
+            # os vizinhos = zero informacao direcional. E o que abre espaco para
+            # a memoria pagar (ou nao — mundo cego e o controle).
+            ve = (dpo.min(1).values < 1e5) | (s.pd_ >= 0)
+            dal = torch.where(ve[:,None], dal, torch.full_like(dal, 2*s.cfg.raio))
         cus = s.W_(); cong = torch.gather(s.npc, 1, vz)
         gs = s.grp_(); fn = torch.gather(s.fase, 1, s.no[:,None]).expand(-1,G)
         vd = ((gs.float()==fn) | (s.tem_()[:,None]==0)).float()*2-1
@@ -192,8 +226,30 @@ def passo(m, esc):
     m.pd_ = torch.where(pega, m.pd.gather(1, ks[:,None]).squeeze(1), m.pd_)
     if pega.any():
         ib = pega.nonzero(as_tuple=True)[0]
-        m.po[ib, ks[ib]] = torch.randint(0,m.n,(len(ib),),generator=m.gsim,device=DEV)
+        if c.mundo in ('hotspot','mare'):
+            m.po[ib, ks[ib]] = m._spawn_polo(ib)
+        else:
+            m.po[ib, ks[ib]] = torch.randint(0,m.n,(len(ib),),generator=m.gsim,device=DEV)
         m.pd[ib, ks[ib]] = torch.randint(0,m.n,(len(ib),),generator=m.gsim,device=DEV)
+    # dinamica OCULTA do mundo
+    if c.mundo == 'hotspot':
+        # o polo deriva: com prob `deriva` por passo, pula para um vizinho
+        rw = torch.rand(B, generator=m.gsim, device=DEV) < c.deriva
+        if rw.any():
+            ibw = rw.nonzero(as_tuple=True)[0]
+            vzs = m.Aa[m.cidx[ibw], m.hot[ibw]]                 # (k,GMAX)
+            nv = (vzs >= 0).float()
+            pk = torch.multinomial(nv + 1e-6, 1, generator=m.gsim).squeeze(1)
+            novo = vzs.gather(1, pk[:,None]).squeeze(1)
+            m.hot[ibw] = torch.where(novo >= 0, novo, m.hot[ibw])
+    elif c.mundo == 'mare':
+        # dois polos trocam com periodo fixo; a FASE e oculta
+        m.tmare += 1
+        vira = m.tmare >= c.per_mare
+        if vira.any():
+            ibv = vira.nonzero(as_tuple=True)[0]
+            tmp = m.hot[ibv].clone(); m.hot[ibv] = m.polo2[ibv]; m.polo2[ibv] = tmp
+            m.tmare[ibv] = 0.
     # mover
     mv = pode & (~serv_ok) & (~pega) & (esc<GMAX)
     viz = m.A_(); sel = esc.clamp(max=GMAX-1)
@@ -231,11 +287,11 @@ def passo(m, esc):
 
 # ============================ CEREBROS ============================
 class Reativo:
-    nome='reativo'; NP=NF+6
+    nome='reativo'; NP=NF+6+6+6   # I8: pesos mortos ate igualar 36
     def reset(s,m,W): pass
     def extra(s,m,W,viz): return 0.
 class BancoEMA:
-    nome='banco EMA'; NP=NF+6+6
+    nome='banco EMA'; NP=NF+6+6+6
     def reset(s,m,W):
         s.al = torch.exp(-1/(2+30*(W[:,NF+9:NF+12].abs()+.1)))   # (B,3)
         s.E  = torch.zeros(m.B,3,m.n,device=DEV)
@@ -246,7 +302,7 @@ class BancoEMA:
         g = torch.stack([torch.gather(s.E[:,k],1,viz) for k in range(3)],1)
         return torch.einsum('bk,bkg->bg', W[:,NF+6:NF+9], g)
 class Diadica:
-    nome='diadica'; NP=NF+6+6; L=6
+    nome='diadica'; NP=NF+6+6+6; L=6
     def reset(s,m,W):
         s.buf = torch.zeros(m.B,2**s.L,dtype=torch.long,device=DEV)
         s.out = torch.zeros(m.B,GMAX,device=DEV); s.p=0
@@ -265,7 +321,7 @@ class Diadica:
         s.buf[:, s.p % N] = m.no; s.p += 1
         return s.out
 class Corpo:
-    nome='corpo'; NP=NF+6+6
+    nome='corpo'; NP=NF+6+6+6
     def reset(s,m,W): pass
     def extra(s,m,W,viz):
         d = torch.stack([1-m.fuel/m.capf(), m.fome/100, m.fad/100,

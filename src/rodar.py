@@ -40,10 +40,10 @@ def limpar():
             torch.cuda.empty_cache()
 
 
-def smoke():
+def smoke(mundo='base'):
     print('--- teste de fumaca ---')
     cids = [gerar_cidade(s) for s in range(2)]
-    cfg = Cfg(1.0)
+    cfg = Cfg(1.0, mundo=mundo)
     for A in ARQS:
         W = torch.randn(4, A.NP, device=DEV)*.8
         m = rodar(A, W, cids, cfg, T=150, seed=0)
@@ -51,7 +51,7 @@ def smoke():
     print('ok')
 
 
-def portao(T=1200, n_cid=3, rep=16, R=2):
+def portao(mundo='base', T=1200, n_cid=3, rep=16, R=2):
     """PORTAO OBRIGATORIO.
 
     Com os pesos de memoria zerados, as 5 arquiteturas sao a MESMA politica.
@@ -61,7 +61,7 @@ def portao(T=1200, n_cid=3, rep=16, R=2):
     """
     print('--- portao de validacao ---')
     cids = [gerar_cidade(s) for s in range(n_cid)]
-    cfg = Cfg(1.0)
+    cfg = Cfg(1.0, mundo=mundo)
     print(f"  {'arquitetura':<12}{'PERITO':>9}{'aleatorio':>11}{'razao':>8}{'avarias':>9}")
     vals = []
     for A in ARQS:
@@ -120,10 +120,10 @@ def trajetoria(Arq, w, cidades, cfg, T=1500, amostras=200):
     return {k: [round(x,2) for x in M[:,i].tolist()] for i,k in enumerate(ks)}
 
 
-def bateria(P, GER, R, T_EVO, T, n_treino, n_teste, seeds, saida_dir, seed_evo=0):
+def bateria(P, GER, R, T_EVO, T, n_treino, n_teste, seeds, saida_dir, seed_evo=0, mundo='base'):
     treino = [gerar_cidade(s) for s in range(n_treino)]
     teste  = [gerar_cidade(1000+s) for s in range(n_teste)]
-    cfg = Cfg(1.0, trafego=.35, imposto=.18)
+    cfg = Cfg(1.0, trafego=.35, imposto=.18, mundo=mundo)
     print(f'mundos/geracao: {P*n_treino*R:,} | por genoma: {n_treino*R}')
 
     if torch.cuda.is_available():
@@ -195,7 +195,7 @@ def bateria(P, GER, R, T_EVO, T, n_treino, n_teste, seeds, saida_dir, seed_evo=0
         dispositivo=(torch.cuda.get_device_name(0)
                      if torch.cuda.is_available() else 'cpu'),
         resultados=res)
-    cam = os.path.join(saida_dir, f'resultado-taxi-s{seed_evo}-{datetime.now():%Y%m%d-%H%M}.json')
+    cam = os.path.join(saida_dir, f'resultado-taxi-{mundo}-s{seed_evo}-{datetime.now():%Y%m%d-%H%M}.json')
     with open(cam, 'w') as f:
         json.dump(out, f)
     print('salvo:', cam, '|', round(os.path.getsize(cam)/1e6, 2), 'MB')
@@ -225,6 +225,8 @@ if __name__ == '__main__':
     # arquitetura. Rode a bateria com --seed-evo 0/1/2 e compare: diferenca
     # entre sementes e o ruido de base; efeito menor que isso nao e efeito.
     ap.add_argument('--seed-evo', type=int, default=0, dest='seed_evo')
+    ap.add_argument('--mundo', default='base',
+                    choices=['base','cego','hotspot','mare'])
     ap.add_argument('--out', default=os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'resultados'))
     a = ap.parse_args()
@@ -237,11 +239,11 @@ if __name__ == '__main__':
     if a.smoke:
         smoke()
     if a.perito:
-        portao()
+        portao(a.mundo)
     if a.bateria:
-        if not portao():
+        if not portao(a.mundo):
             sys.exit('portao falhou — corrija antes de rodar a bateria')
         bateria(a.P, a.geracoes, a.R, a.tevo, a.taval,
-                a.treino, a.teste, a.seeds, a.out, seed_evo=a.seed_evo)
+                a.treino, a.teste, a.seeds, a.out, seed_evo=a.seed_evo, mundo=a.mundo)
     if not (a.smoke or a.perito or a.bateria):
         ap.print_help()
