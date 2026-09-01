@@ -53,6 +53,19 @@ ausente, PIOROU a taxa de fitness (margem 2%).
    a janela de 8 passos é curta demais pro sinal causal.
 3. `lesao` no ruas conserva o recorde (entregas ≥ nível do curta 16.7).
 
+## E6 — tálamo no ser (doc 20) — predições 2026-09-01, ANTES de rodar
+
+Gate por órgão POR PASSO lendo contexto interno (need + carregando); custo por
+CONSULTA. Braços: sempre-ligado · tálamo contextual · cego (só bias — QUANTO
+sem QUANDO) · poda-curta (E8 campeão, estático). Mundo ruas, 3 sementes, NP=54.
+
+1. tálamo ≥ sempre em fitness (entregas ~iguais, custo menor).
+2. tálamo > cego além do ruído ⟺ o QUANDO importa. Empate = "duty aprendido
+   basta" (eco do refutado 'rotear por estatística') — registrar como está.
+3. Δconsulta da ROTA carregando passageiro > 0 nas 3 sementes (roteamento
+   contextual visível).
+4. tálamo vs poda-curta: sem predição forte — dinâmico vs estático é medição.
+
 # Predições — mundos `ruas` e `semgps` + arqs `mem custo` e `mapa servico` — 2026-08-31
 
 Registradas ANTES de qualquer bateria (mini-bateria de CALIBRAÇÃO das constantes

@@ -614,8 +614,8 @@ class SerVital:
         s.rate = torch.zeros(B, 6, device=DEV)
         s.rcnt = torch.zeros(B, 6, device=DEV)
         s._fit_prev = torch.zeros(B, device=DEV)
-    def extra(s,m,W,viz):
-        B=m.B
+    def _sinais(s,m,viz):
+        """(B,5,G) sinais dos 5 orgaos + contexto (need, carregando)."""
         d5 = torch.stack([1-m.fuel/m.capf(), m.fome/100, m.fad/100,
                           1-m.pneu/100, m.temp/120],1)
         k = d5.argmax(1); mp = m.MP[k]; need = d5.max(1).values
@@ -630,7 +630,13 @@ class SerVital:
             need[:,None]*(-m.dsa[m.cidx, mp].gather(1, viz)/6.),     # 4 corpo
             -dor.clamp(max=60.)/6.,                                  # 5 rota
         ], 1)                                                        # (B,5,G)
-        gate = s.mask * s.wo
+        return sig, need, (m.pd_>=0).float()
+    def _gate(s, need, carreg):
+        return s.mask * s.wo
+    def extra(s,m,W,viz):
+        B=m.B
+        sig, need, carreg = s._sinais(m, viz)
+        gate = s._gate(need, carreg)
         if s.modo == 'lesao':
             # janela atual desliga UM orgao durante a infancia (rotativo);
             # janela 5 = tudo ligado (referencia causal)
@@ -698,6 +704,43 @@ class SerVital:
         pen = s.KAPPA * s.mask.sum(1) * adulto
         m.custo_neural = getattr(m, 'custo_neural', torch.zeros(B, device=DEV)) + pen
 
+class SerTalamo(SerVital):
+    """E6 (doc 20): TALAMO dentro do ser — um gate POR ORGAO POR PASSO decide
+    quem e consultado, lendo o contexto interno (necessidade dominante +
+    carregando passageiro). Custo por CONSULTA, nao por orgao-vivo. Sem
+    ontogenia (adulto desde o nascimento): isola o valor do ROTEAMENTO.
+    Genes 36..50: (a,b,c) por orgao -> gate = sig(a + b*need + c*carreg).
+    submodo: 'sempre' (gate=1, paga tudo) | 'talamo' (contextual) | 'cego'
+    (so o bias a — aprende QUANTO consultar mas nao QUANDO; controle do
+    refutado 'rotear por estatistica fixa')."""
+    nome='talamo'; NP=54; modo='direto'; submodo='talamo'; KAPPA_C=5e-4
+    def reset(s,m,W):
+        SerVital.reset(s,m,W)
+        s.G3 = W[:, 36:51].reshape(m.B,5,3)
+        s.duty_soma = torch.zeros(m.B,5,device=DEV)
+        s.duty_carr = torch.zeros(m.B,5,device=DEV)
+        s.carr_soma = torch.zeros(m.B,device=DEV)
+        s.passos_n = torch.zeros((),device=DEV)
+    def _gate(s, need, carreg):
+        if s.submodo == 'sempre':
+            g = torch.ones_like(s.wo)
+        elif s.submodo == 'cego':
+            g = torch.sigmoid(s.G3[:,:,0])
+        else:
+            g = torch.sigmoid(s.G3[:,:,0] + s.G3[:,:,1]*need[:,None]
+                              + s.G3[:,:,2]*carreg[:,None])
+        s._g = g; s._carreg = carreg
+        return g * s.wo
+    def atualizar(s,m):
+        SerVital.atualizar(s,m)
+        # sobrescreve o custo do SerVital: aqui paga-se por CONSULTA (soma dos
+        # gates), a vida inteira (sem subsidio — nao ha infancia)
+        pen_vital = s.KAPPA * s.mask.sum(1) * (s.t.float() > s.Tb).float()
+        m.custo_neural = m.custo_neural - pen_vital + s.KAPPA_C*s._g.sum(1)
+        s.duty_soma += s._g
+        s.duty_carr += s._g * s._carreg[:,None]
+        s.carr_soma += s._carreg
+        s.passos_n = s.passos_n + 1
 ARQS = [Reativo, BancoEMA, Diadica, Corpo, Hibrido, MemCusto, MapaServico]
 # RotaCalculada e SerVital ficam FORA das baterias padrao: sao o E4 e o E8
 # do doc 19/21, com runners e controles proprios (src/e4_rota.py, e8_vida.py)
