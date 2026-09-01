@@ -791,7 +791,9 @@ class SerSono:
         # previsao de aquecimento da PROXIMA rua, pela lei consolidada:
         # dtemp ~ lei0 + lei1*cu + lei2*cu*deficit
         prev = s.lei[:,0:1] + s.lei[:,1:2]*cus + s.lei[:,2:3]*cus*deficit[:,None]
-        risco = torch.relu(m.temp[:,None] + prev - 85.)      # perto de ferver
+        # risco LIMITADO (E9d): sem clamp, lei crescendo em vida x peso evoluido
+        # explodia a penalidade e paralisava o ser (colapso 4.1 do E9c)
+        risco = torch.relu(m.temp[:,None] + prev - 85.).clamp(max=6.)
         d_posto = m.dsa[m.cidx, 0].gather(1, viz)
         s._agua_prev = m.agua; s._temp_prev = m.temp; s._fad_prev = m.fad
         s._tpar_prev = m.tpar; s._no_prev = m.no; s._npc_prev = m.npc
