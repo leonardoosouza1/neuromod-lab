@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import torch, numpy as np
 from lab import (DEV, GMAX, NPX, NF, gerar_cidade, Cfg, Lote, passo,
                  Reativo, BancoEMA, Diadica, Corpo, Hibrido, ARQS,
-                 rodar, avaliar, evoluir)
+                 rodar, avaliar, evoluir, evoluir_juntas, um_passo, modo_execucao)
 
 NOMES_F = (['d_alvo','custo_rua','congestao','semaforo',
             'd_posto','d_comida','d_descanso','d_oficina','d_loja',
@@ -75,7 +75,7 @@ def portao(mundo='base', T=1200, n_cid=3, rep=16, R=2):
         print(f'  {A.nome:<12}{ep:>9.1f}{er:>11.1f}{ep/max(er,.05):>7.1f}x{av:>9.1f}')
         limpar()
     ok = (max(vals) - min(vals)) < 0.05
-    print(f"\n  {'PASSOU' if ok else 'FALHOU'}: as 5 "
+    print(f"\n  {'PASSOU' if ok else 'FALHOU'}: as {len(ARQS)} "
           f"{'batem' if ok else 'DIVERGEM'} (spread {max(vals)-min(vals):.3f})")
     if not ok:
         print('  >>> bug de porte. NAO rode a bateria.')
@@ -103,12 +103,7 @@ def trajetoria(Arq, w, cidades, cfg, T=1500, amostras=200):
     a = Arq(); a.reset(m, Wb)
     pa = max(1, T//amostras); buf = []
     for t in range(T):
-        F, val = m.obs(); viz = m.A_().clamp(min=0)
-        s = (torch.einsum('bgf,bf->bg', F, Wb[:,:NF])
-             + a.extra(m, Wb, viz)).masked_fill(~val, -1e9)
-        svn, sv = m.serv_need()
-        ss = (svn*Wb[:,NF:NF+5] + Wb[:,NF+5:NF+6]).masked_fill(sv<=0, -1e9)
-        passo(m, torch.cat([s,ss],1).argmax(1))
+        um_passo(m, a, Wb); a.atualizar(m)
         if t % pa == 0:
             buf.append(torch.stack([m.fuel[0], m.fome[0], m.fad[0], m.pneu[0],
                                     m.temp[0], m.oleo[0], m.dinh[0], m.ent[0],
@@ -120,11 +115,41 @@ def trajetoria(Arq, w, cidades, cfg, T=1500, amostras=200):
     return {k: [round(x,2) for x in M[:,i].tolist()] for i,k in enumerate(ks)}
 
 
-def bateria(P, GER, R, T_EVO, T, n_treino, n_teste, seeds, saida_dir, seed_evo=0, mundo='base'):
-    treino = [gerar_cidade(s) for s in range(n_treino)]
-    teste  = [gerar_cidade(1000+s) for s in range(n_teste)]
+def salvar_json(caminho, obj):
+    """escrita atomica: escreve .tmp e troca — queda de maquina nunca corrompe."""
+    tmp = caminho + '.tmp'
+    with open(tmp, 'w') as f:
+        json.dump(obj, f)
+    os.replace(tmp, caminho)
+
+
+def bateria(P, GER, R, T_EVO, T, n_treino, n_teste, seeds, saida_dir, seed_evo=0,
+            mundo='base', do_zero=False, n_cidade=26, juntas=False):
+    treino = [gerar_cidade(s, n=n_cidade) for s in range(n_treino)]
+    teste  = [gerar_cidade(1000+s, n=n_cidade) for s in range(n_teste)]
     cfg = Cfg(1.0, trafego=.35, imposto=.18, mundo=mundo)
     print(f'mundos/geracao: {P*n_treino*R:,} | por genoma: {n_treino*R}')
+
+    # --- retomada: resultado parcial por arquitetura + checkpoint por geracao ---
+    os.makedirs(saida_dir, exist_ok=True)
+    parcial = os.path.join(saida_dir, f'resultado-taxi-{mundo}-s{seed_evo}-PARCIAL.json')
+    ckpt_de = lambda nome: os.path.join(
+        saida_dir, f'ckpt-{mundo}-s{seed_evo}-{nome.replace(" ","_")}.pt')
+    cfg_id = (f'P={P} G={GER} R={R} tevo={T_EVO} taval={T} treino={n_treino} '
+              f'teste={n_teste} seeds={seeds} mundo={mundo} seed_evo={seed_evo} '
+              f'n={n_cidade}')
+    res = {}
+    if do_zero:
+        for f in [parcial] + [ckpt_de(A.nome) for A in ARQS]:
+            if os.path.exists(f): os.remove(f)
+    elif os.path.exists(parcial):
+        d = json.load(open(parcial))
+        if d.get('config_str') != cfg_id:
+            sys.exit(f'PARCIAL DE OUTRA CONFIG:\n  parcial: {d.get("config_str")}\n'
+                     f'  agora:   {cfg_id}\n'
+                     f'  Use --do-zero para descartar, ou repita a config original.')
+        res = d.get('resultados', {})
+        if res: print(f'[retomando: {list(res.keys())} ja prontos em {parcial}]')
 
     if torch.cuda.is_available():
         limpar(); torch.cuda.reset_peak_memory_stats()
@@ -138,14 +163,29 @@ def bateria(P, GER, R, T_EVO, T, n_treino, n_teste, seeds, saida_dir, seed_evo=0
             sys.exit(f'REDUZA P (sugestao {int(P*tot*0.7/pico)})')
         print(f'cabe ate P ~= {int(P*tot*0.7/max(pico,1e-6)):,}')
 
-    res = {}; t0 = time.time()
+    t0 = time.time()
+    evolvidas = None
+    if juntas and any(A.nome not in res for A in ARQS):
+        # todas evoluem no MESMO run, geracao a geracao (telemetria lado a lado;
+        # resultado por arq bit a bit igual ao sequencial — ver testes.py).
+        # Sempre a lista COMPLETA: mantem o cfg_id do ckpt estavel; retomar
+        # com evolucao ja concluida e instantaneo (it0==ger).
+        print(f'\n=== evolucao CONJUNTA: {[A.nome for A in ARQS]} ===')
+        evolvidas = evoluir_juntas(ARQS, treino, cfg, P, GER, T_EVO, R=R,
+                                   seed=seed_evo, ckpt=ckpt_de('JUNTAS'))
     for Arq in ARQS:
+        if Arq.nome in res:
+            print(f'\n=== {Arq.nome}: ja pronto, pulando ===')
+            continue
         print(f'\n=== {Arq.nome} ({Arq.NP} params) ===')
         ta = time.time()
         if torch.cuda.is_available():
             torch.cuda.reset_peak_memory_stats()
-        w, hist, snaps = evoluir(Arq, treino, cfg, P, GER, T_EVO, R=R,
-                                seed=seed_evo)
+        if evolvidas is not None:
+            w, hist, snaps = evolvidas[Arq.nome]
+        else:
+            w, hist, snaps = evoluir(Arq, treino, cfg, P, GER, T_EVO, R=R,
+                                    seed=seed_evo, ckpt=ckpt_de(Arq.nome))
 
         m = rodar(Arq, w[None,:].repeat(seeds,1), teste, cfg, T, seed=7777, R=1)
         ent, avr, ups = m.ent, m.avar, m.up
@@ -180,12 +220,18 @@ def bateria(P, GER, R, T_EVO, T, n_treino, n_teste, seeds, saida_dir, seed_evo=0
         est['tempo_s'] = round(time.time()-ta, 1)
         est['vram_pico_gb'] = (round(torch.cuda.max_memory_allocated()/1e9, 2)
                                if torch.cuda.is_available() else 0)
+        est['modo'] = modo_execucao()   # compile e eager divergem ~1e-5: auditar
         res[Arq.nome] = est
+        # salva o PARCIAL agora: se a maquina cair, o que ja rodou esta no disco
+        salvar_json(parcial, dict(data=datetime.now().isoformat(), parcial=True,
+                                  config_str=cfg_id, resultados=res))
+        ck = ckpt_de(Arq.nome)
+        if os.path.exists(ck): os.remove(ck)   # evolucao desta arq concluida
         print(f"  -> {est['entregas']['media']:.1f} +- {est['entregas']['dp']:.1f} "
-              f"entregas ({est['n_amostras']} amostras, {est['tempo_s']:.0f}s)")
+              f"entregas ({est['n_amostras']} amostras, {est['tempo_s']:.0f}s) "
+              f"[parcial salvo]")
 
     print(f'\nTOTAL: {time.time()-t0:.0f}s')
-    os.makedirs(saida_dir, exist_ok=True)
     out = dict(
         data=datetime.now().isoformat(),
         config=dict(P=P, R=R, geracoes=GER, T_evo=T_EVO, T_aval=T,
@@ -196,8 +242,8 @@ def bateria(P, GER, R, T_EVO, T, n_treino, n_teste, seeds, saida_dir, seed_evo=0
                      if torch.cuda.is_available() else 'cpu'),
         resultados=res)
     cam = os.path.join(saida_dir, f'resultado-taxi-{mundo}-s{seed_evo}-{datetime.now():%Y%m%d-%H%M}.json')
-    with open(cam, 'w') as f:
-        json.dump(out, f)
+    salvar_json(cam, out)
+    if os.path.exists(parcial): os.remove(parcial)
     print('salvo:', cam, '|', round(os.path.getsize(cam)/1e6, 2), 'MB')
     print('\nRESUMO:')
     for k, v in sorted(res.items(), key=lambda x: -x[1]['entregas']['media']):
@@ -226,7 +272,13 @@ if __name__ == '__main__':
     # entre sementes e o ruido de base; efeito menor que isso nao e efeito.
     ap.add_argument('--seed-evo', type=int, default=0, dest='seed_evo')
     ap.add_argument('--mundo', default='base',
-                    choices=['base','cego','hotspot','mare'])
+                    choices=['base','cego','hotspot','mare','ruas','semgps'])
+    ap.add_argument('--do-zero', action='store_true', dest='do_zero',
+                    help='ignora parcial/checkpoint existente e recomeca')
+    ap.add_argument('--n-cidade', type=int, default=26, dest='n_cidade',
+                    help='nos por cidade (max 255; cidades maiores = rotas longas)')
+    ap.add_argument('--juntas', action='store_true',
+                    help='todas as arqs evoluem no mesmo run, geracao a geracao')
     ap.add_argument('--out', default=os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'resultados'))
     a = ap.parse_args()
@@ -244,6 +296,8 @@ if __name__ == '__main__':
         if not portao(a.mundo):
             sys.exit('portao falhou — corrija antes de rodar a bateria')
         bateria(a.P, a.geracoes, a.R, a.tevo, a.taval,
-                a.treino, a.teste, a.seeds, a.out, seed_evo=a.seed_evo, mundo=a.mundo)
+                a.treino, a.teste, a.seeds, a.out, seed_evo=a.seed_evo,
+                mundo=a.mundo, do_zero=a.do_zero, n_cidade=a.n_cidade,
+                juntas=a.juntas)
     if not (a.smoke or a.perito or a.bateria):
         ap.print_help()

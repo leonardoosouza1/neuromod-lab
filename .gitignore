@@ -2,3 +2,6 @@ __pycache__/
 *.pyc
 resultados/*.json
 .ipynb_checkpoints/
+neuromod-lab-resultados-*/
+*.log
+ckpt-*.pt

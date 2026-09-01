@@ -15,7 +15,7 @@ Sem mais dependências. Roda em CPU, GPU local ou Colab sem mudar nada.
 ```bash
 python src/rodar.py --smoke      # segundos — só confere que não quebra
 python src/rodar.py --perito     # PORTÃO — obrigatório antes de qualquer bateria
-python src/rodar.py --bateria    # bateria completa (~1h em T4)
+python src/rodar.py --bateria    # bateria completa
 
 # ajustando escala
 python src/rodar.py --bateria -P 8192 -G 100 -R 8
@@ -23,7 +23,24 @@ python src/rodar.py --bateria -P 8192 -G 100 -R 8
 # sementes da EVOLUÇÃO (I4): rode 0/1/2 e compare — efeito entre arquiteturas
 # menor que a amplitude entre sementes é ruído, não efeito
 python src/rodar.py --bateria --seed-evo 1
+
+# mundos com estrutura oculta (ver PREDICOES.md)
+python src/rodar.py --bateria --mundo hotspot
 ```
+
+### Queda no meio? Retoma sozinho (2026-08-31)
+
+A bateria salva **resultado PARCIAL após cada arquitetura** (JSON atômico) e
+**checkpoint da evolução a cada 10 gerações**. Rodar o mesmo comando de novo
+pula o que está pronto e retoma a evolução de onde parou. `--do-zero` ignora
+tudo e recomeça.
+
+### Performance (2026-08-31)
+
+Loop reescrito sem sync CPU↔GPU + `torch.compile` (desligue com `NM_COMPILE=0`)
++ janela diádica por ring buffer fundido: **~3× no B da bateria (524k mundos),
+~4× na avaliação**. `src/testes.py <lab_antigo.py>` prova equivalência
+numérica; o portão `--perito` continua obrigatório após qualquer mudança.
 
 ## Colab
 
