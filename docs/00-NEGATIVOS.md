@@ -29,3 +29,17 @@ Regras que os negativos escreveram (não repetir):
 4. Nunca podar/crescer por volume de ativação (N5 — uso≠contribuição, 4×).
 5. Mecanismo novo em vida × peso evoluído = co-adaptação; LIMITAR a alavanca (N9).
 6. Toda vitória tem uma história prevista e uma real — conferir a real (N11).
+
+## N13 — MONOCULTURA TÉRMICA (achado 2026-09-01, pedido do Leonardo "parado por bug ou escolha?")
+
+Instrumentando a ativação do cérebro do perito: 63% dos ticks o cérebro NAO
+decide (preso). Decomposto: 42% da vida TRAVADO por avaria, e **100% das
+avarias sao SUPERAQUECIMENTO** (combustivel/pneu/oleo = ZERO). O mundo "rico
+com 4 avarias" do README e na pratica um jogo de gerenciar CALOR — monocultura.
+- Comparacoes RELATIVAS seguem validas (mesmo mundo p/ todos os bracos).
+- Comportamento ABSOLUTO era dominado por 1 eixo — nunca medido ate agora.
+- Conserto natural = agua do radiador (E9): temperatura vira recurso APRENDIVEL
+  em vez de imposto fixo. Alternativa: rebalancear as 4 avarias.
+- Instrumento novo: inspetor de ativacao (livre-moveu / parado-a-toa / travado)
+  vira debug padrao — "parado por escolha != parado por bug != mundo mal
+  calibrado" (3a categoria, a que este achado revelou).
