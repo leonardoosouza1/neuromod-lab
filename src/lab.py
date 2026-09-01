@@ -981,6 +981,52 @@ def evoluir(Arq, cidades, cfg, P=512, ger=25, T=1500, seed=0, elite=.15,
     return W[0], hist, snaps
 
 
+def evoluir_sementes(Arq, cidades, cfg, P=512, ger=25, T=1500, seeds=(0,1,2),
+                     elite=.15, verbose=True, R=1):
+    """MEGA-LOTE de sementes: as S populacoes (uma por semente de evolucao)
+    empilhadas num Lote so — B cresce S vezes e sai da regiao limitada por
+    LANCAMENTO de kernel (VRAM vazia + GPU 'ocupada' = kernels pequenos).
+    Selecao/mutacao POR BLOCO com um Generator por semente. NAO e bit-igual ao
+    sequencial (o stream de mundos e por posicao no lote), mas os blocos sao
+    estatisticamente iid e os MESMOS mundos pareiam as sementes entre si.
+    Devolve {semente: (campeao, hist, snaps)}."""
+    S = len(seeds); NPQ = Arq.NP
+    gs = []
+    Ws = []
+    for sd in seeds:
+        g = torch.Generator(device=DEV); g.manual_seed(sd)
+        gs.append(g); Ws.append(torch.randn(P, NPQ, generator=g, device=DEV)*.8)
+    W = torch.cat(Ws)                                  # (S*P, NP)
+    hist = {sd: [] for sd in seeds}; snaps = {sd: [] for sd in seeds}
+    ne = max(2, int(P*elite))
+    for it in range(ger):
+        f = avaliar(Arq, W, cidades, cfg, T, seed=777000+it*13, R=R).view(S, P)
+        Wv = W.view(S, P, NPQ)
+        novos = []
+        for si, sd in enumerate(seeds):
+            o = f[si].argsort(descending=True)
+            Wb = Wv[si][o]; fb = f[si][o]
+            hist[sd].append(float(fb[0]))
+            idx = torch.randint(0, ne, (P-ne,), generator=gs[si], device=DEV)
+            fil = (Wb[idx] + torch.randn(P-ne, NPQ, generator=gs[si],
+                                         device=DEV)*.3).clamp(-5, 5)
+            Wn = torch.cat([Wb[:ne], fil])
+            if it % 5 == 0:
+                q = torch.tensor([0., .25, .5, .75, 1.], device=DEV)
+                snaps[sd].append({'ger': it,
+                    'fit_percentis': [float(x) for x in torch.quantile(fb, q)],
+                    'fit_media': float(fb.mean()),
+                    'diversidade': float(Wn.std(0).mean()),
+                    'alocacao_elite': alocacao(Wn, ne)})
+            novos.append(Wn)
+        W = torch.cat(novos)
+        if verbose and it % 5 == 0:
+            linha = ' '.join(f'{hist[sd][-1]:>8.2f}' for sd in seeds)
+            print(f'  ger {it:>3} | {linha}   (melhor por semente)', flush=True)
+    Wv = W.view(S, P, NPQ)
+    return {sd: (Wv[si][0], hist[sd], snaps[sd]) for si, sd in enumerate(seeds)}
+
+
 def evoluir_juntas(arqs, cidades, cfg, P=512, ger=25, T=1500, seed=0, elite=.15,
                    verbose=True, R=1, ckpt=None, ckpt_cada=10):
     """Todas as arquiteturas evoluem NO MESMO RUN, geracao a geracao.
