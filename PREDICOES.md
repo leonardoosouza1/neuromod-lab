@@ -39,6 +39,20 @@ evolução conjunta pareada. Fitness = entregas − 0.3·avarias − custo neura
 6. (ponte E4) no `ruas`, o órgão-rota com infância atinge confiança útil em
    ≥2/3 sementes (vs 1/3 do E4 sem infância).
 
+## E8b — poda por LESÃO (causal) — predição 2026-09-01, ANTES de rodar
+
+Furo medido no E8: contribuição por |w·sinal| é MAGNITUDE — manteve a rota em
+100% também no `base`, onde ela não deveria pagar. E8b: lesões rotativas na
+infância (cada órgão OFF em janelas de 8 passos) e poda mantém só quem,
+ausente, PIOROU a taxa de fitness (margem 2%).
+
+1. `lesao` ≥ `poda` em fitness nos dois mundos.
+2. **Diagnóstica**: no `base`, `lesao` PODA a rota (que a magnitude mantinha);
+   no `ruas`, MANTÉM a rota. Se mantiver rota no base, ou a rota ajuda de
+   verdade lá (reforço do d_alvo — investigar antes de culpar o mecanismo) ou
+   a janela de 8 passos é curta demais pro sinal causal.
+3. `lesao` no ruas conserva o recorde (entregas ≥ nível do curta 16.7).
+
 # Predições — mundos `ruas` e `semgps` + arqs `mem custo` e `mapa servico` — 2026-08-31
 
 Registradas ANTES de qualquer bateria (mini-bateria de CALIBRAÇÃO das constantes

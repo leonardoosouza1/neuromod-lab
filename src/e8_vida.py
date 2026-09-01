@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import torch
 from lab import DEV, NF, gerar_cidade, Cfg, SerVital, evoluir_juntas, rodar
 
-MODOS = ['direto', 'sem_poda', 'poda', 'poda_aleatoria', 'curta']
+MODOS = ['direto', 'sem_poda', 'poda', 'poda_aleatoria', 'curta', 'lesao']
 
 
 def variante(modo):

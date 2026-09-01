@@ -575,7 +575,11 @@ class SerVital:
             5 rota calculada (FW sobre custos lembrados, compartilha C com 1).
     modo: 'direto' (adulto desde o nascimento) | 'sem_poda' | 'poda' |
           'poda_aleatoria' (mesma contagem, orgaos sorteados) | 'curta'
-          (infancia 5%). T_REF fixa a infancia em passos ABSOLUTOS."""
+          (infancia 5%) | 'lesao' (E8b: lesoes ROTATIVAS na infancia — cada
+          orgao desligado em janelas de 8 passos; poda CAUSAL: mantem so quem,
+          ausente, piorou a taxa de fitness. Conserta o furo do E8: a
+          contribuicao por |w*sinal| e MAGNITUDE e mantinha orgao inutil de
+          sinal alto). T_REF fixa a infancia em passos ABSOLUTOS."""
     nome='ser vital'; NP=NF+6+6+6; K=16; KAPPA=5e-4; T_REF=600
     modo='poda'
     def reset(s,m,W):
@@ -584,6 +588,9 @@ class SerVital:
         fr = torch.sigmoid(W[:, NF+11])*.45+.05          # infancia = 5..50% de T_REF
         if s.modo=='curta':  fr = torch.full_like(fr, .05)
         if s.modo=='direto': fr = torch.zeros_like(fr)
+        if s.modo=='lesao':
+            # lesao precisa de ciclos completos de 6 janelas: minimo 2 ciclos
+            fr = fr.clamp(min=6*2*8/s.T_REF)
         s.Tb = (fr*s.T_REF).round()                      # (B,) passos de infancia
         s.Tbebe   = torch.nn.functional.softplus(W[:, NF+12])
         s.Tadulto = torch.nn.functional.softplus(W[:, NF+13])*.3
@@ -601,6 +608,12 @@ class SerVital:
         # gerador PROPRIO p/ sorteios da poda: nunca tocar o gsim do mundo
         # (o portao E8 pegou: um draw extra dessincroniza o mundo entre modos)
         s.gp = torch.Generator(device=DEV); s.gp.manual_seed(987654)
+        # lesao: contabilidade causal (Δfitness por condicao: orgao o OFF / tudo ON)
+        s.WJAN = 8
+        s.AR5o = torch.arange(5, device=DEV)
+        s.rate = torch.zeros(B, 6, device=DEV)
+        s.rcnt = torch.zeros(B, 6, device=DEV)
+        s._fit_prev = torch.zeros(B, device=DEV)
     def extra(s,m,W,viz):
         B=m.B
         d5 = torch.stack([1-m.fuel/m.capf(), m.fome/100, m.fad/100,
@@ -618,6 +631,13 @@ class SerVital:
             -dor.clamp(max=60.)/6.,                                  # 5 rota
         ], 1)                                                        # (B,5,G)
         gate = s.mask * s.wo
+        if s.modo == 'lesao':
+            # janela atual desliga UM orgao durante a infancia (rotativo);
+            # janela 5 = tudo ligado (referencia causal)
+            jan_i = (s.t // s.WJAN) % 6
+            bebe_ = (s.t.float() < s.Tb).float()[:,None]
+            les = 1. - bebe_*(s.AR5o == jan_i).float()[None,:]
+            gate = gate * les
         s._absc = (s.mask * s.wo.abs()) * sig.abs().mean(2)          # contribuicao
         s._obs = torch.gather(m.npc, 1, m.no[:,None]); s._no = m.no
         s._sv = m.serv_()
@@ -637,6 +657,16 @@ class SerVital:
         s.M.scatter_(2, no3, torch.maximum(s.M.gather(2,no3), s._sv[:,:,None]))
         s.jan.push_no(m, s._no)
         s.contrib += s._absc
+        if s.modo == 'lesao':
+            # Δfitness deste passo cai no balde da condicao vigente (ANTES do t+1,
+            # casando com a janela que o extra() usou)
+            fit_now = m.ent - 0.3*m.avar
+            d = fit_now - s._fit_prev; s._fit_prev = fit_now
+            jan_i = (s.t // s.WJAN) % 6
+            oh = (torch.arange(6, device=DEV) == jan_i).float()
+            bebe_ = (s.t.float() < s.Tb).float()
+            s.rate += (bebe_*d)[:,None]*oh[None,:]
+            s.rcnt += bebe_[:,None]*oh[None,:]
         s.t = s.t + 1
         if int(s.t) % s.K == 0:                       # rota lembrada (barato, eager)
             n=m.n; A=m.Aa[m.cidx]; Wr=m.Wa[m.cidx]
@@ -649,7 +679,13 @@ class SerVital:
             s.D = D
         # ADOLESCENCIA: mundos que cruzam T_b AGORA decidem a poda
         cruza = (s.t.float() == s.Tb)
-        if s.modo in ('poda','poda_aleatoria','curta'):
+        if s.modo == 'lesao':
+            # poda CAUSAL: mantem o orgao se a AUSENCIA dele piorou a taxa
+            r = s.rate / s.rcnt.clamp(min=1.)
+            r_on = r[:, 5:6]; r_off = r[:, :5]
+            manter = (r_on - r_off > 0.02*r_on.abs() + 1e-4).float()
+            s.mask = torch.where(cruza[:,None], manter, s.mask)
+        elif s.modo in ('poda','poda_aleatoria','curta'):
             frac = s.contrib / (s.contrib.sum(1, keepdim=True)+1e-9)
             manter = (frac > s.limiar[:,None]*0.2).float()
             if s.modo == 'poda_aleatoria':
