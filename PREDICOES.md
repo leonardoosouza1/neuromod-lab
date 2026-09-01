@@ -63,7 +63,23 @@ se adaptar). Consertos E9c: fix do partiu (corr do estimador 0.03→0.77 com
 dados ricos), gene de hora-preferida-de-dormir + força do bônus (o volante).
 As MESMAS predições abaixo valem para o E9c.
 
-## E9c — o sono que aprende (doc 24) — predições (herdadas do E9b)
+## E9c — RODADO 2026-09-01: metade confirmada, metade refutada COM teto medido
+
+CONFIRMADO 3/3: corr(lei aprendida, k_agua oculto) = 0.73/0.69/0.67 nos que
+consolidam, 0.0 no fixo — **o ser aprende a física oculta do próprio mundo
+dormindo** (aprendizado-em-vida por forma fechada, gateado pelo sono: FUNCIONA).
+REFUTADO: saber não pagou (fixo 19.1 > circadiano 14.0 > constante 11.1).
+TETO MEDIDO DEPOIS (erro de método — era antes): ignorância custa 15.8% da
+vida parado fervendo = teto de +2.4 entregas; os aprendizes perderam 5-8 —
+pagaram >2× o teto em paranoia do previsor (risco×lei crescente = co-adaptação,
+o colapso 4.1 da s1) e sono extra. Mecanismo de APRENDER validado; mecanismo
+de USAR mal desenhado.
+
+E9d (a rodar): penalidade de risco LIMITADA (clamp) + consolidação SÓ no
+descanso que já ia acontecer (custo marginal zero) + predição: aprendiz
+captura ≥1 entrega do teto de 2.4 (fixo + parte do teto).
+
+## E9c — predições originais (herdadas do E9b)
 
 Mundo base + água de radiador com lei k_agua SORTEADA POR MUNDO. Braços SerSono:
 fixo (α=0) · constante (α=.55) · circadiano (α por horário 1.0/0.5/0.2).
