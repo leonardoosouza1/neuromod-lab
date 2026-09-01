@@ -23,8 +23,17 @@ def cfg_agua():
     return c
 
 def bracos():
-    return [type(f'S_{mo}', (SerSono,), {'submodo': mo, 'nome': f'sono:{mo}'})
-            for mo in ('fixo','constante','circadiano')]
+    B=[type(f'S_{mo}', (SerSono,), {'submodo': mo, 'nome': f'sono:{mo}'})
+       for mo in ('fixo','constante','circadiano')]
+    # diagnostico E9e: aprende (alfa circadiano) mas NUNCA usa (previsor morto)
+    # -> separa custo de APRENDER (sono) do custo de USAR (previsor)
+    class S_naousa(SerSono):
+        submodo='circadiano'; nome='sono:aprende_nao_usa'
+        def reset(s,m,W):
+            SerSono.reset(s,m,W)
+            s.w1 = torch.zeros_like(s.w1); s.w2 = torch.zeros_like(s.w2)
+    B.append(S_naousa)
+    return B
 
 def portao(cids):
     print('--- portao E9b (3 bracos, genes zerados) ---')

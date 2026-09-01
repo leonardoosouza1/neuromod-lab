@@ -79,6 +79,16 @@ E9d (a rodar): penalidade de risco LIMITADA (clamp) + consolidação SÓ no
 descanso que já ia acontecer (custo marginal zero) + predição: aprendiz
 captura ≥1 entrega do teto de 2.4 (fixo + parte do teto).
 
+## E9d/E9e — RODADOS 2026-09-01: a contabilidade fechou
+
+E9d (risco clamp): gap fixo−aprendizes caiu −7→−3.3; corr subiu (até 0.85).
+E9e (braço aprende-não-usa): custo de APRENDER = −1.85 (sono espalhado);
+custo de USAR = −1.45 (previsor ≤0 em 3/3); teto = +2.4. Mesmo captura
+perfeita renderia +0.5 líquido — margem do mundo apertada demais.
+VEREDITO DO BLOCO: aprender-dormindo VALIDADO (corr 0.65-0.85, 12/12
+braços-semente, lei POR MUNDO); lucrar exige sono em BLOCO em casa
+(amortiza o −1.85) e/ou mundo com teto maior → E11-cidade. Ver 00-NEGATIVOS.
+
 ## E9c — predições originais (herdadas do E9b)
 
 Mundo base + água de radiador com lei k_agua SORTEADA POR MUNDO. Braços SerSono:
