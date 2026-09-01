@@ -768,11 +768,16 @@ class SerSono:
     so aprendizado em vida alcanca. A lei alimenta o PREVISOR: penaliza mover
     quando a previsao diz superaquecer e puxa pro posto quando o risco sobe.
     submodo: 'fixo' (alfa=0, nao aprende) | 'constante' (alfa=0.55, sono nao
-    importa) | 'circadiano' (a tese).  Genes: NF+6=w_risco, NF+7=w_posto."""
+    importa) | 'circadiano' (a tese).
+    Genes: NF+6=w_risco, NF+7=w_posto, NF+8=hora preferida de dormir (o
+    VOLANTE do horario — sem ele o circadiano sofria o castigo do alfa sem
+    poder se adaptar), NF+9=forca do bonus de dormir."""
     nome='ser sono'; NP=NF+6+6+6; submodo='circadiano'; LAMB=1e-3
     def reset(s,m,W):
         B=m.B
         s.w1 = W[:, NF+6:NF+7]; s.w2 = W[:, NF+7:NF+8]
+        s.hpref = torch.sigmoid(W[:, NF+8])*24.      # hora preferida de dormir
+        s.gdorme = W[:, NF+9]                        # forca do bonus (0=inerte)
         s.A = torch.zeros(B,3,3,device=DEV)          # hipocampo: soma phi phi^T
         s.b = torch.zeros(B,3,device=DEV)            #            soma phi*alvo
         s.lei = torch.zeros(B,3,device=DEV)          # cortex: lei consolidada
@@ -790,11 +795,23 @@ class SerSono:
         d_posto = m.dsa[m.cidx, 0].gather(1, viz)
         s._agua_prev = m.agua; s._temp_prev = m.temp; s._fad_prev = m.fad
         s._tpar_prev = m.tpar; s._no_prev = m.no; s._npc_prev = m.npc
+        s._rest_prev = m.rest
         return -s.w1*risco + s.w2*(risco.mean(1,keepdim=True))*(-d_posto/6.)
+    def extra_serv(s, m):
+        """bonus no servico DESCANSO na janela de hora preferida (o relogio
+        interno evoluivel — cos da o pico em hpref e o vale 12h depois)."""
+        hora = ((s.t.float() + m.fase_dia) % m.cfg.dia) / m.cfg.dia * 24.
+        jan = torch.cos(2*3.14159265*(hora - s.hpref)/24.)
+        out = torch.zeros(m.B, 5, device=DEV)
+        out[:, 2] = s.gdorme * jan
+        return out
     def atualizar(s,m):
         c = m.cfg; B = m.B
-        # 1) GRAVAR (dia): passos em que ANDOU, sem avaria — aquecimento real
-        partiu = (m.indo >= 0) & (m.rest > 0) & (m.tpar <= s._tpar_prev)
+        # 1) GRAVAR (dia): passos de LARGADA (rest 0 -> >0), sem avaria.
+        # BUG PAGO (E9b): sem o rest_prev<=0, todo passo de viagem entrava com
+        # dtemp=0 e afogava a regressao — corr 0.03 ate com dados ricos.
+        partiu = (s._rest_prev <= 0) & (m.rest > 0) & (m.indo >= 0) \
+                 & (m.tpar <= s._tpar_prev)
         dst = m.indo.clamp(min=0)
         A0 = m.Aa[m.cidx, s._no_prev]
         w_edge = (m.Wa[m.cidx, s._no_prev]*(A0==dst[:,None]).float()).sum(1)
@@ -835,7 +852,10 @@ def um_passo(m, a, Wb):
     sc = torch.einsum('bgf,bf->bg', F, Wb[:,:NF]) + a.extra(m, Wb, viz)
     sc = sc.masked_fill(~val, -1e9)
     svn, sv = m.serv_need()
-    ss = (svn*Wb[:,NF:NF+5] + Wb[:,NF+5:NF+6]).masked_fill(sv<=0, -1e9)
+    ss = svn*Wb[:,NF:NF+5] + Wb[:,NF+5:NF+6]
+    if hasattr(a, 'extra_serv'):        # arq pode influenciar servicos (ex.: sono)
+        ss = ss + a.extra_serv(m)
+    ss = ss.masked_fill(sv<=0, -1e9)
     tudo = torch.cat([sc, ss],1)
     # arqs com decisao propria (ex.: temperatura por fase da vida — SerVital)
     esc = a.decidir(tudo, m) if hasattr(a, 'decidir') else tudo.argmax(1)

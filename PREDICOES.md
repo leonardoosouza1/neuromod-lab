@@ -53,7 +53,17 @@ ausente, PIOROU a taxa de fitness (margem 2%).
    a janela de 8 passos é curta demais pro sinal causal.
 3. `lesao` no ruas conserva o recorde (entregas ≥ nível do curta 16.7).
 
-## E9b — o sono que aprende (doc 24) — predições 2026-09-01, ANTES de rodar
+## E9b — RODADO: refutado por BUG (registrado) → E9c
+
+E9b deu fixo>aprendizes e corr~0. Diagnóstico numérico: (1) BUG no `partiu`
+(sem rest_prev≤0, todo passo de viagem entrava com Δtemp=0 e afogava a
+regressão — estimador dava corr 0.03 ATÉ com dados ricos); (2) sono raro
+(2.3/2 dias) e sem volante de horário (circadiano sofria o α baixo sem poder
+se adaptar). Consertos E9c: fix do partiu (corr do estimador 0.03→0.77 com
+dados ricos), gene de hora-preferida-de-dormir + força do bônus (o volante).
+As MESMAS predições abaixo valem para o E9c.
+
+## E9c — o sono que aprende (doc 24) — predições (herdadas do E9b)
 
 Mundo base + água de radiador com lei k_agua SORTEADA POR MUNDO. Braços SerSono:
 fixo (α=0) · constante (α=.55) · circadiano (α por horário 1.0/0.5/0.2).
