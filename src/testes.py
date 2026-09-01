@@ -65,6 +65,19 @@ def test_juntas_equivale():
     print('  evoluir_juntas == evoluir isolado (bit a bit, 2 arqs)  OK')
 
 
+def test_sementes_determinismo():
+    """evoluir_sementes: mesma chamada 2x = mesmo resultado (por bloco)."""
+    from lab import evoluir_sementes, Reativo
+    cids = [gerar_cidade(s) for s in range(2)]
+    cfg = Cfg(1.0, mundo='base')
+    a = evoluir_sementes(Reativo, cids, cfg, P=64, ger=4, T=120, seeds=(0,1), R=2, verbose=False)
+    b = evoluir_sementes(Reativo, cids, cfg, P=64, ger=4, T=120, seeds=(0,1), R=2, verbose=False)
+    for sd in (0,1):
+        assert a[sd][1] == b[sd][1], f'semente {sd} nao deterministica'
+        assert torch.equal(a[sd][0], b[sd][0])
+    print('  evoluir_sementes deterministico (2 sementes)  OK')
+
+
 if __name__ == '__main__':
     velho = sys.argv[1] if len(sys.argv) > 1 else None
     print('--- testes de equivalencia ---')
@@ -77,16 +90,3 @@ if __name__ == '__main__':
     test_juntas_equivale()
     test_sementes_determinismo()
     print('ok')
-
-
-def test_sementes_determinismo():
-    """evoluir_sementes: mesma chamada 2x = mesmo resultado (por bloco)."""
-    from lab import evoluir_sementes, Reativo
-    cids = [gerar_cidade(s) for s in range(2)]
-    cfg = Cfg(1.0, mundo='base')
-    a = evoluir_sementes(Reativo, cids, cfg, P=64, ger=4, T=120, seeds=(0,1), R=2, verbose=False)
-    b = evoluir_sementes(Reativo, cids, cfg, P=64, ger=4, T=120, seeds=(0,1), R=2, verbose=False)
-    for sd in (0,1):
-        assert a[sd][1] == b[sd][1], f'semente {sd} nao deterministica'
-        assert torch.equal(a[sd][0], b[sd][0])
-    print('  evoluir_sementes deterministico (2 sementes)  OK')
