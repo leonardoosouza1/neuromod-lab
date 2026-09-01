@@ -53,6 +53,22 @@ ausente, PIOROU a taxa de fitness (margem 2%).
    a janela de 8 passos é curta demais pro sinal causal.
 3. `lesao` no ruas conserva o recorde (entregas ≥ nível do curta 16.7).
 
+## E9b — o sono que aprende (doc 24) — predições 2026-09-01, ANTES de rodar
+
+Mundo base + água de radiador com lei k_agua SORTEADA POR MUNDO. Braços SerSono:
+fixo (α=0) · constante (α=.55) · circadiano (α por horário 1.0/0.5/0.2).
+
+1. corr(lei aprendida, k_agua oculto) > 0.7 nos braços que consolidam; ~0 no
+   fixo — o ser APRENDE a física do próprio mundo dormindo.
+2. circadiano e constante > fixo em fitness (aprender em vida paga; a lei não
+   é evoluível por construção).
+3. Curva entregas-por-dia SOBE nos que consolidam (dia 5 > dia 1 além do
+   ruído); plana no fixo — aprendizado em vida visível.
+4. circadiano: sono concentra em 20h-00h (histograma) MAIS que no constante —
+   a rotina emerge da moeda de retenção. Se circadiano ≈ constante em fitness,
+   registrar: o gradiente de α não foi forte o bastante pra pagar o
+   deslocamento de horário (dose baixa), não que consolidar não paga.
+
 ## E6 — tálamo no ser (doc 20) — predições 2026-09-01, ANTES de rodar
 
 Gate por órgão POR PASSO lendo contexto interno (need + carregando); custo por

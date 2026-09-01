@@ -69,6 +69,9 @@ class Cfg:
         s.mundo=mundo; s.raio=raio; s.deriva=deriva; s.per_mare=per_mare
         s.cron_frac=.30; s.cron_alto=1.6   # ruas: fracao cronica e teto do custo extra
         s.clarividente=False   # diagnostico: ruas com congestao VISIVEL = teto fisico
+        # E9b (doc 24): agua de radiador + relogio de 24h
+        s.com_agua=False       # liga o recurso agua (fisica extra de temperatura)
+        s.dia=480              # passos por dia (1 passo ~ 3 min)
         s.fuel=.70+1.4*d; s.pneu=.18+.9*d; s.temp=1.6+4.*d; s.fome=.07+.25*d
         s.fadiga=.45+1.2*d; s.risco=.02+.12*d; s.oleo=.25+.7*d
         s.per=max(int(round(16-6*d)),6); s.base=6.; s.km=2.6
@@ -147,6 +150,12 @@ class Lote:
             s.npc=torch.rand(B,n,generator=g,device=DEV)*cfg.trafego*2
         s.po=ri(n,(B,NPX)); s.pd=ri(n,(B,NPX))
         s.t=torch.zeros((),dtype=torch.long,device=DEV)
+        if cfg.com_agua:
+            # agua do radiador; a LEI (aquecimento por deficit) e SORTEADA POR
+            # MUNDO: a evolucao nao decora — so aprendizado EM VIDA alcanca
+            s.agua = torch.full((B,), 80., device=DEV)
+            s.k_agua = 1.0 + 3.0*torch.rand(B, generator=g, device=DEV)
+            s.fase_dia = ri(cfg.dia, (B,)).float()
         # constantes cacheadas (regra 2)
         s.ARB   = torch.arange(B, device=DEV)
         s.AR5   = torch.arange(5, device=DEV)
@@ -286,6 +295,8 @@ def passo(m, esc):
     o1 = pode & (esc==GMAX+0) & (sv[:,0]>0) & (m.dinh>=2.)
     m.dinh = m.dinh - 2.*o1.float()
     m.fuel = torch.where(o1, torch.minimum(m.fuel + (m.capf() if m.cfg.eco2 else 30.), m.capf()), m.fuel)
+    if c.com_agua:
+        m.agua = torch.where(o1, torch.full_like(m.agua,100.), m.agua)  # posto enche o radiador
     o2 = pode & (esc==GMAX+1) & (sv[:,1]>0) & (m.dinh>=3.)
     m.dinh = m.dinh - 3.*o2.float()
     m.fome = torch.where(o2, (m.fome-45).clamp(min=0), m.fome)
@@ -373,7 +384,14 @@ def passo(m, esc):
     m.fad  = (m.fad  + cu*c.fadiga*an.float()).clamp(max=100)
     m.pneu = (m.pneu - cuf*c.pneu*m.txp()*an.float()).clamp(min=0)
     m.oleo = (m.oleo - cuf*c.oleo*m.txo()*an.float()).clamp(min=0)
-    m.temp = (m.temp + cuf*c.temp*m.txt()*an.float()).clamp(max=120)
+    if c.com_agua:
+        # radiador: sem agua o motor esquenta MAIS — pela lei OCULTA k_agua
+        # do mundo (a fisica que so se aprende vivendo, doc 24)
+        m.agua = (m.agua - cuf*.6*an.float()).clamp(min=0)
+        aquece = cuf*c.temp*m.txt()*(1 + m.k_agua*(1-m.agua/100.))
+        m.temp = (m.temp + aquece*an.float()).clamp(max=120)
+    else:
+        m.temp = (m.temp + cuf*c.temp*m.txt()*an.float()).clamp(max=120)
     if c.mundo == 'ruas':
         # flutua EM TORNO da base cronica (AR-1): a estrutura persiste
         m.npc = (m.npc_base + (m.npc - m.npc_base)*.85
@@ -741,6 +759,71 @@ class SerTalamo(SerVital):
         s.duty_carr += s._g * s._carreg[:,None]
         s.carr_soma += s._carreg
         s.passos_n = s.passos_n + 1
+class SerSono:
+    """E9b (doc 24): o sono que APRENDE. De dia vive e GRAVA no buffer-
+    hipocampo (features -> aquecimento observado); DORMINDO (descanso)
+    consolida: resolve a lei do aquecimento por forma fechada e mistura com
+    alfa(hora): 1.0 dormindo 20h-00h | 0.5 pos-meia-noite | 0.2 de dia.
+    A lei k_agua e SORTEADA POR MUNDO (cfg.com_agua) — evolucao nao decora,
+    so aprendizado em vida alcanca. A lei alimenta o PREVISOR: penaliza mover
+    quando a previsao diz superaquecer e puxa pro posto quando o risco sobe.
+    submodo: 'fixo' (alfa=0, nao aprende) | 'constante' (alfa=0.55, sono nao
+    importa) | 'circadiano' (a tese).  Genes: NF+6=w_risco, NF+7=w_posto."""
+    nome='ser sono'; NP=NF+6+6+6; submodo='circadiano'; LAMB=1e-3
+    def reset(s,m,W):
+        B=m.B
+        s.w1 = W[:, NF+6:NF+7]; s.w2 = W[:, NF+7:NF+8]
+        s.A = torch.zeros(B,3,3,device=DEV)          # hipocampo: soma phi phi^T
+        s.b = torch.zeros(B,3,device=DEV)            #            soma phi*alvo
+        s.lei = torch.zeros(B,3,device=DEV)          # cortex: lei consolidada
+        s.t = torch.zeros((),dtype=torch.long,device=DEV)
+        s._prev = None
+        s.sono_hora = torch.zeros(B,24,device=DEV)   # telemetria: sono por hora
+        s.EYE = torch.eye(3,device=DEV)[None]
+    def extra(s,m,W,viz):
+        cus = m.W_()
+        deficit = (1 - m.agua/100.)
+        # previsao de aquecimento da PROXIMA rua, pela lei consolidada:
+        # dtemp ~ lei0 + lei1*cu + lei2*cu*deficit
+        prev = s.lei[:,0:1] + s.lei[:,1:2]*cus + s.lei[:,2:3]*cus*deficit[:,None]
+        risco = torch.relu(m.temp[:,None] + prev - 85.)      # perto de ferver
+        d_posto = m.dsa[m.cidx, 0].gather(1, viz)
+        s._agua_prev = m.agua; s._temp_prev = m.temp; s._fad_prev = m.fad
+        s._tpar_prev = m.tpar; s._no_prev = m.no; s._npc_prev = m.npc
+        return -s.w1*risco + s.w2*(risco.mean(1,keepdim=True))*(-d_posto/6.)
+    def atualizar(s,m):
+        c = m.cfg; B = m.B
+        # 1) GRAVAR (dia): passos em que ANDOU, sem avaria — aquecimento real
+        partiu = (m.indo >= 0) & (m.rest > 0) & (m.tpar <= s._tpar_prev)
+        dst = m.indo.clamp(min=0)
+        A0 = m.Aa[m.cidx, s._no_prev]
+        w_edge = (m.Wa[m.cidx, s._no_prev]*(A0==dst[:,None]).float()).sum(1)
+        cu = w_edge + s._npc_prev.gather(1, dst[:,None]).squeeze(1)
+        dtemp = (m.temp - s._temp_prev) + 1.6        # devolve o resfriamento fixo
+        ok = (partiu & (s._temp_prev>26) & (m.temp<118)).float()
+        phi = torch.stack([torch.ones_like(cu), cu,
+                           cu*(1-s._agua_prev/100.)],1)     # (B,3)
+        s.A += ok[:,None,None]*(phi[:,:,None]*phi[:,None,:])
+        s.b += ok[:,None]*(phi*dtemp[:,None])
+        # 2) CONSOLIDAR (sono): descansou agora (queda de fadiga do servico)
+        dormiu = ((s._fad_prev - m.fad) > 5) & ((s._fad_prev - m.fad) < 35) \
+                 & (m.tpar <= s._tpar_prev)
+        hora24 = (((s.t.float() + m.fase_dia) % c.dia) / c.dia * 24).long()
+        if s.submodo == 'fixo':
+            alfa = torch.zeros(B, device=DEV)
+        elif s.submodo == 'constante':
+            alfa = torch.full((B,), .55, device=DEV)
+        else:
+            alfa = torch.where(hora24 >= 20, torch.full((B,),1.,device=DEV),
+                   torch.where(hora24 < 6, torch.full((B,),.5,device=DEV),
+                               torch.full((B,),.2,device=DEV)))
+        theta = torch.linalg.solve(s.A + s.LAMB*s.EYE, s.b[:,:,None]).squeeze(2)
+        s.lei = torch.where(dormiu[:,None],
+                            s.lei + (alfa*dormiu.float())[:,None]*(theta - s.lei),
+                            s.lei)
+        s.sono_hora.scatter_add_(1, hora24[:,None], dormiu.float()[:,None])
+        s.t = s.t + 1
+
 ARQS = [Reativo, BancoEMA, Diadica, Corpo, Hibrido, MemCusto, MapaServico]
 # RotaCalculada e SerVital ficam FORA das baterias padrao: sao o E4 e o E8
 # do doc 19/21, com runners e controles proprios (src/e4_rota.py, e8_vida.py)
