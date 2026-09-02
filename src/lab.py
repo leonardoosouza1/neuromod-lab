@@ -146,6 +146,9 @@ class Cfg:
         s.LIMITE_DIVIDA=60.               # piso do saldo: dinh nunca abaixo de -LIMITE
         s.JUROS=.05                       # juros diarios sobre o saldo NEGATIVO
         s.KCAL_REBOQUE=1.0                # calorias por unidade de distancia ate o posto (gordura -> tanque)
+        s.KCAL_VIDA=0.                    # >0: o que a gordura nao cobrir vira VIDA (tanto por kcal) em vez
+                                          # de sair do TANQUE. O tanque e a moeda que leva ao posto: cobrar
+                                          # nele e regra 12 na moeda calorica (mede-se a espiral no doc 29 §5)
         # ATENCAO (N16 / regra 12): com economia o reboque cobra CALORIAS, entao
         # `pane_dinh` TEM que ser 0 (o Lote levanta erro se nao for) e o runner
         # baixa D_PANE de 6 para 3 — senao a pane pune tres vezes (vida+caloria+dinheiro).
@@ -295,6 +298,10 @@ class Lote:
             pr = (torch.rand(B, D, generator=ge, device=DEV).argsort(1) if cfg.dist_sorteia
                   else torch.arange(D, device=DEV)[None,:].expand(B, D))
             s.e15_aliq = AL[pr]; s.e15_pmul = PM[pr]      # (B,D)
+            # posto do distrito na tabela de precos (0 = mais barato). A telemetria
+            # por distrito e indexada por AQUI, nao pela etiqueta geografica: com a
+            # permutacao por mundo, so o POSTO diz se o ser prefere o barato.
+            s.e15_rank = pr
             s.e15_fat  = s.e15_pmul*(1.+s.e15_aliq)       # fator de preco local (gastar)
             fa = PM*(1.+AL); fmin = float(fa.min()); fmax = float(fa.max())
             s.e15_fatn = (s.e15_fat - fmin)/max(fmax-fmin, 1e-6)   # feature e15_b em 0..1
@@ -533,7 +540,8 @@ def passo(m, esc):
         corr = br*(c.imposto - alq_o)*ch.float()
         m.dinh = m.dinh + corr; m.imp = m.imp - corr
         m.imp_orig = m.imp_orig + br*alq_o*ch.float()
-        m.ent_dist = m.ent_dist + (m.e15_dorig[:,None] == m.ARD[None,:]).float()*ch.float()[:,None]
+        rk_o = m.e15_rank.gather(1, m.e15_dorig[:,None])          # posto na tabela de precos
+        m.ent_dist = m.ent_dist + (rk_o == m.ARD[None,:]).float()*ch.float()[:,None]
         # (2) ALUGUEL + AGUA + JUROS a meia-noite. Mascara `meia` recalculada aqui:
         # nao depende do bloco da reserva (E12), que so existe com cfg.reserva.
         pos_prev = (m.t - 1 + m.fase_dia.long()) % c.dia
@@ -678,13 +686,20 @@ def passo(m, esc):
         vv = viva.float() if viva is not None else torch.ones_like(m.dinh)
         m.div_max = torch.maximum(m.div_max, (-m.dinh).clamp(min=0)*vv)
         m.t_divida = m.t_divida + (m.dinh < 0).float()*vv     # so conta enquanto vivo
-        m.t_dist = m.t_dist + (dn[:,None] == m.ARD[None,:]).float()*vv[:,None]
+        rk = m.e15_rank.gather(1, dn[:,None])                     # 0 = distrito mais barato
+        m.t_dist = m.t_dist + (rk == m.ARD[None,:]).float()*vv[:,None]
         # (4) REBOQUE EM CALORIAS (N16): a pane cobra KCAL_REBOQUE x d_posto — gordura
         # primeiro (com a perda de mobilizacao), tanque depois. Nada em dinheiro.
         q = c.KCAL_REBOQUE*m.dposto[m.cidx, m.no]*sf.float()
         qr = torch.minimum(m.res, q/(1-m.perda)); m.res = m.res - qr
-        qf = torch.minimum(m.fuel, q - qr*(1-m.perda)); m.fuel = m.fuel - qf
-        m.kcal_reb = m.kcal_reb + qr*(1-m.perda) + qf
+        fl = q - qr*(1-m.perda)                          # o que a gordura nao cobriu
+        if c.KCAL_VIDA:
+            # MOEDA CRUZADA: o resto vira dano, nao tanque (o tanque e o que leva ao posto)
+            m.vida = (m.vida - c.KCAL_VIDA*fl).clamp(min=0)
+            qf = torch.zeros_like(fl)
+        else:
+            qf = torch.minimum(m.fuel, fl); m.fuel = m.fuel - qf
+        m.kcal_reb = m.kcal_reb + qr*(1-m.perda) + (fl if c.KCAL_VIDA else qf)
         # (5) EMBARQUE: grava o distrito de ORIGEM da corrida que comeca agora
         m.e15_dorig = torch.where(pega, dn, m.e15_dorig)
     # [E15 fim]

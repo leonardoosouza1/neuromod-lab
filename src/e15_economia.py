@@ -30,14 +30,15 @@ OUT = '/media/llm-data/universe-runs/neuromod-lab-taxi/e15'
 
 
 def cfg_e15(economia=True, aluguel=6., agua=2., juros=.05, kcal=1.0, limite=60.,
-            aliq=None, pmul=None, sorteia=True, D=3, D_pane=3., imposto=None, **kw):
+            aliq=None, pmul=None, sorteia=True, D=3, D_pane=3., imposto=None,
+            kcal_vida=0., **kw):
     """mundo recomendado do E13 + economia. pane_dinh ja e 0 em _R (N16)."""
     c = cfg_corpo(continua=.02, **{**_R, **kw})
     if imposto is not None: c.imposto = imposto
     if economia:
         c.economia = True
         c.ALUGUEL = aluguel; c.AGUA = agua; c.JUROS = juros
-        c.KCAL_REBOQUE = kcal; c.LIMITE_DIVIDA = limite
+        c.KCAL_REBOQUE = kcal; c.KCAL_VIDA = kcal_vida; c.LIMITE_DIVIDA = limite
         c.D_DIST = D; c.dist_sorteia = sorteia
         if aliq is not None: c.ALIQ = aliq
         if pmul is not None: c.PMUL = pmul
@@ -59,14 +60,15 @@ def telemetria(m, T):
         renda_bruta=f(m.rec),
     )
     if m.cfg.economia:
-        vivo = (m.vida > 0).float().clamp(min=1e-6)
         d.update(
             imp_receber=f(m.imp_orig), imp_gastar=f(m.imp_gastar),
             aluguel_agua=f(m.aluguel_pago), juros=f(m.juros_pago),
             div_max=f(m.div_max), div_frac=f(m.t_divida/T), kcal_reboque=f(m.kcal_reb),
-            carga_fiscal=round(float(((m.imp_orig+m.imp_gastar+m.aluguel_pago+m.juros_pago)
-                                      / m.rec.clamp(min=1e-6)).mean()), 3),
-            t_dist=[round(float(x), 1) for x in m.t_dist.mean(0)],
+            # razao das MEDIAS (nao media das razoes: quem morre cedo tem rec~0 e
+            # a razao explode — foi o 814138 da 1a rodada)
+            carga_fiscal=round(float((m.imp_orig+m.imp_gastar+m.aluguel_pago+m.juros_pago).mean()
+                                     / max(float(m.rec.mean()), 1e-6)), 3),
+            t_dist=[round(float(x), 1) for x in m.t_dist.mean(0)],   # por POSTO de preco: [barato, medio, caro]
             ent_dist=[round(float(x), 2) for x in m.ent_dist.mean(0)],
             div_max_p=[round(float(x), 1) for x in torch.quantile(
                 m.div_max, torch.tensor([0., .25, .5, .75, 1.], device=m.div_max.device))],
@@ -109,7 +111,10 @@ BRACOS = [('corpo (sem economia)', dict(economia=False)),
 BRACOS_B = [('economia so imposto',   dict(aluguel=0., agua=0.)),
             ('economia so aluguel',   dict(aliq=(.18, .18, .18), pmul=(1., 1., 1.))),
             ('economia kcal 0',       dict(kcal=0.)),
-            ('economia kcal 3',       dict(kcal=3.))]
+            ('economia kcal 3',       dict(kcal=3.)),
+            # moeda cruzada: gordura paga o guincho, o resto vira VIDA (nunca o tanque)
+            ('economia reboque so gordura', dict(kcal_vida=1.)),
+            ('economia so gordura kcal 3',  dict(kcal=3., kcal_vida=1.))]
 # fase c: os distritos importam? (lei oculta vs fixa vs cidade plana)
 BRACOS_C = [('economia distritos fixos', dict(sorteia=False)),
             ('economia sem distritos',   dict(aliq=(.20, .20, .20), pmul=(1.03, 1.03, 1.03))),
