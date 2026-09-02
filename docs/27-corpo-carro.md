@@ -546,3 +546,27 @@ Conserto proposto e testado em E14b: pena por morrer no fitness da evolução
 (`pena_morte`, 0 = identidade). Se a evolução achar os dois genes com a
 pena, o piso era do objetivo — e "seres que tentam deixar o carro vivo"
 exige que viver valha pontos, não só entregar.
+
+### 6.16 E14b — a vida no fitness (pena por morrer)
+
+| arquitetura | pena | fit (sem pena) | mortos | genes posto por semente |
+|---|---|---|---|---|
+| Reativo | 0 | 8.76 | 0.18 | – |
+| Reativo | 5 | 7.18 | 0.22 | – |
+| ReativoNoite | 0 | 7.25 | 0.23 | 0.96 −1.96 −1.20 0.96 −1.81 |
+| **ReativoNoite** | **5** | 7.51 | **0.16** | **1.73 1.13 4.03 1.58 4.40** |
+
+- **Com a vida no objetivo, o gene aponta pro lado certo em 5/5 sementes**
+  (sem pena: 3/5 pro lado errado). É o resultado categórico do dia: não era
+  falta de alavanca nem de gerações — era o fitness que não via a morte.
+- A mortalidade cai de 0.23 pra 0.16 (abaixo do Reativo, 0.18); o tamanho
+  ainda está dentro do ruído de ±8 pp e não chega ao teto da regra à mão
+  (0.134). E14c testa se o limite é o ruído de avaliação (16 vidas por
+  genoma → 64).
+- Pena no Reativo puro não ajuda (0.22): sem alavanca no genoma, o gradiente
+  não tem onde agir. Pena custa fitness (−1.2 a −1.6): viver mais devagar.
+- **Pro Leonardo:** "seres que tentam deixar o carro vivo" exige que viver
+  valha pontos. Entregas − avarias não basta: quem morre no dia 4 entregou
+  quase tudo. Candidatos a objetivo: pena fixa por morte (testado), ou
+  fitness por dia vivido (entregas/dia × dias), ou vida como moeda do
+  torneio (arena).

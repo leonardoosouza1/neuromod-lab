@@ -813,3 +813,28 @@ recomendado. Reporto o fitness SEM a pena (comparável) e os mortos.
     (custa pouco). Se mortos não caem nem com pena: as mortes são AZAR
     irredutível pra política de 1 salto e o teto de 5 pp da regra à mão só
     existe por injeção. Se caem só no Reativo: o gene certo não é hora.
+
+**E14b Reativo rodou (pena 5, 5 sementes):** fit sem pena 7.18, mortos 0.22
+[.25 .15 .29 .30 .10] — ✗ (previa ≤ 0.15): a pena não baixa a mortalidade do
+Reativo e custa −1.6. Sem alavanca de timing no genoma, o gradiente da pena
+não tem onde agir (ou se afoga: ver E14c).
+
+**E14b ReativoNoite rodou (pena 5, 5 sementes):** fit sem pena 7.51, **mortos
+0.16** [.15 .20 .19 .12 .16] (vs 0.23 sem pena, vs Reativo 0.18); genes posto
+(1.73, 1.13, 4.03, 1.58, 4.40) — **5/5 positivos** (sem pena: 3/5 negativos);
+rota positiva 4/5. 39: ✓ sinal dos genes (o mais forte: categórico), ✗ limiar
+0.13 (0.16), ✗ fit 8.3 (7.51). A vida no objetivo faz a evolução apontar o
+gene pro lado certo; o tamanho (−7 pp vs si mesmo, −2 vs Reativo) fica
+dentro do ruído de ±8 pp. Efeito da pena no Reativo puro: nada (0.22) — sem
+alavanca no genoma, pena não ajuda.
+
+**E14c (ruído de avaliação: R=16 vidas por genoma) — 2026-09-02 15:25, ANTES de rodar**
+Cada genoma é avaliado em NC×R = 4×4 = 16 vidas; mortalidade 18% em 16 vidas
+tem σ ≈ 10 pp → a pena (5 × Δmortos) vira sinal de ±0.5 num fitness com
+ruído ±1.5. R=16 → 64 vidas por genoma, σ ≈ 5 pp.
+40. ReativoNoite pena 5 R=16: mortos ≤ 0.14 (chega perto do teto 0.134 da
+    regra à mão) com fit sem pena ≥ 7.5; genes posto > 0 em 5/5 e maiores.
+    Reativo pena 5 R=16 (controle): mortos ~0.18–0.22 (nada a achar). Se o
+    ReativoNoite ficar em ~0.16 com R=16: o ruído não era o limite; o teto
+    evoluível está em ~0.16 e o resto do caminho até 0.134 exige a regra
+    exata (k=8), que 2 genes lineares só aproximam.

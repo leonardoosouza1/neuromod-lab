@@ -113,9 +113,10 @@ BRACOS_D = [('vencedor peso .03/.10', dict(peso=True, WF=.03, WR=.10, **_V)),
             ('vencedor peso .05/.15', dict(peso=True, WF=.05, WR=.15, **_V)),
             ('vencedor peso .10/.30', dict(peso=True, **_V))]
 
-def main(preset, out, so=None, fase='a', arq='reativo', T_aval=None, teste_seed=1000, seeds=None, tag='', G=None, T_evo=None):
+def main(preset, out, so=None, fase='a', arq='reativo', T_aval=None, teste_seed=1000, seeds=None, tag='', G=None, T_evo=None, R=None):
     p = dict(PRESET if preset == 'rapido' else PRESET_LONGO)
     if T_aval: p['T_aval'] = T_aval
+    if R: p['R'] = R
     if G: p['G'] = G
     if T_evo: p['T_evo'] = T_evo
     if seeds: p['seeds'] = tuple(seeds)
@@ -161,6 +162,7 @@ if __name__ == '__main__':
     ap.add_argument('--so', nargs='*', default=None)
     ap.add_argument('--fase', default='a', choices=tuple('abcdefghijklmn'))
     ap.add_argument('--G', type=int, default=None)
+    ap.add_argument('--R', type=int, default=None)
     ap.add_argument('--T-evo', type=int, default=None)
     ap.add_argument('--T-aval', type=int, default=None)
     ap.add_argument('--teste-seed', type=int, default=1000)
@@ -168,4 +170,4 @@ if __name__ == '__main__':
     ap.add_argument('--tag', default='')
     ap.add_argument('--arq', default='reativo', choices=('reativo','hora','corpo','talamo','sempre','talamo_noite','noite'))
     a = ap.parse_args()
-    main(a.preset, a.out, a.so, a.fase, a.arq, a.T_aval, a.teste_seed, a.seeds, a.tag, a.G, a.T_evo)
+    main(a.preset, a.out, a.so, a.fase, a.arq, a.T_aval, a.teste_seed, a.seeds, a.tag, a.G, a.T_evo, a.R)
