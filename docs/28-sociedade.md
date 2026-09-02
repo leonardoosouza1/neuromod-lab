@@ -112,3 +112,7 @@ Yerkes-Dodson: imposto intermediário produz MAIS que zero.
   `×mult[:,4]`; o bloco (a) passou a aplicar só o regime. Fator 1.0 sem
   glândulas: portão bit-exato, testes e15/e16 ok. Bateria honesta das
   glândulas (fase a: reativo, K=2, K=1, regime) enfileirada atrás da onda 1.
+- Onda 1 (honesto, R=16, 5 sementes, 1000+): E17 com e sem pena fechado (doc
+  33); E15 âncora + 2 braços fechados (doc 33); glândulas relançadas (a 1ª
+  tentativa caiu por flag inexistente `--preset` no runner do E16 — o runner
+  usa `--P/--G/--T-evo/--T-aval/--R`); economia tanque/só-gordura na fila.
