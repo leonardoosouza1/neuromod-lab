@@ -317,3 +317,21 @@ Predição 23 em PREDICOES.md.
   empurrão de 7% vira +50% de fervuras (20 passos + 10 de vida cada). O peso
   custa pouco em linha reta e muito no limiar. É a mesma lição do N15 (vive
   no limite) vista pelo lado do calor.
+
+### 6.5 E13h — vida longa e cidades nunca vistas (mesmo campeão)
+
+| avaliação | fit | fit/dia | mortos | panes/dia | fervura/dia | res~ |
+|---|---|---|---|---|---|---|
+| 5 dias, cidades 1000+ (padrão) | 8.16 | 1.63 | 0.21 | 1.46 | 0.94 | 45 |
+| **10 dias**, cidades 1000+ | 14.66 | 1.47 | **0.39** | 1.09 | 0.67 | 51 |
+| 5 dias, **cidades 2000+** | 4.71 | 0.94 | 0.35 | 2.02 | 0.88 | 28 |
+
+- **Risco de morte é constante (~4%/dia), não "morte cedo"**: 0.21 nos 5
+  primeiros dias, 0.18 nos 5 seguintes. Meia-vida ~17 dias. Quem sobrevive
+  melhora com a idade (panes/dia −25%, fervura/dia −29%): a gordura acumula
+  (51) e o corpo é mantido — mas o azar de uma noite ruim continua matando.
+- **Cidade manda.** Perito (sem política) rende ent 4.6 em 1000+ e 3.3 em
+  2000+: o conjunto de teste padrão é o mais fácil dos quatro. O campeão cai
+  −42% em 2000+ — ⅔ dificuldade, ⅓ possível overfit. **Todos os números em
+  1000+ estão ~30% otimistas.** Decisão: avaliar em 6 cidades daqui pra
+  frente (predição 25 ✗ na cláusula de generalização).

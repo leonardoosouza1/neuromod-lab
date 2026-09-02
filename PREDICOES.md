@@ -550,3 +550,16 @@ custo restante (~1.7) é o TANQUE (+7.5%) cruzando o limiar de fervura: fervura
 4.0–4.3 em todo braço com peso vs 2.7 sem — o limiar (92 °C) amplifica um
 peso pequeno porque o ser evoluído roda encostado nele (N15 de novo: vive no
 limite). "Gordo esquenta" é não-linear.
+
+**E13h10 rodou (mesmo campeão, 10 dias):** fit 14.66 (1.47/dia vs 1.63/dia em
+5 dias: −10% ✓); **mortos 0.39** (✗ ≤ 0.35): 0.21 nos 5 primeiros dias, ~0.18
+nos 5 seguintes — risco ≈ 4%/dia CONSTANTE, não morte cedo (meia-vida ~17
+dias). Gordura média 51 (✓ acumula). Quem sobrevive melhora: panes/dia
+1.46 → 1.09, fervura/dia 0.94 → 0.67, oficina/dia 2.1 → 1.7.
+
+**E13h20 rodou (cidades 2000+):** fit 4.71 vs 8.16 (✗ ±1.5), mortos 0.35.
+Perito (independe da política) por conjunto: 0+ −1.12 / ent 4.1; **1000+ −0.67
+/ ent 4.6 (o mais fácil)**; 2000+ −1.38 / ent 3.3 (−28%); 3000+ −1.23 / ent
+3.4. O campeão cai −42%: ~⅔ é cidade mais dura, ~⅓ pode ser overfit ao
+treino. Consequência: TODOS os números em 1000+ são otimistas ~30%. Daqui pra
+frente avaliar em 6 cidades (1000+ e 2000+) — `--teste-seed` já existe.
