@@ -600,3 +600,24 @@ em 16 vidas tem desvio ≈ 10 pontos; a pena de 5 por morte vira um sinal de
   taxa do evento). Com p ≈ 0.18, 16 vidas não bastam; 64 começam a bastar.
   Isto e a regra 13 (n ≥ 5 sementes) são a mesma coisa em dois níveis: o
   ruído da morte engana tanto o experimentador quanto a seleção.
+
+### 6.18 E14e — números honestos com a avaliação certa (pena 5, R=16)
+
+| arquitetura | cidades 1000+ | cidades 2000+ | **média 6 cidades** |
+|---|---|---|---|
+| recomendado padrão (Reativo, R=4, sem pena) | 8.76 / 0.18 | 5.39 / 0.30 | 7.08 / 0.24 |
+| Reativo, pena 5, R=16 | 8.17 / 0.17 | 5.29 / 0.27 | 6.73 / 0.22 |
+| **ReativoNoite, pena 5, R=16** | **9.11 / 0.11** | 5.77 / 0.24 | **7.44 / 0.175** |
+
+(fit sem pena / mortos, 5 sementes)
+
+- Com a morte visível à seleção (pena + 64 vidas por genoma) e a paisagem do
+  ReativoNoite, o ser vive mais E entrega mais: −6.5 pontos de mortos e
+  +0.36 de fitness sobre o recomendado padrão, na média de 6 cidades. A
+  direção repete nos dois conjuntos (−6 pp e −3 pp); o tamanho é sugestivo
+  (4/5 e 3/5 sementes).
+- O que faz a diferença não é o gene de timing (inerte na ablação) — é a
+  trajetória que a paisagem com esse gene abre. Isto pede o próximo teste
+  honesto: outras paisagens "neutras" (ex.: o Reativo com 2 pesos mortos
+  religados a ruído) chegam ao mesmo lugar? Se sim, é diversidade de busca,
+  não hora.

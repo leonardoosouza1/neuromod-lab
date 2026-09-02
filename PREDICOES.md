@@ -889,3 +889,18 @@ R=16 (trajetória; 4/5 sementes). E14e testa em 2000+.
 **E14e Reativo rodou (pena 5, R=16, cidades 2000+):** fit 5.29, mortos 0.27
 [.25 .20 .29 .32 .27] vs 0.30 (R=4, sem pena) — −3 pp, ruído; 42 ✗ pro
 Reativo (≤ 0.24). Consistente com o 2×2: no Reativo a morte não cede.
+
+**E14e ReativoNoite rodou (pena 5, R=16, cidades 2000+):** fit 5.77, mortos
+**0.24** [.26 .16 .23 .27 .28] vs Reativo 0.27 → −3 pp, 3/5 sementes abaixo.
+42 ✓ no limite (≤ 0.24; ≥ 3/5; fit ≥ 5). **Números honestos com a avaliação
+certa (6 cidades × 5 sementes, pena 5 + R=16):** Reativo 6.73 / 0.22;
+**ReativoNoite 7.44 / 0.175** — contra o recomendado padrão (R=4, sem pena)
+7.08 / 0.24. Direção replicada em 2 conjuntos de cidades (−6 pp, −3 pp);
+mecanismo = trajetória (genes inertes). Sugestivo, não fechado.
+
+**E14f (10 dias com a avaliação certa) — 2026-09-02 15:20, ANTES de rodar**
+ReativoNoite, pena 5, R=16, G=100, T_evo=T_aval=2400, 5 sementes, 1000+.
+Referência: recomendado R=4 sem pena em 10 dias = 18.70 / mortos 0.29 (n=5).
+43. mortos ≤ 0.25 e fit/dia ≥ 1.75 (17.5 em 10 dias). Se mortos ≥ 0.29:
+    em vida longa a vantagem some (o risco constante de 4%/dia domina e a
+    pena fixa por morte não pesa mais que 10 dias de entregas).

@@ -62,8 +62,8 @@ td.n{font-family:var(--mono);text-align:right;font-variant-numeric:tabular-nums;
 </div>
 
 <h2>1 · A escada da mortalidade</h2>
-<p>Cada degrau é uma decisão do mundo ou do treino. O perito à mão morre quase sempre; a evolução aprende a não ferver o motor; o resto é calibração honesta.</p>
-<div class="card"><svg id="escada" class="chart" viewBox="0 0 960 330"></svg>
+<p>Cada degrau é uma decisão do mundo, do treino ou do objetivo. O perito à mão morre quase sempre; a evolução aprende a não ferver o motor; o resto é calibração honesta — e o último degrau é tornar a morte visível à seleção.</p>
+<div class="card"><svg id="escada" class="chart" viewBox="0 0 960 360"></svg>
 <div class="legend"><span><span class="sw" style="background:var(--morte)"></span>fração que morre em 5 dias</span><span><span class="sw" style="background:var(--line)"></span>n=3 (ruído possível)</span></div></div>
 
 <h2>2 · O que sobreviveu a cinco sementes</h2>
@@ -126,7 +126,7 @@ const txt=(p,x,y,s,a)=>{const t=el('text',Object.assign({x,y,fill:css('--ink'),'
 
 // 1 · escada
 (function(){
-  const d=[['perito à mão',0.86,3],['evoluído, treino 2,5 dias (nunca vê a morte)',0.52,3],['treino 5 dias',0.39,3],['+ gordura fácil, cap 120',0.34,5],['+ reboque só no corpo (sem multa)',0.23,5],['mundo recomendado, cidades fáceis',0.18,5],['mundo recomendado, cidades duras',0.30,5],['média honesta · 6 cidades',0.24,5]];
+  const d=[['perito à mão',0.86,3],['evoluído, treino 2,5 dias (nunca vê a morte)',0.52,3],['treino 5 dias',0.39,3],['+ gordura fácil, cap 120',0.34,5],['+ reboque só no corpo (sem multa)',0.23,5],['mundo recomendado, cidades fáceis',0.18,5],['mundo recomendado, cidades duras',0.30,5],['média honesta · 6 cidades',0.24,5],['+ morte visível à seleção (pena + 64 vidas/genoma) · 6 cidades',0.175,5]];
   const s=document.getElementById('escada');const W=960,L=330,bw=560,rh=34;
   d.forEach((r,i)=>{const y=14+i*rh;const w=r[1]*bw;
     el('rect',{x:L,y,width:bw,height:22,fill:css('--line'),opacity:.35},s);
