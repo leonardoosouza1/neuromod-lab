@@ -220,3 +220,124 @@ geométrica declarada: cidade 4.6× maior com os MESMOS 3-4 nós de cada serviç
 às cegas é impossível por construção, não por mérito. Conserto: densidade de
 serviço escala com n (n=26 bit a bit igual ao original; n=120 → 14/14/9/18/9).
 As 5 predições ARENA v1 continuam valendo, agora contra o mundo consertado.
+
+## E12 — RESERVA (energia em 2 compartimentos + peso no chassi) — 2026-09-01 20:45, ANTES de rodar
+
+Pedido do Leonardo: "combustível = calorias; sobra do dia vira reserva se não
+for consumida por crescer/cérebro; a reserva PESA no chassi (lento, mais água,
+mais fome, dorme pior); conversão lenta e com perda; a perda pode variar e o
+cérebro desvendar". Números cravados por ele: reserva paga o cérebro / perda
+~30% / teto limitado. Mundo: base + relógio (dia=240) + NOITE 22h-6h (posto
+fechado, 1 de 6 passageiros acordado) + eco2. Reativo, NP=NF+18 (NF agora 21:
++reserva, +sin/cos hora). Preset rápido P=1024 G=20 T=600 R=4 × 3 sementes.
+
+Teto medido ANTES (regra 1, N2/N10): perito à mão no mundo-noite faz 18
+panes/3 dias e fica parado 74% da noite — a noite MORDE (N13 tinha 0 panes).
+
+1. `noite` < `dia` por ≥ 3 de fitness: a noite magra custa (referência).
+2. TETO da reserva (= panes evitáveis × custo da pane) no `noite` evoluído
+   entre 1 e 6 de fitness. Se < 0.5 → reserva sem trabalho → negativo com
+   mecanismo (o evoluído já dorme a noite toda e não precisa de gordura).
+3. `reserva` (sem peso) ≥ `noite` — seguro grátis não perde além do ruído
+   (amplitude entre sementes). Ganho ≤ teto.
+4. `reserva+peso` ≤ `reserva` (o peso cobra) e — a aposta — `reserva+peso` ≥
+   `noite`: mesmo pagando peso, sobreviver à noite compensa. Se `reserva+peso`
+   < `noite` além do ruído: o peso está caro demais OU a reserva nunca se forma.
+5. COMPORTAMENTO (o que vale mais que o número): (a) n_mob > 0 nas duas
+   reservas — a reserva é USADA à noite; (b) `res_media` em `reserva+peso` <
+   `res_media` em `reserva` (evolução mantém a gordura baixa quando ela pesa);
+   (c) fuel_22 (tanque às 22h) em `reserva*` > em `noite` — "encher antes da
+   noite" emerge (economia de precaução sem ninguém programar).
+6. Fase B (cérebro come calorias, KAPPA_F=.05/consulta): gap `talamo` −
+   `sempre` MAIOR que no E6 (fitness-κ), porque agora o cérebro ligado 100%
+   drena o tanque que salva a noite. Se o gap encolher: calorias do cérebro
+   são baratas demais neste mundo (declarar e recalibrar KAPPA_F uma vez).
+
+**v1 (2026-09-01 20:45) INVÁLIDA — mundo morto, não conta contra as predições.**
+Todos os braços deram ent 0.2–0.4 em 5 dias (base evoluído dá 15–18). Causa
+isolada com o perito (mesmo genoma, 6 configs): `eco2` puro dá fuel=5 após
+pane e 5 não paga UM salto até o posto → pane de novo → espiral (perito: ent
+8.0→2.9, av_fuel 25→48). A evolução achou o ótimo local "ficar parado" (fit
+−0.6). Lição: `eco2` tinha predição registrada mas NUNCA foi rodado — usei
+flag de mundo não validada. Registrado como N14. v2 = `pane_fuel=15` (posto
+ainda enche o tanque), braço `base` como âncora. Predições 1–6 mantidas
+como estão, sem editar.
+
+**v2 (pane_fuel=15) rodou, viva** (base 5.75 ≈ dia 5.66; noite 2.74; reserva
+2.54; reserva+peso 2.88; come:sempre −0.11; come:talamo 1.62). Reserva
+OCIOSA: res~4/60, conv/dia 6, fuel22 32–33 (< 34 do noite), mob 1.4/vida
+com 17 panes/vida. Antes de declarar negativo, v3 = preset LONGO (G=60,
+T_evo=1200 = 5 meias-noites no treino) + braço NIVEL=30. Predição v3:
+7. se a reserva é explorável dado tempo: conv/dia > 15, res_media > 15,
+   fuel22(reserva*) > fuel22(noite) por ≥ 5, e reserva+peso − noite ≥ +0.5.
+   Se continuar chapado (res_media < 8, fuel22 igual): a gordura não se forma
+   porque o tanque às 22h vive abaixo de NIVEL — falha de DESIGN (o gatilho
+   de conversão), não de evolução. NIVEL=30 separa as duas: se N30 forma
+   gordura (res_media ≫) e ganha, era o gatilho; se forma e NÃO ganha, o peso
+   come o ganho (ou a mobilização é cara demais: 3 passos + perda 15–45%).
+
+**v3 (longo G=60, 5 meias-noites) rodou:** noite 4.83 [4.2–5.6]; reserva 5.34
+[5.25–5.48]; reserva+peso 4.50 [3.9–4.8]; reserva+peso N30 4.16. res_media
+3.7–4.5 em TODOS (gordura queimada assim que forma: 18 panes/vida drenam);
+fuel22 37→39 (+2: "encher antes da noite" NÃO emergiu). Causa estrutural
+achada no código (`um_passo`): score de serviço = w·necessidade·disponível;
+hora/reserva são features de ESTADO e só deslocam mover-vs-servir em bloco —
+o Reativo NÃO TEM alavanca pra "posto às 21h". E12b = `ReativoHora`: os 12
+pesos mortos do Reativo viram modulação por hora (sin/cos × 5 serviços) e por
+reserva (posto, descanso). Mesmo NP=36 → comparação justa. Telemetria nova:
+n_posto (abastecimentos/vida) e pobre_frac (fração de passos com dinh<2).
+8. Com a alavanca: fuel22(reserva*) ≥ 45 (> noite por ≥ 5), conv/dia ≥ 15,
+   res_media ≥ 10, e reserva+peso ≥ noite. Se fuel22 subir mas res_media
+   ficar < 8: a gordura forma e é queimada pelos panes de DIA — o gargalo é
+   pobreza (pobre_frac alta: 12 dinh por pane × 18 panes = 216 > tudo que
+   ganha), não a noite. Se nem fuel22 subir: a alavanca de hora não é usada
+   → evolução não acha planejamento de 3 passos (relógio→posto→dinheiro) em
+   60 gerações — negativo do mesmo tipo do N1 (memória decorativa).
+
+**E12b (ReativoHora, longo) rodou:** noite 4.42; reserva 5.13; reserva+peso
+4.42; N30 4.07. fuel22 37–39 (alavanca de hora NÃO usada), res~4–5 de novo.
+Predição 8 → ramo 3: evolução não acha o plano de 3 passos. Dado novo:
+`pobre_frac` 0.36–0.46 (o ser não tem 2 dinh pro posto em ~40% da vida) com
+posto 8–12×/vida vs 17–19 panes/vida. Pane = 12 dinh × 18 = 216 > renda
+(~11 entregas × ~12). v4 = braço RICO: `pane_dinh=0` (única mudança).
+9. Se a pobreza é o gargalo: pobre_frac < 0.10, posto ≫ panes (av_fuel < 8),
+   fuel22 ≥ 45, res_media ≥ 10, e reserva+peso rico ≥ noite rico. Se mesmo
+   rico a gordura não forma (res_media < 8): o gargalo não é dinheiro — é
+   que o tanque só sobra à meia-noite quando o ser abastece tarde, e nada
+   no repertório faz isso → a reserva precisa de OUTRO gatilho de formação
+   (conversão contínua acima de NIVEL, não em lote à meia-noite).
+
+**v4 (rico, pane_dinh=0) rodou:** noite 8.21, reserva 7.85, reserva+peso
+7.09; pobre_frac 0.06–0.09 ✓ mas av_fuel 16.5–17.7 (previsto < 8 ✗) e
+res_media 3–5 ✗. Dinheiro NÃO era o motivo das panes. Emergente: com reserva
+o ser vai MENOS ao posto (6.3 vs 10.2/vida) — a gordura substitui o posto,
+não a noite. Hipótese que sobrou: o Reativo não tem previdência pra DESVIAR
+até o posto (mesmo mecanismo do N1/N2: 1 salto, sem replanejar). Teste:
+`Corpo` (steer pro serviço da maior necessidade via dsa) no mesmo trio.
+10. Se é falta de previdência: Corpo faz av_fuel < 8 e posto > 15/vida; com
+    reserva, res_media ≥ 10 e reserva+peso ≥ noite. Se Corpo pane igual (~17):
+    a pane é ESCOLHA da evolução — pane devolve 15 de fuel por 18 passos e é
+    aceita como "posto grátis lento"; o conserto é físico (pane sem fuel +
+    reboque), não neural.
+
+**v5 (Corpo) rodou:** noite 4.97, reserva 4.71, reserva+peso 4.42, N30 4.07;
+av_fuel 15–17 ✗ (não é falta de previdência). **v6 (reboque):** perito
+espirala (ent 3.1, pobre 0.81); evolução `dia reboque` fit −4.33; com multa 4:
+−1.31; com multa 0: dia 0.24, noite −1.24, reserva −1.10, res+peso −2.71,
+av_fuel 22–26 — mundo MORTO em qualquer multa. Conclusão: a pane que devolve 15
+de fuel é o que SUSTENTA a economia — sem ela não há mundo; com ela não há sobra
+(fuel22 31–39, res~ 3–5). A gordura nunca teve o que guardar.
+
+**v7 (mundo COM sobra: fuel × 0.5, resto E12 padrão) — 2026-09-01 21:40, ANTES de rodar**
+11. Com o salto custando metade, o tanque sobra: fuel22 ≥ 50, conv/dia ≥ 15,
+    res_media ≥ 20 (gordura FORMA), av_fuel < 8. Aí a pergunta original vale:
+    reserva − noite ≥ +0.5 (seguro grátis paga) e reserva+peso fica ENTRE
+    (o peso morde porque agora há gordura). Se mesmo com sobra res_media < 8:
+    o lote da meia-noite (NIVEL=50) é o furo, não a escassez.
+
+**v7 rodou (rápido + longo, 6 braços, JSON `e12_reserva_longo_sobra`):** 11 ✓
+— gordura forma (res~ 17.7 rápido, 20.6 longo; conv/dia 13–15; panes 5). Seguro
+grátis +1.26 (rápido) / +0.34 (longo). Par justo reserva+peso vs noite+peso:
+−0.41 (rápido) / **−1.66** (longo, 3/3 sementes); meio peso −0.38 / −0.38.
+Emergente: sob peso o ser fica magro — 8.9 vs 17.7 no rápido, só 17.8 vs 20.6
+no longo. Fecha o E12: física funciona, vantagem não sai do ruído (doc 26 §6).

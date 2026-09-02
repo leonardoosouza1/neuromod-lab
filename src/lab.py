@@ -81,6 +81,34 @@ class Cfg:
         # registrada em PREDICOES.md antes de rodar. Default False: nao
         # contamina baterias em andamento.
         s.eco2=False
+        # pane_fuel: quanto sobra no tanque apos pane-seca. None = 5 com eco2,
+        # 15 sem. Com 5 o perito entra em ESPIRAL (5 nao paga 1 salto ate o
+        # posto -> pane de novo): ent 8.0 -> 2.9, av_fuel 25 -> 48 (E12 v1).
+        s.pane_fuel=None
+        s.pane_dinh=12.   # multa da pane-seca em dinheiro (E12b: 18 panes x 12 = 216 > renda)
+        # reboque (E12 v6): pane NAO devolve 15 de fuel — devolve so a RACAO pra
+        # rastejar ate o posto mais perto (galao do guincho). 5 baterias
+        # mostraram que a pane e ESCOLHA: 15 de fuel por 18 passos e aceita
+        # como "posto gratis lento" (15-19 panes/vida em todo braco, pobre ou
+        # rico, Reativo/Hora/Corpo) e a gordura nunca acumula.
+        s.reboque=False
+        # E12 (doc 26): energia em DOIS compartimentos + peso no chassi.
+        #   relogio  relogio de 24h sempre (features sin/cos da hora; fase por mundo)
+        #   noite    22h-6h: posto FECHADO e so 1 dos NPX passageiros acordado
+        #            (noite magra: e o que faz a energia MORDER — sem isto o
+        #            teto da reserva e zero, vide N13: av_fuel=0 no base)
+        #   reserva  sobra do tanque acima de NIVEL vira RESERVA a meia-noite
+        #            (perde PERDA_ARMAZ); tanque vazio mobiliza a reserva em vez
+        #            de pane (para TPAR_MOB passos, perde `perda` — sorteada POR
+        #            MUNDO se perda_var: so se descobre vivendo)
+        #   peso     1 + WF*fuel/cap + WR*res/RES_MAX multiplica tempo de viagem,
+        #            consumo de fuel/agua/aquecimento, fome e fadiga; divide a
+        #            recuperacao do descanso ("nao dorme tao bem")
+        #   cerebro_come  custo neural sai do TANQUE (calorias), nao do fitness
+        s.relogio=False; s.noite=False; s.reserva=False; s.peso=False
+        s.perda_var=True; s.cerebro_come=False
+        s.RES_MAX=60.; s.NIVEL=50.; s.PERDA_ARMAZ=.10; s.MOB=25.; s.TPAR_MOB=3.
+        s.WF=.10; s.WR=.30; s.KAPPA_F=.05
 
 # ============================ MUNDO EM LOTE ============================
 # REGRA DE PERF (esta reescrita rendeu ~10x; nao regredir):
@@ -111,6 +139,7 @@ class Lote:
                              if m.any() else torch.full((n,), 20., device=DEV))
             ds.append(torch.stack(linha))
         s.dsa = torch.stack(ds)                       # (NC,5,n)
+        s.dposto = s.dsa[:,0,:].clone()               # distancia real ao posto (reboque)
         if cfg.mundo == 'semgps':
             # oraculo removido NA FONTE: features ds e a leitura direta do
             # corpo/hibrido enxergam a mesma constante (ninguem trapaceia)
@@ -171,6 +200,42 @@ class Lote:
             # respawn ja concentrado no polo desde o inicio
             for k in range(NPX):
                 s.po[:,k] = s._spawn_polo()
+        # E12: relogio + reserva (sorteios no FIM: nao desloca os draws acima)
+        s.RELOGIO = bool(cfg.relogio or cfg.com_agua)
+        if s.RELOGIO and not cfg.com_agua:
+            s.fase_dia = ri(cfg.dia, (B,)).float()
+        elif not s.RELOGIO:
+            s.fase_dia = torch.zeros(B, device=DEV)
+        s.res = torch.zeros(B, device=DEV)                  # reserva (gordura)
+        if cfg.perda_var:
+            s.perda = .15 + .30*torch.rand(B, generator=g, device=DEV)   # 15..45%
+        else:
+            s.perda = torch.full((B,), .30, device=DEV)
+        s.ARNPX = torch.arange(NPX, device=DEV)
+        # telemetria E12 (somas mascaradas, zero sync)
+        s.n_mob=torch.zeros(B,device=DEV); s.n_conv=torch.zeros(B,device=DEV)
+        s.res_soma=torch.zeros(B,device=DEV); s.conv_soma=torch.zeros(B,device=DEV)
+        s.fuel_22=torch.zeros(B,device=DEV); s.n_22=torch.zeros(B,device=DEV)
+        s.ent_noite=torch.zeros(B,device=DEV); s.par_noite=torch.zeros(B,device=DEV)
+        s.n_posto=torch.zeros(B,device=DEV); s.t_pobre=torch.zeros(B,device=DEV)
+    def hora(s):
+        """(B,) hora do dia 0..24 (fase oculta por mundo)."""
+        return ((s.t.float() + s.fase_dia) % s.cfg.dia) / s.cfg.dia * 24.
+    def noite_(s):
+        if not s.cfg.noite:
+            return None
+        h = s.hora(); return (h >= 22.) | (h < 6.)
+    def peso_(s):
+        """1 + carga no chassi: tanque pesa pouco, reserva pesa muito."""
+        if not s.cfg.peso:
+            return 1.
+        return 1. + s.cfg.WF*s.fuel/s.capf() + s.cfg.WR*s.res/s.cfg.RES_MAX
+    def serv_ab(s, noite=None):
+        """servicos ABERTOS no no: posto fecha a noite."""
+        sv = s.serva[s.cidx, s.no]
+        if noite is not None:
+            sv = sv * torch.cat([(~noite).float()[:,None], torch.ones(s.B,4,device=DEV)],1)
+        return sv
     def _spawn_polo(s):
         """(B,) sorteio de no ~ exp(-dist ao polo), para TODOS os mundos de uma
         vez. Gumbel-argmax == softmax-sampling, sem multinomial (que faz sync)."""
@@ -188,7 +253,7 @@ class Lote:
     def serv_(s): return s.serva[s.cidx, s.no]
     def serv_need(s):
         """servico disponivel PONDERADO pela necessidade (posto so importa se falta combustivel)"""
-        sv = s.serva[s.cidx, s.no]
+        sv = s.serv_ab(s.noite_())
         nec = torch.stack([1-s.fuel/s.capf(), s.fome/100., s.fad/100.,
                            torch.maximum(1-s.pneu/100., s.temp/120.),
                            (s.dinh/90.).clamp(max=1.)], -1)
@@ -206,6 +271,11 @@ class Lote:
         ce = s.cidx[:,None].expand(-1,G)
         # passageiro livre mais proximo
         dpo = s.DIa[s.cidx[:,None].expand(-1,NPX), s.no[:,None].expand(-1,NPX), s.po]
+        noite = s.noite_()
+        if noite is not None:
+            # noite magra: so o passageiro do slot 0 esta acordado
+            dorme = noite[:,None] & (s.ARNPX[None,:] > 0)
+            dpo = torch.where(dorme, torch.full_like(dpo, 1e6), dpo)
         VIS_LIMITADA = s.cfg.mundo in ('cego','hotspot','mare')
         if VIS_LIMITADA:
             # VISAO LIMITADA: passageiro alem do raio nao existe para o taxi.
@@ -237,16 +307,24 @@ class Lote:
             # feature ZERADA (nao constante!): constante desloca movimento vs
             # servico e paralisa o perito — zero e contribuicao exata nula.
             ds = torch.zeros_like(ds)
+        if s.RELOGIO:
+            ang = s.hora()*(2*3.14159265/24.)
+            hsin, hcos = torch.sin(ang), torch.cos(ang)
+        else:
+            hsin = hcos = torch.zeros_like(s.fuel)      # sem relogio: zero info
         est = torch.stack([s.fuel/s.capf(), s.fome/100, s.fad/100, s.pneu/100,
                            s.temp/120, s.oleo/100, (s.dinh/120).clamp(max=1.),
-                           (s.pd_>=0).float()], -1)
+                           (s.pd_>=0).float(),
+                           s.res/s.cfg.RES_MAX, hsin, hcos], -1)   # E12: reserva + hora
         F = torch.cat([(-dal/6.)[...,None], (-cus/4.)[...,None], (-cong/2.)[...,None],
                        vd[...,None], (-ds.permute(0,2,1)/6.),
                        est[:,None,:].expand(-1,G,-1),
                        s.UNS], -1)
         return F, val
 
-NF = 1+1+1+1+5+8+1   # 18 features por candidato (ver NOMES_F em rodar.py)
+NF = 1+1+1+1+5+11+1  # 21 features por candidato (ver NOMES_F em rodar.py)
+                     # E12 (2026-09-01): +reserva, +sin(hora), +cos(hora) — zero
+                     # nos mundos sem relogio/reserva (contribuicao exata nula)
 
 # blocos do genoma padrao NP=36 — usados na telemetria de alocacao
 BLOCOS = {'features': (0, NF), 'servico': (NF, NF+6),
@@ -271,6 +349,25 @@ def passo(m, esc):
     m.fase = torch.where(v, 1-m.fase, m.fase)
     m.tsem = torch.where(v, torch.zeros_like(m.tsem), m.tsem)
     m.temp = (m.temp-1.6).clamp(min=25.)
+    # E12: relogio, noite, peso, reserva
+    noite = m.noite_(); peso = m.peso_()
+    if c.reserva:
+        # MEIA-NOITE: sobra do tanque acima de NIVEL vira reserva (com perda de
+        # armazenamento). So converte o que CABE; o resto fica no tanque.
+        pos_prev = (m.t - 1 + m.fase_dia.long()) % c.dia
+        pos_now  = (m.t + m.fase_dia.long()) % c.dia
+        meia = (pos_now < pos_prev).float()
+        sobra = (m.fuel - c.NIVEL).clamp(min=0) * meia
+        cabe = (c.RES_MAX - m.res) / (1 - c.PERDA_ARMAZ)
+        conv = torch.minimum(sobra, cabe)
+        m.res = m.res + conv*(1 - c.PERDA_ARMAZ)
+        m.fuel = m.fuel - conv
+        m.n_conv += (conv > 0).float(); m.conv_soma += conv
+        m.res_soma += m.res
+    if m.RELOGIO:
+        h = m.hora()
+        h22 = ((h >= 22.) & (h < 22. + 24./c.dia)).float()   # 1 passo por dia
+        m.fuel_22 += m.fuel*h22; m.n_22 += h22
     # entrega
     ch = (m.pd_>=0) & (m.no==m.pd_) & (m.rest<=0)
     d = m.DIa[m.cidx, m.po_.clamp(min=0), m.pd_.clamp(min=0)]
@@ -284,15 +381,16 @@ def passo(m, esc):
     cg = an_ & (m.rest<=0)
     m.no = torch.where(cg, m.indo.clamp(min=0), m.no)
     m.indo = torch.where(cg, torch.full_like(m.indo,-1), m.indo)
-    m.fome = (m.fome+c.fome).clamp(max=100)
+    m.fome = (m.fome+c.fome*peso).clamp(max=100)          # pesado = mais fome
     ap = m.fad>=95
     m.par_fad += ap.float()
     m.tpar = torch.where(ap, torch.full_like(m.tpar,12.), m.tpar)
     m.fad  = torch.where(ap, torch.full_like(m.fad,40.), m.fad)
     pode = livre & (m.rest<=0) & (~ap)
-    sv = m.serv_()
+    sv = m.serv_ab(noite)
     # servicos (sem closures: compile-friendly)
     o1 = pode & (esc==GMAX+0) & (sv[:,0]>0) & (m.dinh>=2.)
+    m.n_posto += o1.float(); m.t_pobre += (m.dinh < 2.).float()
     m.dinh = m.dinh - 2.*o1.float()
     m.fuel = torch.where(o1, torch.minimum(m.fuel + (m.capf() if m.cfg.eco2 else 30.), m.capf()), m.fuel)
     if c.com_agua:
@@ -301,7 +399,7 @@ def passo(m, esc):
     m.dinh = m.dinh - 3.*o2.float()
     m.fome = torch.where(o2, (m.fome-45).clamp(min=0), m.fome)
     o3 = pode & (esc==GMAX+2) & (sv[:,2]>0)
-    m.fad = torch.where(o3, (m.fad-30).clamp(min=0), m.fad)
+    m.fad = torch.where(o3, (m.fad-30./peso).clamp(min=0), m.fad)   # pesado dorme pior
     o4 = pode & (esc==GMAX+3) & (sv[:,3]>0) & (m.dinh>=10.)
     m.dinh = m.dinh - 10.*o4.float()
     m.pneu = torch.where(o4, torch.full_like(m.pneu,100.), m.pneu)
@@ -313,7 +411,10 @@ def passo(m, esc):
     m.up[m.ARB, k] += o5.float(); m.melh += o5.float()
     serv_ok = o1|o2|o3|o4|o5
     # pegar passageiro (qualquer um dos NPX que esteja neste no)
-    hit = (m.po == m.no[:,None]); tem = hit.any(1); ks = hit.float().argmax(1)
+    hit = (m.po == m.no[:,None])
+    if noite is not None:
+        hit = hit & ~(noite[:,None] & (m.ARNPX[None,:] > 0))   # dormindo: nao embarca
+    tem = hit.any(1); ks = hit.float().argmax(1)
     pega = pode & (~serv_ok) & (m.pd_<0) & tem
     m.po_ = torch.where(pega, m.no, m.po_)
     m.pd_ = torch.where(pega, m.pd.gather(1, ks[:,None]).squeeze(1), m.pd_)
@@ -360,11 +461,30 @@ def passo(m, esc):
         cuf = wru + .3*npd
     else:
         cuf = cu
-    sf = val & (m.fuel < cuf*c.fuel)
+    cuf = cuf*peso                      # pesado bebe mais (fuel/agua/calor)
+    falta = val & (m.fuel < cuf*c.fuel)
+    if c.reserva:
+        # MOBILIZAR a reserva em vez de pane: para TPAR_MOB passos e perde
+        # `perda` (lei oculta do mundo). Pane so quando a reserva zerou.
+        mob = falta & (m.res > 0)
+        q = torch.minimum(m.res, torch.full_like(m.res, c.MOB)) * mob.float()
+        m.fuel = m.fuel + q*(1 - m.perda)
+        m.res = m.res - q
+        m.tpar = torch.where(mob, torch.full_like(m.tpar, c.TPAR_MOB), m.tpar)
+        m.n_mob += mob.float()
+        sf = falta & (~mob)
+    else:
+        mob = torch.zeros_like(falta); sf = falta
     m.avar += sf.float(); m.av_fuel += sf.float(); m.tpar = torch.where(sf, torch.full_like(m.tpar,18.), m.tpar)
-    m.fuel = torch.where(sf, torch.full_like(m.fuel, 5. if m.cfg.eco2 else 15.), m.fuel)
-    m.dinh = (m.dinh-12*sf.float()).clamp(min=0)
+    pf = c.pane_fuel if c.pane_fuel is not None else (5. if c.eco2 else 15.)
+    if c.reboque:
+        pf = (m.dposto[m.cidx, m.no]*c.fuel*1.25 + 2.).clamp(min=3.)
+        m.fuel = torch.where(sf, pf, m.fuel)
+    else:
+        m.fuel = torch.where(sf, torch.full_like(m.fuel, pf), m.fuel)
+    m.dinh = (m.dinh-c.pane_dinh*sf.float()).clamp(min=0)
     rd = torch.rand(B, generator=m.gsim, device=DEV)
+    val = val & (~mob)                  # mobilizando = parado este passo
     fu = val & (~sf) & (rd < ((1-m.pneu/100)-.45).clamp(min=0)*c.risco*m.txp())
     m.avar += fu.float(); m.av_furo += fu.float(); m.tpar = torch.where(fu, torch.full_like(m.tpar,15.), m.tpar)
     m.pneu = torch.where(fu, torch.full_like(m.pneu,60.), m.pneu)
@@ -379,9 +499,12 @@ def passo(m, esc):
     vd = (gs==fn) | (m.tem_()==0)
     an = val & (~sf) & (~fu) & (~ol) & (~qt) & vd
     m.indo = torch.where(an, dst, m.indo)
-    m.rest = torch.where(an, (cu*m.vel()).round().clamp(min=1), m.rest)
+    m.rest = torch.where(an, (cu*m.vel()*peso).round().clamp(min=1), m.rest)  # pesado = lento
     m.fuel = m.fuel - cuf*c.fuel*an.float()
-    m.fad  = (m.fad  + cu*c.fadiga*an.float()).clamp(max=100)
+    m.fad  = (m.fad  + cu*c.fadiga*peso*an.float()).clamp(max=100)
+    if noite is not None:
+        m.par_noite += (noite & ~an & (m.rest<=0)).float()   # parado a noite
+        m.ent_noite += (noite & ch).float()
     m.pneu = (m.pneu - cuf*c.pneu*m.txp()*an.float()).clamp(min=0)
     m.oleo = (m.oleo - cuf*c.oleo*m.txo()*an.float()).clamp(min=0)
     if c.com_agua:
@@ -411,6 +534,25 @@ class Reativo:
     def reset(s,m,W): pass
     def extra(s,m,W,viz): return 0.
     def atualizar(s,m): pass
+class ReativoHora(Reativo):
+    """E12b: o Reativo NAO tem alavanca pra "encher antes da noite": o score
+    de servico e w*necessidade*disponivel, e hora/reserva (features de estado)
+    so deslocam mover-vs-servir em bloco. Aqui os 12 pesos MORTOS do Reativo
+    viram modulacao por hora e por reserva, POR SERVICO (mesmo NP: comparacao
+    justa): ss += hsin*W[NF+6:NF+11] + hcos*W[NF+11:NF+16]
+                 + e_res*(W[NF+16] no posto, W[NF+17] no descanso)."""
+    nome='reativo-hora'
+    def extra_serv(s, m):
+        Wb = s.W
+        ang = m.hora()*(2*3.14159265/24.)
+        hs, hc = torch.sin(ang)[:,None], torch.cos(ang)[:,None]
+        er = m.res/m.cfg.RES_MAX
+        ss = hs*Wb[:,NF+6:NF+11] + hc*Wb[:,NF+11:NF+16]
+        ss = ss + torch.stack([er*Wb[:,NF+16], torch.zeros_like(er),
+                               er*Wb[:,NF+17], torch.zeros_like(er),
+                               torch.zeros_like(er)], 1)
+        return ss
+    def reset(s,m,W): s.W = W
 class BancoEMA:
     nome='banco EMA'; NP=NF+6+6+6
     def reset(s,m,W):
@@ -719,8 +861,17 @@ class SerVital:
             s.mask = torch.where(cruza[:,None], manter, s.mask)
         # custo neural: so na fase adulta (infancia e subsidiada)
         adulto = (s.t.float() > s.Tb).float()
-        pen = s.KAPPA * s.mask.sum(1) * adulto
+        uso = s._consumo(adulto)                      # unidades de consulta no passo
+        if m.cfg.cerebro_come:
+            # E12b: o cerebro COME calorias (tanque), nao fitness; infancia
+            # segue subsidiada (os pais alimentam)
+            m.fuel = (m.fuel - m.cfg.KAPPA_F * uso).clamp(min=0)
+            pen = torch.zeros(B, device=DEV)
+        else:
+            pen = s.KAPPA * uso
         m.custo_neural = getattr(m, 'custo_neural', torch.zeros(B, device=DEV)) + pen
+    def _consumo(s, adulto):
+        return s.mask.sum(1) * adulto
 
 class SerTalamo(SerVital):
     """E6 (doc 20): TALAMO dentro do ser — um gate POR ORGAO POR PASSO decide
@@ -731,10 +882,10 @@ class SerTalamo(SerVital):
     submodo: 'sempre' (gate=1, paga tudo) | 'talamo' (contextual) | 'cego'
     (so o bias a — aprende QUANTO consultar mas nao QUANDO; controle do
     refutado 'rotear por estatistica fixa')."""
-    nome='talamo'; NP=54; modo='direto'; submodo='talamo'; KAPPA_C=5e-4
+    nome='talamo'; NP=NF+36; modo='direto'; submodo='talamo'; KAPPA_C=5e-4
     def reset(s,m,W):
         SerVital.reset(s,m,W)
-        s.G3 = W[:, 36:51].reshape(m.B,5,3)
+        s.G3 = W[:, NF+18:NF+33].reshape(m.B,5,3)
         s.duty_soma = torch.zeros(m.B,5,device=DEV)
         s.duty_carr = torch.zeros(m.B,5,device=DEV)
         s.carr_soma = torch.zeros(m.B,device=DEV)
@@ -749,12 +900,11 @@ class SerTalamo(SerVital):
                               + s.G3[:,:,2]*carreg[:,None])
         s._g = g; s._carreg = carreg
         return g * s.wo
+    def _consumo(s, adulto):
+        # paga-se por CONSULTA (soma dos gates), a vida inteira (sem infancia)
+        return s._g.sum(1)
     def atualizar(s,m):
         SerVital.atualizar(s,m)
-        # sobrescreve o custo do SerVital: aqui paga-se por CONSULTA (soma dos
-        # gates), a vida inteira (sem subsidio — nao ha infancia)
-        pen_vital = s.KAPPA * s.mask.sum(1) * (s.t.float() > s.Tb).float()
-        m.custo_neural = m.custo_neural - pen_vital + s.KAPPA_C*s._g.sum(1)
         s.duty_soma += s._g
         s.duty_carr += s._g * s._carreg[:,None]
         s.carr_soma += s._carreg

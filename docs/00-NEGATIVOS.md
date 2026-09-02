@@ -43,3 +43,59 @@ com 4 avarias" do README e na pratica um jogo de gerenciar CALOR — monocultura
 - Instrumento novo: inspetor de ativacao (livre-moveu / parado-a-toa / travado)
   vira debug padrao — "parado por escolha != parado por bug != mundo mal
   calibrado" (3a categoria, a que este achado revelou).
+
+## N14 — MUNDO MORTO POR FLAG NÃO VALIDADA (E12 v1, 2026-09-01)
+
+`eco2` (posto enche o tanque; pane deixa fuel=5) tinha predições registradas
+desde a era anterior mas NUNCA tinha rodado. Liguei em E12 pra reserva poder
+se formar à meia-noite. Resultado: os 6 braços nasceram mortos (ent 0.2–0.4
+em 5 dias; base dá 15–18) e a evolução achou "ficar parado" (fit −0.6 > ir
+e quebrar).
+- Mecanismo: fuel=5 após pane não paga um salto (custo 2–6/aresta) até o
+  posto → pane → 18 passos parado → fuel=5 → pane. Espiral sem saída.
+  Perito isola em 6 configs: só `eco2` derruba (ent 8.0→2.9, panes 25→48);
+  relógio, dia=240, noite, reserva, peso não mudam nada sozinhos.
+- Quase custou uma conclusão falsa: "reserva+peso VENCE noite" (−0.66 vs
+  −2.14) era verdade no mundo morto — vitória de quem quebra menos por andar
+  menos. Sem o braço-âncora e sem olhar `ent`, teria passado.
+- Regra 7: **flag de mundo só entra em bateria depois de rodada sozinha**
+  (predição registrada ≠ validada). E toda bateria carrega um braço-âncora
+  no mundo conhecido — `ent` absoluto é o detector de mundo morto.
+- Conserto: `pane_fuel` desacoplado do `eco2` (15 mantém o posto alcançável).
+
+**Adendo N13 (2026-09-01, E12):** o perito em `Cfg(1.0, base)` hoje faz 32.9
+avarias/5 dias sendo **25.1 pane-seca e 3.8 superaquecimento** (76% fuel) —
+idêntico bit a bit no HEAD b5955e2 e no lab.py do E12 (portão de identidade).
+O "100% superaquecimento" do N13 veio de um inspetor que não está no repo e
+não sei em que mundo/genoma rodou. Até re-medir: N13 vale como "1 eixo domina",
+não como "o eixo é calor". Comando: perito_W × rodar(Reativo, base, T=1200,
+seed=7777, 64 réplicas) — ver PREDICOES §E12 v1.
+
+## N15 — A pane subsidiada sustenta a economia e deixa a gordura sem trabalho (E12, 2026-09-01)
+
+**Afirmação:** no mundo base (com ou sem noite) a evolução aceita 15–19 panes
+de fuel por vida em TODAS as condições — 26 braços, 78 sementes, 3
+arquiteturas, pobre ou rico, G=20 ou 60. Não é falta de dinheiro (rico: pobre
+0.09, panes iguais), nem de tempo de evolução, nem de alavanca pra hora
+(ReativoHora), nem de previdência de rota (Corpo). É ESCOLHA: a pane devolve
+15 de fuel por 18 passos parado = "posto grátis lento", 2.5 tanques grátis por
+vida. Prova: tirar o fuel da pane (`reboque`) mata o mundo com multa 12 (fit
+−4.3), 4 (−1.3) e 0 (+0.2) — sem a pane subsidiada não há economia que feche.
+Consequência: o tanque às 22h nunca passa de ~39 e a reserva (NIVEL=50)
+converte 6–9/dia; gordura oscila em 3–5/60. A reserva não teve o que guardar.
+
+**Regra 8 (deriva da 1):** antes de dar um órgão de POUPANÇA ao ser, medir
+se existe SOBRA no mundo (fluxo de entrada − saída > 0 sem subsídio). Sem
+sobra, o órgão é airbag pequeno competindo com um airbag grátis. Medida
+direta: `fuel22` (tanque às 22h) e `n_posto` vs `av_fuel`; se panes ≥ postos,
+a pane virou posto.
+
+**Regra 9:** um subsídio (pane que devolve recurso, reabastecimento gratuito,
+fitness aditivo) nunca é neutro — vira a fonte de renda do ser e todo órgão
+que dependa de escassez fica ocioso. Antes de testar mecanismo de escassez,
+listar cada subsídio do mundo e o que ele vale por vida.
+
+**O que NÃO é negativo:** no mundo com sobra (fuel×0.5) a cadeia inteira
+funciona e um comportamento emergiu sem roteiro: sob peso o ser fica MAGRO
+(gordura 8.9 vs 17.7, metade das visitas ao posto, mais panes aceitas).
+Homeostase de peso por seleção. O fitness só não saiu do ruído.

@@ -18,7 +18,7 @@ def bracos():
     B = [type('T_sempre', (SerTalamo,), {'submodo':'sempre', 'nome':'talamo:sempre'}),
          type('T_talamo', (SerTalamo,), {'submodo':'talamo', 'nome':'talamo:contextual'}),
          type('T_cego',   (SerTalamo,), {'submodo':'cego',   'nome':'talamo:cego'}),
-         type('V_curta',  (SerVital,),  {'modo':'curta', 'NP':54, 'nome':'poda:curta'})]
+         type('V_curta',  (SerVital,),  {'modo':'curta', 'NP':NF+36, 'nome':'poda:curta'})]
     return B
 
 def portao(cids, cfg):

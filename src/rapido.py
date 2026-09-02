@@ -27,7 +27,7 @@ def variantes(exp):
     if exp == 'talamo':
         return ([type(f'T_{s}', (SerTalamo,), {'submodo': s, 'nome': f'tal:{s}'})
                  for s in ('sempre','talamo','cego')]
-                + [type('V_curta',(SerVital,),{'modo':'curta','NP':54,'nome':'poda:curta'})])
+                + [type('V_curta',(SerVital,),{'modo':'curta','NP':NF+36,'nome':'poda:curta'})])
     if exp == 'sono':
         return [type(f'S_{m}', (SerSono,), {'submodo': m, 'nome': f'sono:{m}'})
                 for m in ('fixo','constante','circadiano')]
