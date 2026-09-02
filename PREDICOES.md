@@ -655,3 +655,10 @@ de 10, vida_fim 63 vs 53. O efeito do bloco CRESCE com a vida (5 d: −3 pp;
     −7 pp ± 3 (≥ 4/5 sementes com menos mortos), fit +0.7 ± 0.7, bloco ~2
     noites de 10. Se −10 pp segurar em 5/5: é o primeiro mecanismo que
     reduz a mortalidade tardia — vale virar padrão do mundo-corpo.
+
+**E13n rodou (5 sementes, vida de 5 dias):** recomendado 8.76 / mortos 0.18;
+sono bloco 7.55 / 0.21 → **−1.21 de fit e +3 pp de mortos** (2/5 sementes com
+menos mortos). 31 ✗: o −3 pp de n=3 (e sua repetição em 2000+) era ruído. Em
+vida de 5 dias o bloco é inerte ou levemente nocivo (perde a madrugada, não
+evita morte). O −10 pp em 10 dias (n=3, §6.9) fica sob suspeita — E13o (5
+sementes, 10 dias) decide. 4ª vez que n=3 enganou nesta sessão.

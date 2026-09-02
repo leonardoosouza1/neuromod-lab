@@ -415,3 +415,10 @@ de cidades e nada de fitness.
   dias** (3/3 sementes), +1.0 de fitness. Dormir uma noite inteira a cada
   5 evita as mortes tardias — é a primeira alavanca que mexe no piso.
   Replicação com 5 sementes em E13o.
+
+**Replicação (E13n, 5 sementes, vida de 5 dias):** recomendado 8.76 / mortos
+0.18; com bloco 7.55 / 0.21. O bloco **perde** 1.2 de fitness e não reduz
+mortes (2/5 sementes abaixo). O −3 pp de n=3 — repetido em 2000+ — era
+ruído. Em vidas de 5 dias o bloco é inerte. O −10 pp em 10 dias (n=3) só
+vale se sobreviver ao E13o (5 sementes). Quarta vez que n=3 enganou hoje:
+regra de casa a partir daqui, **efeito de mortalidade só conta com n ≥ 5**.
