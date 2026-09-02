@@ -487,3 +487,9 @@ têm alavanca de HORA (ReativoHora: serviço × sin/cos da hora) e de ROTA
     sobem, panes ≤ 4. Corpo (rota pro posto) → mortos ≤ 0.12. Se ambos ~0.16:
     o resto é azar de cidade (1002 mata 2× a 1001) — teto da política de
     1 salto, próxima alavanca é sono em bloco (doc 24) ou memória de posto.
+
+**E13e rodou (longo):** ReativoHora 7.75, mortos 0.27 (✗ pior que o Reativo
+9.23/0.16 — 12 pesos a mais pra buscar e panes 8.0); Corpo 8.44, mortos 0.17
+(✗ igual). Nenhuma alavanca de hora ou rota reduz os 17%: teto da política de
+1 salto neste mundo (cidade 1002 mata 2× a 1001). Próxima alavanca: sono em
+BLOCO à noite (doc 24) ou memória de posto — mecanismo novo, não peso novo.

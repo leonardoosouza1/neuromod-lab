@@ -188,6 +188,22 @@ rota/noite — o ser roda de noite sem posto e seca onde está.
   peso .10/.30 = **4.74, 44% mortos** → cap 120 + reboque 0 + peso .10/.30 =
   **9.23, 16% mortos**. Duas decisões de mundo, ×2 no fitness, ÷3 nas mortes.
 
+### 4.7 E13e — os 17% que restam não são de hora nem de rota
+
+Config vencedora com peso (.10/.30), três cérebros:
+
+| arquitetura | fit | mortos | panes | fervura |
+|---|---|---|---|---|
+| Reativo | **9.23** | **0.16** | 6.5 | 3.8 |
+| ReativoHora (serviço × hora) | 7.75 | 0.27 | 8.0 | 4.4 |
+| Corpo (desvia pro serviço da maior necessidade) | 8.44 | 0.17 | 5.7 | 4.5 |
+
+Predição 22 ✗ nas duas. A alavanca de hora piora (12 pesos a mais, G=60 não
+acha "posto às 21h" — o mesmo resultado do E12b) e a de rota empata. Os 17%
+são o teto da política reativa de 1 salto neste mundo: a cidade 1002 mata 2×
+a 1001 com o mesmo genoma. Próxima alavanca é MECANISMO (sono em bloco à
+noite com tanque baixo, doc 24; memória de posto), não peso a mais.
+
 ## 5. Veredito e regras
 
 **O corpo funciona como o Leonardo pediu:** a dor ensina (corpo > sem corpo,
@@ -215,6 +231,7 @@ dia em que o perito morre e treinar mais longo que isso.
 adicionar multa, perguntar "com que o ser paga o conserto?" — se for a mesma
 coisa, a multa mata por espiral, não por seleção.
 
-**Fica pra depois (declarado):** os 17% que ainda morrem (rota noturna: sono
-em bloco à noite quando o tanque está baixo, doc 24), dano permanente por
-idade, oficina com preço por HP, greve no mundo-corpo.
+**Fica pra depois (declarado):** os 17% que ainda morrem — hora e rota
+não resolvem (§4.7); candidatos: sono em bloco à noite com tanque baixo
+(doc 24), memória de posto. Também: dano permanente por idade, oficina com
+preço por HP, greve no mundo-corpo.
