@@ -1,0 +1,187 @@
+<title>Corpo = Carro</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#EDF0F3; --panel:#FFFFFF; --ink:#1A2129; --ink2:#4A5560; --line:#D3D9DF;
+  --gas:#0E7C86; --gas2:#CFE9EB; --morte:#C8401F; --morte2:#F4D9D0; --peso:#B8851F; --peso2:#F3E6C6;
+  --ok:#2E7D4F; --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#12161B; --panel:#1B2129; --ink:#E8ECF0; --ink2:#A7B1BB; --line:#2E3740;
+    --gas:#3FB2BC; --gas2:#123C41; --morte:#E8674A; --morte2:#4A231A; --peso:#D8A33C; --peso2:#453718; --ok:#5FBF86;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#12161B; --panel:#1B2129; --ink:#E8ECF0; --ink2:#A7B1BB; --line:#2E3740;
+  --gas:#3FB2BC; --gas2:#123C41; --morte:#E8674A; --morte2:#4A231A; --peso:#D8A33C; --peso2:#453718; --ok:#5FBF86;
+}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 'IBM Plex Sans',system-ui,sans-serif;margin:0}
+main{max-width:1040px;margin:0 auto;padding:32px 20px 64px}
+h1,h2,h3{font-family:'Barlow Condensed','Arial Narrow',sans-serif;text-wrap:balance;margin:0}
+h1{font-size:58px;line-height:1;font-weight:700;letter-spacing:-.01em}
+h2{font-size:30px;font-weight:700;margin-top:48px;padding-top:18px;border-top:2px solid var(--ink)}
+h3{font-size:19px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.06em}
+p{max-width:68ch;margin:10px 0}
+.eyebrow{font-family:var(--mono);font-size:12px;color:var(--ink2);text-transform:uppercase;letter-spacing:.12em}
+.hero{display:grid;grid-template-columns:1.2fr 1fr;gap:28px;align-items:end;margin-top:8px}
+.gauges{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.gauge{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:16px 18px}
+.gauge .big{font-family:'Barlow Condensed',sans-serif;font-size:64px;line-height:1;font-weight:700;font-variant-numeric:tabular-nums}
+.gauge.m .big{color:var(--morte)} .gauge.f .big{color:var(--gas)}
+.gauge small{display:block;color:var(--ink2);font-size:13px;margin-top:6px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:18px 20px}
+.chart{width:100%;height:auto;display:block;overflow:visible}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-family:var(--mono);font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink2);font-weight:500}
+td.n{font-family:var(--mono);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tag{display:inline-block;font-family:var(--mono);font-size:11px;padding:2px 7px;border-radius:3px;letter-spacing:.06em}
+.tag.ok{background:var(--gas2);color:var(--gas)} .tag.no{background:var(--morte2);color:var(--morte)}
+.law{background:var(--panel);border-left:4px solid var(--gas);padding:14px 18px;font-family:var(--mono);font-size:14px;overflow-x:auto}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--ink2);margin-top:6px}
+.sw{display:inline-block;width:12px;height:12px;border-radius:2px;vertical-align:-1px;margin-right:5px}
+.wrap{overflow-x:auto}
+.foot{color:var(--ink2);font-size:13px;margin-top:40px;border-top:1px solid var(--line);padding-top:12px}
+@media (max-width:760px){.hero,.grid2{grid-template-columns:1fr} h1{font-size:44px}}
+@media (prefers-reduced-motion:no-preference){.bar{transition:width .5s ease}}
+</style>
+<main>
+<div class="eyebrow">neuromod-lab · E12 → E13 · 2026-09-02 · 34 baterias, ~120 braços, 3 e 5 sementes</div>
+<div class="hero">
+  <div>
+    <h1>Corpo = Carro</h1>
+    <p>O táxi ganhou um corpo que fere, um motor que desliga, gordura que acumula devagar e peso que se sente. Este painel mostra <strong>o que sobreviveu a cinco sementes</strong> — e o que era ruído de três.</p>
+  </div>
+  <div class="gauges">
+    <div class="gauge m"><div class="big" id="g-mortos">0.24</div><small>mortos em 5 dias · mundo recomendado · 6 cidades × 5 sementes</small></div>
+    <div class="gauge f"><div class="big" id="g-fit">7.08</div><small>fitness (entregas − 0.3·avarias) · mesma média honesta</small></div>
+  </div>
+</div>
+
+<h2>1 · A escada da mortalidade</h2>
+<p>Cada degrau é uma decisão do mundo ou do treino. O perito à mão morre quase sempre; a evolução aprende a não ferver o motor; o resto é calibração honesta.</p>
+<div class="card"><svg id="escada" class="chart" viewBox="0 0 960 330"></svg>
+<div class="legend"><span><span class="sw" style="background:var(--morte)"></span>fração que morre em 5 dias</span><span><span class="sw" style="background:var(--line)"></span>n=3 (ruído possível)</span></div></div>
+
+<h2>2 · O que sobreviveu a cinco sementes</h2>
+<p>Cada linha é uma afirmação medida primeiro com 3 sementes e depois com 5. O ponto claro é n=3, o escuro é n=5. Quando o escuro cruza o zero, a afirmação morreu.</p>
+<div class="card"><svg id="halteres" class="chart" viewBox="0 0 960 420"></svg>
+<div class="legend"><span><span class="sw" style="background:var(--gas)"></span>sobreviveu (mecanismo físico direto)</span><span><span class="sw" style="background:var(--morte)"></span>caiu (era ruído)</span></div></div>
+<p><strong>Regra 13.</strong> A mortalidade é bimodal — quem pane cedo morre — e varia ±8 pontos entre sementes. Efeito de morte abaixo de 10 pontos só conta com n ≥ 5. Cinco afirmações inverteram de sinal num dia.</p>
+
+<div class="grid2">
+<div>
+<h2>3 · De onde vem o dano</h2>
+<p>Perito: ferve o motor. Evoluído: aprende a não ferver e a reparar (oficina 0 → 7 por vida) — e passa a morrer de <strong>pane</strong>.</p>
+<div class="card"><svg id="dano" class="chart" viewBox="0 0 460 190"></svg>
+<div class="legend"><span><span class="sw" style="background:var(--gas)"></span>pane seca</span><span><span class="sw" style="background:var(--peso)"></span>motor quente</span><span><span class="sw" style="background:var(--ink2)"></span>furo · óleo · rodar ferido</span></div></div>
+</div>
+<div>
+<h2>4 · Quem morre é quem quebra</h2>
+<p>Mesma política, população em dois modos. O reboque de 20 dinheiros cobra na moeda que compra o conserto — a primeira pane vira espiral. Zerar a multa: −11 pontos de mortos, 5 de 5 sementes.</p>
+<div class="card wrap"><table>
+<tr><th></th><th>vivos (69%)</th><th>mortos (31%)</th></tr>
+<tr><td>panes por vida</td><td class="n">1.3</td><td class="n" style="color:var(--morte)">16</td></tr>
+<tr><td>dinheiro no fim</td><td class="n">—</td><td class="n" style="color:var(--morte)">0.7</td></tr>
+<tr><td>vida no fim</td><td class="n">83–90</td><td class="n">0</td></tr>
+<tr><td>dia da morte</td><td class="n">—</td><td class="n">2–3, meio-dia</td></tr>
+<tr><td>causa (últimos 50 passos)</td><td class="n">—</td><td class="n">pane 16 · resto 0.4</td></tr>
+</table></div>
+</div>
+</div>
+
+<h2>5 · O peso custa no limiar, não na estrada</h2>
+<p>Peso por massa: chassi 1000 kg + 0,75 kg por unidade de combustível + 2,5 kg por unidade de gordura + 80 kg de passageiro. Custa 2.3 de fitness (5/5 sementes). O passageiro explica um quarto; a gordura, nada. O resto é o tanque empurrando o motor por cima dos 92 °C — o ser evoluído roda encostado no limiar.</p>
+<div class="card"><svg id="peso" class="chart" viewBox="0 0 960 230"></svg>
+<div class="legend"><span><span class="sw" style="background:var(--gas)"></span>fitness</span><span><span class="sw" style="background:var(--peso)"></span>fervuras por vida</span></div></div>
+
+<h2>6 · A lei da poupança</h2>
+<p>Do E12, derivada por custo → derivada zero. Explica por que a gordura não paga contra a noite diária, paga contra a greve rara, e por que sob peso o ser emagrece.</p>
+<div class="law">benefício/dia = v · min(I, f·S, f·RES_MAX) − ℓ·I − w·I/(2f)<br>ótimo: I* = f·S &nbsp;·&nbsp; guarde exatamente a escassez esperada; acima disso é perda (ℓ) mais peso (w)</div>
+<div class="wrap" style="margin-top:12px"><table>
+<tr><th>escassez</th><th>f·S por dia</th><th>entrada I</th><th>cobertura</th><th>ganho da reserva</th></tr>
+<tr><td>noite diária, mundo padrão</td><td class="n">45</td><td class="n">10</td><td class="n">22%</td><td class="n">≈ 0</td></tr>
+<tr><td>greve 1 dia em 4 (E12)</td><td class="n">25</td><td class="n">12–16</td><td class="n">50%</td><td class="n" style="color:var(--gas)">+1.2 a +1.8 (6/6)</td></tr>
+<tr><td>noite + greve, mundo-corpo</td><td class="n">45 + 25</td><td class="n">~20</td><td class="n">a noite gasta antes</td><td class="n">+1.0</td></tr>
+<tr><td>gordura contínua no corpo (n=5)</td><td class="n">45</td><td class="n">~25 (2%/passo)</td><td class="n">~50%</td><td class="n" style="color:var(--gas)">+0.8 · −7 pp de mortos</td></tr>
+</table></div>
+
+<h2>7 · O que fica declarado pra depois</h2>
+<div class="grid2">
+<div class="card"><h3>Piso de mortalidade</h3><p>~18–24% em 5 dias, ~29% em 10, risco ≈ 4%/dia constante. Não cede a treino longo, hora, rota, sono em bloco nem tálamo. É o teto da política reativa de 1 salto. Em teste: o portão do tálamo lendo a noite (E13r, 5 sementes).</p></div>
+<div class="card"><h3>Calibrações que valem</h3><p>Reboque só no corpo (sem multa em dinheiro). Peso .10/.30 ou por massa: sentido, não fatal. Gordura contínua a 2% por passo (o vale entre 1% e 5%). Cap da gordura: indiferente. Sono em bloco: encerrado.</p></div>
+</div>
+
+<div class="foot">Fontes: docs/26-reserva-calorias.md, docs/27-corpo-carro.md, docs/00-NEGATIVOS.md (N15–N17), PREDICOES.md §E12–E13 (predições 1–35 registradas antes de rodar). JSONs em /media/llm-data/universe-runs/neuromod-lab-taxi/. Números em cidades 1000+ são ~30% otimistas; a média honesta usa 1000+ e 2000+.</div>
+</main>
+<script>
+(function(){
+const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const NS='http://www.w3.org/2000/svg';
+const el=(t,a,p)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e};
+const txt=(p,x,y,s,a)=>{const t=el('text',Object.assign({x,y,fill:css('--ink'),'font-size':13,'font-family':css('--mono')},a||{}),p);t.textContent=s;return t};
+
+// 1 · escada
+(function(){
+  const d=[['perito à mão',0.86,3],['evoluído, treino 2,5 dias (nunca vê a morte)',0.52,3],['treino 5 dias',0.39,3],['+ gordura fácil, cap 120',0.34,5],['+ reboque só no corpo (sem multa)',0.23,5],['mundo recomendado, cidades fáceis',0.18,5],['mundo recomendado, cidades duras',0.30,5],['média honesta · 6 cidades',0.24,5]];
+  const s=document.getElementById('escada');const W=960,L=330,bw=560,rh=34;
+  d.forEach((r,i)=>{const y=14+i*rh;const w=r[1]*bw;
+    el('rect',{x:L,y,width:bw,height:22,fill:css('--line'),opacity:.35},s);
+    el('rect',{x:L,y,width:w,height:22,fill:r[2]===5?css('--morte'):css('--line'),class:'bar'},s);
+    txt(s,L-10,y+16,r[0],{'text-anchor':'end','font-family':"'IBM Plex Sans',sans-serif",'font-size':13});
+    txt(s,L+w+8,y+16,Math.round(r[1]*100)+'%'+(r[2]===3?'  n=3':''),{'font-weight':500});
+  });
+})();
+
+// 2 · halteres
+(function(){
+  const d=[
+   ['gordura contínua vale (fitness)','+0.82','+0.79',0.82,0.79,'fit',1],
+   ['gordura contínua vale (mortos, pp)','−6','−7',-6,-7,'pp',1],
+   ['peso por massa custa (fitness)','−2.26','−2.34',-2.26,-2.34,'fit',1],
+   ['reboque só no corpo (mortos, pp)','−14','−11',-14,-11,'pp',1],
+   ['cap 120 > cap 60 (fitness)','+2.37','+0.40',2.37,0.40,'fit',0],
+   ['cap 120 > cap 60 (mortos, pp)','−8','+1',-8,1,'pp',0],
+   ['sono em bloco, 5 dias (mortos, pp)','−3','+3',-3,3,'pp',0],
+   ['sono em bloco, 10 dias (mortos, pp)','−10','+2',-10,2,'pp',0],
+   ['“a dor ensina” (fitness)','+0.75','−0.45',0.75,-0.45,'fit',0]];
+  const s=document.getElementById('halteres');const L=330,cx=640,half=290,rh=42;
+  const sc=(v,u)=>cx+(u==='fit'?v/3:v/16)*half;
+  el('line',{x1:cx,y1:6,x2:cx,y2:14+d.length*rh-10,stroke:css('--ink2'),'stroke-dasharray':'3 4'},s);
+  txt(s,cx,14+d.length*rh+4,'zero (nenhum efeito)',{'text-anchor':'middle','fill':css('--ink2'),'font-size':12});
+  d.forEach((r,i)=>{const y=24+i*rh;const c=r[6]?css('--gas'):css('--morte');const x3=sc(r[3],r[5]),x5=sc(r[4],r[5]);
+    txt(s,L-10,y+5,r[0],{'text-anchor':'end','font-family':"'IBM Plex Sans',sans-serif"});
+    el('line',{x1:x3,y1:y,x2:x5,y2:y,stroke:c,'stroke-width':3,opacity:.5},s);
+    el('circle',{cx:x3,cy:y,r:6,fill:css('--panel'),stroke:c,'stroke-width':2},s);
+    el('circle',{cx:x5,cy:y,r:8,fill:c},s);
+    txt(s,x5+(x5>=x3?14:-14),y+5,r[2]+' (n=5)',{'text-anchor':x5>=x3?'start':'end','font-weight':500,fill:c});
+    txt(s,x3+(x5>=x3?-14:14),y+5,r[1]+' (n=3)',{'text-anchor':x5>=x3?'end':'start',fill:css('--ink2'),'font-size':12});
+  });
+})();
+
+// 3 · dano
+(function(){
+  const d=[['perito',[44,81,12]],['evoluído (5 dias)',[48,24,11]],['recomendado (n=5)',[46,41,13]]];
+  const s=document.getElementById('dano');const L=150,bw=280,rh=52;const cols=[css('--gas'),css('--peso'),css('--ink2')];
+  d.forEach((r,i)=>{const y=14+i*rh;let x=L;const tot=r[1].reduce((a,b)=>a+b,0);
+    txt(s,L-8,y+18,r[0],{'text-anchor':'end','font-family':"'IBM Plex Sans',sans-serif"});
+    r[1].forEach((v,j)=>{const w=v/140*bw;el('rect',{x,y,width:w,height:26,fill:cols[j]},s);if(w>26)txt(s,x+w/2,y+18,v,{'text-anchor':'middle',fill:'#fff','font-size':12});x+=w;});
+    txt(s,x+6,y+18,tot+' de vida',{fill:css('--ink2'),'font-size':12});
+  });
+})();
+
+// 5 · peso
+(function(){
+  const d=[['sem peso',10.42,2.7],['passageiro 0 kg',8.79,4.0],['gordura 1,5 kg/u',7.77,4.3],['recomendado (massa cheia)',8.16,4.7]];
+  const s=document.getElementById('peso');const L=260,bw=420,rh=48;
+  d.forEach((r,i)=>{const y=14+i*rh;
+    txt(s,L-10,y+16,r[0],{'text-anchor':'end','font-family':"'IBM Plex Sans',sans-serif"});
+    el('rect',{x:L,y,width:r[1]/12*bw,height:16,fill:css('--gas')},s);txt(s,L+r[1]/12*bw+8,y+13,r[1].toFixed(2),{'font-weight':500});
+    el('rect',{x:L,y:y+19,width:r[2]/6*bw,height:9,fill:css('--peso')},s);txt(s,L+r[2]/6*bw+8,y+27,r[2].toFixed(1)+' fervuras',{fill:css('--ink2'),'font-size':12});
+  });
+})();
+})();
+</script>
