@@ -29,3 +29,19 @@ posto 0.5–1.0 em **5/5** (redescobriu o do Noite24, mais fraco), **descanso 0.
 em 5/5** (o atrator: puxa pro descanso sempre, porque fadiga nunca é zero),
 oficina 0–1.1, comida ≈ 0, loja pequeno; os dois genes de hora ficaram
 dispersos (−3.7 a +1.7) — 6ª vez que hora não converge.
+
+## E17 — cérebro com produtos, SEM pena (controle)
+
+| cérebro | fit | mortos | panes |
+|---|---|---|---|
+| Reativo | 9.42 | 0.18 | 6.5 |
+| **ReativoNoite24 (1 produto)** | **9.61** | **0.13** | 5.4 |
+| ReativoProduto (5 produtos + hora) | 7.06 | 0.19 | 6.7 |
+
+Sem pena a história é a mesma e mais limpa: **o produto certo, sozinho,
+melhora os dois eixos** (+0.2 entregas, −5 mortos por 100, 4/5 sementes); os
+cinco juntos custam 2.4 de entregas e não salvam ninguém. Com pena o
+ReativoProduto tinha panes 4.9 e agora 6.7 — sem a pena ele não se esconde
+tanto no descanso, mas continua orbitando. Veredito da onda 1 pro cérebro:
+**produtos sim, mas um de cada vez e com limiar** (só ligam quando a
+necessidade passa de um ponto). Predição 17.3 ✗ nos dois controles.
