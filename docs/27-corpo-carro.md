@@ -444,3 +444,30 @@ Mortos por semente, reboque 20 → 0: 0.38→0.26, 0.31→0.23, 0.42→0.21,
 do E13: multa em dinheiro na moeda que compra o conserto mata por espiral.
 O cap era o que parecia mais óbvio pela lei do E12 e era ruído: a noite
 gasta a gordura antes de o cap importar (§6.7).
+
+### 6.11 Números finais e o que sobreviveu ao n=5 (E13q)
+
+**Mundo recomendado** (corpo + massa como cálculo base + gordura contínua 2%
++ reboque só no corpo + noite; cap 120 indiferente), Reativo, G=60, 5 dias:
+
+| cidades | fit (5 sementes) | mortos |
+|---|---|---|
+| 1000+ (fáceis) | 8.76 | 0.18 |
+| 2000+ (duras) | 5.39 | 0.30 |
+| **média honesta (6 cidades)** | **7.08** | **0.24** |
+
+Afirmações do E13, replicadas com 5 sementes (1000+):
+
+| afirmação | n=3 | n=5 | veredito |
+|---|---|---|---|
+| gordura contínua vale | +0.82, −6 pp | **+0.79 (4/5), −7 pp (4/5)** | ✓ |
+| peso por massa custa, via fervura | −2.26, fervura +2.0 | **−2.34 (5/5), fervura +1.2** | ✓ |
+| reboque só no corpo (sem multa) | −14 pp | **−11 pp (5/5), +1.3** | ✓ |
+| cap 120 > 60 | +2.37 (3/3), −8 pp | +0.40 (2/5), +1 pp | ✗ ruído |
+| sono em bloco (5 d) | −3 pp | +3 pp, −1.2 | ✗ ruído |
+| sono em bloco (10 d) | −10 pp (3/3), +1.0 | +2 pp, −1.0 | ✗ ruído |
+| "a dor ensina" (fitness) | +0.75 | −0.45 | ✗ ruído |
+
+Três de sete sobreviveram — as três que têm mecanismo físico direto
+(gordura cobre pane; peso esquenta; multa quebra). As quatro que caíram
+eram efeitos de MORTALIDADE ou ganhos sem mecanismo próprio. Regra 13.

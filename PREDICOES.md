@@ -696,3 +696,13 @@ armadilha de pobreza REPLICA; o cap não. Placar das decisões: reboque 0 ✓
     +1.0. Em 2000+, recomendado 5 sementes ≈ 4.7 ± 1; média honesta de 6
     cidades ≈ 6.5 ± 1, mortos ≈ 0.27. Se gordura < +0.3: a gordura contínua
     não paga nem no corpo (e a lei do E12 explica: a noite gasta antes).
+
+**E13q1000 rodou (5 sementes):** recomendado 8.76 / 0.18 (bit-igual ao E13n
+✓); sem peso 11.10 / 0.18 → **peso custa −2.34 (5/5), fervura 2.9 → 4.1** ✓;
+sem gordura 7.97 / 0.25 → **gordura vale +0.79 (4/5), mortos −7 pp (4/5)** ✓.
+34 ✓ nas duas cláusulas de 1000+. Das afirmações do recomendado, as duas
+sobreviveram ao n=5 (ao contrário do cap e do sono em bloco).
+
+**E13q2000 rodou (5 sementes, cidades 2000+):** 5.39 / mortos 0.30 (✓ 4.7 ± 1).
+**NÚMEROS FINAIS (6 cidades × 5 sementes) do mundo recomendado: fit 7.08,
+mortos 0.24.** 34 ✓ (≈ 6.5 ± 1, 0.27).
