@@ -657,7 +657,8 @@ def passo(m, esc):
     m.dinh = m.dinh - 3.*o2.float()
     m.fome = torch.where(o2, (m.fome-45).clamp(min=0), m.fome)
     o3 = pode & (esc==GMAX+2) & (sv[:,2]>0)
-    m.fad = torch.where(o3, (m.fad-30./peso).clamp(min=0), m.fad)   # pesado dorme pior
+    fsono = m.mult[:,3] if c.glandulas else 1.   # E16: canal 3 (sono) liberado; 1.0 sem glandulas
+    m.fad = torch.where(o3, (m.fad-30.*fsono/peso).clamp(min=0), m.fad)   # pesado dorme pior
     if c.sono_bloco and noite is not None:
         # E13l: a noite, descansar vira SONO EM BLOCO ate as 6h — decisao do ser, nao roteiro
         ate6 = ((6. - m.hora()) % 24.) / 24. * c.dia
@@ -736,6 +737,7 @@ def passo(m, esc):
     else:
         cuf = cu
     cuf = cuf*peso*saude                # pesado/ferido bebe mais (fuel/agua/calor)
+    if c.glandulas: cuf = cuf*m.mult[:,2]   # E16: canal 2 (metabolismo PLENO: fuel/agua/calor/pneu/oleo)
     falta = val & (m.fuel < cuf*c.fuel)
     if c.reserva:
         # MOBILIZAR a reserva em vez de pane: para TPAR_MOB passos e perde
@@ -809,7 +811,8 @@ def passo(m, esc):
     vd = (gs==fn) | (m.tem_()==0)
     an = val & (~sf) & (~fu) & (~ol) & (~qt) & vd
     m.indo = torch.where(an, dst, m.indo)
-    m.rest = torch.where(an, (cu*m.vel()*peso*saude).round().clamp(min=1), m.rest)  # pesado/ferido = lento
+    fvel = m.mult[:,4] if c.glandulas else 1.    # E16: canal 4 (velocidade/tempo de viagem) liberado
+    m.rest = torch.where(an, (cu*m.vel()*peso*saude*fvel).round().clamp(min=1), m.rest)  # pesado/ferido = lento
     m.fuel = m.fuel - cuf*c.fuel*an.float()
     # [E16 glandulas: custo calorico dos hormonios; sono limpa h — SO E16]
     if c.glandulas or c.gl_regime:
@@ -818,12 +821,11 @@ def passo(m, esc):
         #     `cuf` mais abaixo, FORA do bloco (doc 30 §3 lista a linha exata).
         #     O REGIME vale para todo mundo (inclusive o braco de referencia,
         #     senao a comparacao e placebo); o GANHO, so com glandulas.
-        fmet = m.mult[:,2] if c.glandulas else 1.
+        # metabolismo (canal 2) ja esta em `cuf` (liberado na linha do cuf); aqui SO o regime
         freg = m.gl_reg if c.gl_regime else 1.
-        m.fuel = m.fuel - cuf*c.fuel*an.float()*(fmet*freg - 1.)
+        m.fuel = m.fuel - cuf*c.fuel*an.float()*(freg - 1.)
     if c.glandulas:
-        # (b) SONO: a recuperacao de fadiga ja saiu com 30./peso; aqui a diferenca.
-        m.fad = torch.where(o3, (m.fad - (30./peso)*(m.mult[:,3] - 1.)).clamp(0., 100.), m.fad)
+        # (b) SONO: canal 3 aplicado direto na linha do descanso (liberado pelo dono do lab.py).
         # (c) CUSTO CALORICO, TODO passo (parado tambem): gordura primeiro (com
         #     perda), depois tanque. E o que faz o TIMING valer: o beneficio so
         #     aparece andando, a conta chega sempre.
