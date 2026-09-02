@@ -621,3 +621,47 @@ em 16 vidas tem desvio ≈ 10 pontos; a pena de 5 por morte vira um sinal de
   honesto: outras paisagens "neutras" (ex.: o Reativo com 2 pesos mortos
   religados a ruído) chegam ao mesmo lugar? Se sim, é diversidade de busca,
   não hora.
+
+## 7. Resumo do dia (2026-09-02) e decisões pro Leonardo
+
+**O que foi pedido:** dano real no carro, motor que desliga, reboque caro,
+morte; gordura que entra fácil e acumula ao longo do tempo; peso que se
+sente por um cálculo base; "seres que tentam deixar o carro vivo".
+
+**O que ficou de pé com 5 sementes (regra 13):**
+
+| afirmação | efeito (n=5) |
+|---|---|
+| gordura contínua vale | +0.8 fit, −7 pp mortos |
+| peso por massa custa, via limiar de fervura | −2.3 fit, fervura +1.2 |
+| reboque em dinheiro cria armadilha de pobreza | zerar: −11 pp mortos, +1.3 fit |
+| sono que come caloria é nocivo | −2.0 fit, +9 pp mortos |
+| acumular gordura depressa custa | taxa .05: −1.4 (5/5) |
+| **a morte só é selecionada se é visível** | pena + 64 vidas/genoma: 0.24 → 0.175 (6 cidades) |
+
+**O que caiu:** cap da gordura, sono em bloco (5 e 10 dias), "a dor ensina"
+como ganho, gene de timing como alavanca (inerte por escala). Todos eram
+n=3.
+
+**Números finais (6 cidades × 5 sementes):** mundo recomendado 7.08 /
+mortos 0.24; com a morte visível à seleção (pena 5 + R=16, ReativoNoite)
+**7.44 / 0.175**. Cidades 1000+ são ~30% otimistas — sempre reportar a
+média de 6.
+
+**Decisões tuas:**
+1. **Objetivo.** Entregas − avarias não vê a morte. Escolher: pena fixa por
+   morrer (testado, funciona com R ≥ 16), entregas por dia vivido, ou vida
+   como moeda do torneio (arena). Recomendo a pena por ser a menor mudança;
+   a arena é a mais "humana".
+2. **Avaliação.** R=16 vidas por genoma como padrão em qualquer mundo com
+   morte (regra 14). Custa 4× por geração; sem isso a seleção está cega.
+3. **Mundo-corpo padrão:** massa como cálculo base (teus números), gordura
+   contínua a 2%, reboque só no corpo, cap indiferente, sono sem custo de
+   caloria (ou custo baixo), sem sono em bloco.
+4. **Próxima linha honesta:** o 0.175 é trajetória (genes inertes). Testar
+   se paisagens "neutras" chegam lá (Reativo com 2 pesos mortos religados a
+   ruído, R=16 + pena). Se sim, é diversidade de busca; se não, o
+   ReativoNoite abriu um caminho que vale entender.
+
+Predições registradas antes de rodar: 1–43 (E12 1–13, E13 14–38, E14
+39–43). Placar: ~45% ✓ — e cada ✗ apontou o mecanismo seguinte.
