@@ -984,6 +984,23 @@ class SerTalamo(SerVital):
         s.duty_carr += s._g * s._carreg[:,None]
         s.carr_soma += s._carreg
         s.passos_n = s.passos_n + 1
+class SerTalamoNoite(SerTalamo):
+    """E13r: o portao do talamo tambem le a NOITE — gate = sig(a + b*need + c*carreg + d*noite).
+    Genes NF+18..NF+38 (5 orgaos x 4). Zero-noite = SerTalamo (mundos sem relogio)."""
+    nome='talamo-noite'; NP=NF+38
+    def reset(s,m,W):
+        SerTalamo.reset(s,m,W)
+        s.G4 = W[:, NF+18:NF+38].reshape(m.B,5,4)
+        s._noite = torch.zeros(m.B, device=DEV)
+    def extra(s,m,W,viz):
+        n = m.noite_()
+        s._noite = n.float() if n is not None else torch.zeros(m.B, device=DEV)
+        return SerTalamo.extra(s,m,W,viz)
+    def _gate(s, need, carreg):
+        g = torch.sigmoid(s.G4[:,:,0] + s.G4[:,:,1]*need[:,None]
+                          + s.G4[:,:,2]*carreg[:,None] + s.G4[:,:,3]*s._noite[:,None])
+        s._g = g; s._carreg = carreg
+        return g * s.wo
 class SerSono:
     """E9b (doc 24): o sono que APRENDE. De dia vive e GRAVA no buffer-
     hipocampo (features -> aquecimento observado); DORMINDO (descanso)

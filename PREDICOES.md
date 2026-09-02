@@ -706,3 +706,15 @@ sobreviveram ao n=5 (ao contrário do cap e do sono em bloco).
 **E13q2000 rodou (5 sementes, cidades 2000+):** 5.39 / mortos 0.30 (✓ 4.7 ± 1).
 **NÚMEROS FINAIS (6 cidades × 5 sementes) do mundo recomendado: fit 7.08,
 mortos 0.24.** 34 ✓ (≈ 6.5 ± 1, 0.27).
+
+**E13r (portão do tálamo lê a noite) — 2026-09-02 14:05, ANTES de rodar**
+`SerTalamoNoite`: gate = σ(a + b·need + c·carreg + d·noite), 5 genes a mais.
+Mundo recomendado + cérebro comendo do tanque, 5 sementes, 5 dias, 1000+.
+Referência: tálamo n=3 = 7.45 / mortos 0.22.
+35. Previsão HONESTA: efeito ≈ 0 — mortos ±3 pp e fit ±0.5 vs tálamo sem
+    noite. Motivo: a morte noturna é o posto FECHADO com o tanque vazio; nenhum
+    órgão abre o posto, e os órgãos do SerVital modulam movimento, não
+    "ficar parado". Se mortos caírem ≥ 5 pp com ≥ 4/5 sementes: o órgão achou
+    um padrão noturno (ver duty por órgão à noite) e é a 1ª alavanca neural
+    que mexe no piso. Se subir: 5 genes a mais que G=60 não ajusta (ReativoHora
+    de novo).
