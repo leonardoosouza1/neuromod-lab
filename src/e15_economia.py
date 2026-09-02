@@ -34,6 +34,7 @@ def cfg_e15(economia=True, aluguel=6., agua=2., juros=.05, kcal=1.0, limite=60.,
             kcal_vida=0., **kw):
     """mundo recomendado do E13 + economia. pane_dinh ja e 0 em _R (N16)."""
     c = cfg_corpo(continua=.02, **{**_R, **kw})
+    c.pena_morte = PENA   # --pena (0 = padrao)
     if imposto is not None: c.imposto = imposto
     if economia:
         c.economia = True
@@ -124,6 +125,8 @@ FASES = {'a': BRACOS, 'b': BRACOS_B, 'c': BRACOS_C}
 ARQS = {'reativo': Reativo, 'noite': ReativoNoite, 'noite24': ReativoNoite24}
 
 
+PENA = 0.
+
 def main(preset, out, so=None, fase='a', arq='reativo', T_aval=None, teste_seed=1000,
          seeds=None, tag='', G=None, T_evo=None, R=None, P=None):
     p = dict(PRESET if preset == 'rapido' else PRESET_LONGO)
@@ -177,6 +180,8 @@ if __name__ == '__main__':
     ap.add_argument('--teste-seed', type=int, default=1000)
     ap.add_argument('--seeds', type=int, nargs='*', default=None)
     ap.add_argument('--tag', default='')
+    ap.add_argument('--pena', type=float, default=0., help='pena_morte na evolucao (0 = E13 padrao; 5 = morte visivel)')
     a = ap.parse_args()
+    PENA = a.pena
     main(a.preset, a.out, a.so, a.fase, a.arq, a.T_aval, a.teste_seed, a.seeds,
          a.tag, a.G, a.T_evo, a.R, a.P)

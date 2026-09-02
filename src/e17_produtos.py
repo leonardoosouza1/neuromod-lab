@@ -38,6 +38,7 @@ def main(a):
     for k, v in (('P', a.P), ('G', a.G), ('T_evo', a.T_evo), ('T_aval', a.T_aval), ('R', a.R)):
         if v: p[k] = v
     if a.seeds: p['seeds'] = tuple(a.seeds)
+    MUNDO['pena_morte'] = a.pena
     cfg = cfg_corpo(**MUNDO)
     treino = [gerar_cidade(s) for s in range(4)]
     teste = [gerar_cidade(a.teste_seed+s) for s in range(3)]
@@ -82,4 +83,5 @@ if __name__ == '__main__':
     ap.add_argument('--teste-seed', type=int, default=1000)
     ap.add_argument('--seeds', type=int, nargs='*', default=None)
     ap.add_argument('--tag', default='')
+    ap.add_argument('--pena', type=float, default=5., help='pena_morte na evolucao (5 = default do E17; 0 = controle)')
     main(ap.parse_args())
