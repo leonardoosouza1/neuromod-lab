@@ -838,3 +838,19 @@ ruído ±1.5. R=16 → 64 vidas por genoma, σ ≈ 5 pp.
     ReativoNoite ficar em ~0.16 com R=16: o ruído não era o limite; o teto
     evoluível está em ~0.16 e o resto do caminho até 0.134 exige a regra
     exata (k=8), que 2 genes lineares só aproximam.
+
+**E14c ReativoNoite rodou (pena 5, R=16, 5 sementes):** fit sem pena **9.11**
+[9.5 8.8 9.2 9.1 8.9], **mortos 0.11** [.12 .08 .12 .12 .14] — 40 ✓ (≤ 0.14,
+fit ≥ 7.5), abaixo até do teto da regra à mão (0.134). MAS genes posto
+(−0.86, 0.35, −0.42, −1.67, 0.51), rota ≈ 0: **não foi o gene de timing** —
+foi o RUÍDO DE AVALIAÇÃO. Com 64 vidas por genoma (era 16) a seleção enxerga
+a mortalidade e a população acha sobrevivência pelos pesos que já tinha
+(panes 7.6 → 6.4, vida_fim 62 → 75). Mecanismo: seleção por evento raro
+precisa de MUITAS vidas por genoma — σ(mortos em 16 vidas) ≈ 10 pp afogava
+o sinal. Controle em curso: Reativo puro, pena 5, R=16.
+
+**E14d (célula que falta do 2×2: R=16 SEM pena) — ANTES de rodar**
+41. Reativo, sem pena, R=16: mortos ~0.16–0.18 e fit ≥ 8.8 — R sozinho não
+    baixa a morte porque ela não está no objetivo (E13t: fit idêntico com −5
+    pp). Se mortos ≤ 0.12 sem pena: o objetivo já valorizava a vida o
+    suficiente e o ruído era a história inteira — aí a "lei" é só R.
