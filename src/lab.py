@@ -108,6 +108,15 @@ class Cfg:
         s.relogio=False; s.noite=False; s.reserva=False; s.peso=False
         s.perda_var=True; s.cerebro_come=False
         s.greve=0          # E12-v9: a cada N dias o posto fecha o DIA INTEIRO (escassez rara e grande)
+        # E13 (doc 27): CORPO = CARRO. Dano real acumulado, morte.
+        #   corpo    vida 0..100; avarias FEREM (pane/furo/oleo/quente), rodar
+        #            machucado fere por passo, ferido = lento e bebe mais,
+        #            oficina repara REPARO, vida<=0 = morte (para de entregar)
+        s.corpo=False
+        s.D_PANE=6.; s.D_FURO=5.; s.D_OLEO=12.; s.D_QUENTE=10.; s.D_RODAR=.15
+        s.REPARO=30.; s.K_SAUDE=.6
+        s.reserva_posto=0.   # >0: posto tambem enche a reserva com este tanto (gordura entra facil)
+        s.sono_come=0.       # >0: cada descanso custa este tanto de fuel (dormir custa caloria)
         s.RES_MAX=60.; s.NIVEL=50.; s.PERDA_ARMAZ=.10; s.MOB=25.; s.TPAR_MOB=3.
         s.WF=.10; s.WR=.30; s.KAPPA_F=.05
 
@@ -208,6 +217,10 @@ class Lote:
         elif not s.RELOGIO:
             s.fase_dia = torch.zeros(B, device=DEV)
         s.res = torch.zeros(B, device=DEV)                  # reserva (gordura)
+        # E13: corpo — vida (HP) e censo
+        s.vida = torch.full((B,), 100., device=DEV)
+        s.t_vida = torch.zeros(B, device=DEV); s.n_oficina = torch.zeros(B, device=DEV)
+        s.sono_soma = torch.zeros(B, device=DEV); s.dano_soma = torch.zeros(B, device=DEV)
         if cfg.perda_var:
             s.perda = .15 + .30*torch.rand(B, generator=g, device=DEV)   # 15..45%
         else:
@@ -324,14 +337,16 @@ class Lote:
         est = torch.stack([s.fuel/s.capf(), s.fome/100, s.fad/100, s.pneu/100,
                            s.temp/120, s.oleo/100, (s.dinh/120).clamp(max=1.),
                            (s.pd_>=0).float(),
-                           s.res/s.cfg.RES_MAX, hsin, hcos], -1)   # E12: reserva + hora
+                           s.res/s.cfg.RES_MAX, hsin, hcos,
+                           1. - s.vida/100.], -1)   # E12: reserva + hora; E13: dano (0 sem corpo)
         F = torch.cat([(-dal/6.)[...,None], (-cus/4.)[...,None], (-cong/2.)[...,None],
                        vd[...,None], (-ds.permute(0,2,1)/6.),
                        est[:,None,:].expand(-1,G,-1),
                        s.UNS], -1)
         return F, val
 
-NF = 1+1+1+1+5+11+1  # 21 features por candidato (ver NOMES_F em rodar.py)
+NF = 1+1+1+1+5+12+1  # 22 features por candidato (ver NOMES_F em rodar.py)
+                     # E13 (2026-09-02): +e_dano (1-vida/100) — zero sem corpo
                      # E12 (2026-09-01): +reserva, +sin(hora), +cos(hora) — zero
                      # nos mundos sem relogio/reserva (contribuicao exata nula)
 
@@ -360,6 +375,9 @@ def passo(m, esc):
     m.temp = (m.temp-1.6).clamp(min=25.)
     # E12: relogio, noite, peso, reserva
     noite = m.noite_(); peso = m.peso_()
+    # E13: corpo — morto nao age; ferido e lento e bebe mais
+    viva = (m.vida > 0) if c.corpo else None
+    saude = (1. + c.K_SAUDE*(1. - m.vida/100.)) if c.corpo else 1.
     if c.reserva:
         # MEIA-NOITE: sobra do tanque acima de NIVEL vira reserva (com perda de
         # armazenamento). So converte o que CABE; o resto fica no tanque.
@@ -379,6 +397,7 @@ def passo(m, esc):
         m.fuel_22 += m.fuel*h22; m.n_22 += h22
     # entrega
     ch = (m.pd_>=0) & (m.no==m.pd_) & (m.rest<=0)
+    if viva is not None: ch = ch & viva
     d = m.DIa[m.cidx, m.po_.clamp(min=0), m.pd_.clamp(min=0)]
     br = (c.base+c.km*d)*m.tar(); im = br*c.imposto
     m.ent += ch.float(); m.rec += br*ch.float(); m.imp += im*ch.float()
@@ -396,6 +415,7 @@ def passo(m, esc):
     m.tpar = torch.where(ap, torch.full_like(m.tpar,12.), m.tpar)
     m.fad  = torch.where(ap, torch.full_like(m.fad,40.), m.fad)
     pode = livre & (m.rest<=0) & (~ap)
+    if viva is not None: pode = pode & viva
     sv = m.serv_ab(noite)
     # servicos (sem closures: compile-friendly)
     o1 = pode & (esc==GMAX+0) & (sv[:,0]>0) & (m.dinh>=2.)
@@ -404,16 +424,29 @@ def passo(m, esc):
     m.fuel = torch.where(o1, torch.minimum(m.fuel + (m.capf() if m.cfg.eco2 else 30.), m.capf()), m.fuel)
     if c.com_agua:
         m.agua = torch.where(o1, torch.full_like(m.agua,100.), m.agua)  # posto enche o radiador
+    if c.reserva and c.reserva_posto:
+        # E13: gordura entra facil — o posto tambem enche a reserva (comer alem da conta)
+        m.res = torch.where(o1, torch.minimum(m.res + c.reserva_posto*(1-c.PERDA_ARMAZ),
+                                              torch.full_like(m.res, c.RES_MAX)), m.res)
     o2 = pode & (esc==GMAX+1) & (sv[:,1]>0) & (m.dinh>=3.)
     m.dinh = m.dinh - 3.*o2.float()
     m.fome = torch.where(o2, (m.fome-45).clamp(min=0), m.fome)
     o3 = pode & (esc==GMAX+2) & (sv[:,2]>0)
     m.fad = torch.where(o3, (m.fad-30./peso).clamp(min=0), m.fad)   # pesado dorme pior
+    if c.sono_come:
+        # E13: dormir custa caloria — do tanque, e se faltar, da gordura (com a perda)
+        q  = c.sono_come*o3.float()
+        q1 = torch.minimum(m.fuel, q); m.fuel = m.fuel - q1
+        q2 = torch.minimum(m.res, (q-q1)/(1-m.perda)); m.res = m.res - q2
+        m.sono_soma += q1 + q2*(1-m.perda)
     o4 = pode & (esc==GMAX+3) & (sv[:,3]>0) & (m.dinh>=10.)
     m.dinh = m.dinh - 10.*o4.float()
     m.pneu = torch.where(o4, torch.full_like(m.pneu,100.), m.pneu)
     m.oleo = torch.where(o4, torch.full_like(m.oleo,100.), m.oleo)
     m.temp = torch.where(o4, torch.full_like(m.temp,25.), m.temp)
+    if c.corpo:
+        m.vida = torch.where(o4, torch.minimum(m.vida + c.REPARO, torch.full_like(m.vida,100.)), m.vida)
+        m.n_oficina += o4.float()
     o5 = pode & (esc==GMAX+4) & (sv[:,4]>0) & (m.dinh>=26.)
     m.dinh = m.dinh - 26.*o5.float()
     k = (m.up.sum(1) % 9).long()
@@ -470,7 +503,7 @@ def passo(m, esc):
         cuf = wru + .3*npd
     else:
         cuf = cu
-    cuf = cuf*peso                      # pesado bebe mais (fuel/agua/calor)
+    cuf = cuf*peso*saude                # pesado/ferido bebe mais (fuel/agua/calor)
     falta = val & (m.fuel < cuf*c.fuel)
     if c.reserva:
         # MOBILIZAR a reserva em vez de pane: para TPAR_MOB passos e perde
@@ -495,20 +528,22 @@ def passo(m, esc):
     rd = torch.rand(B, generator=m.gsim, device=DEV)
     val = val & (~mob)                  # mobilizando = parado este passo
     fu = val & (~sf) & (rd < ((1-m.pneu/100)-.45).clamp(min=0)*c.risco*m.txp())
-    m.avar += fu.float(); m.av_furo += fu.float(); m.tpar = torch.where(fu, torch.full_like(m.tpar,15.), m.tpar)
-    m.pneu = torch.where(fu, torch.full_like(m.pneu,60.), m.pneu)
+    T_FURO, P_FURO = (30., 40.) if c.corpo else (15., 60.)   # E13: furo demora mais, pneu sai pior
+    m.avar += fu.float(); m.av_furo += fu.float(); m.tpar = torch.where(fu, torch.full_like(m.tpar,T_FURO), m.tpar)
+    m.pneu = torch.where(fu, torch.full_like(m.pneu,P_FURO), m.pneu)
     ol = val & (~sf) & (~fu) & (m.oleo<12) & (rd<.05)
     m.avar += ol.float(); m.av_oleo += ol.float(); m.tpar = torch.where(ol, torch.full_like(m.tpar,22.), m.tpar)
     m.oleo = torch.where(ol, torch.full_like(m.oleo,45.), m.oleo)
     qt = val & (~sf) & (~fu) & (~ol) & (m.temp>92)
-    m.avar += qt.float(); m.av_quente += qt.float(); m.tpar = torch.where(qt, torch.full_like(m.tpar,14.), m.tpar)
-    m.temp = torch.where(qt, torch.full_like(m.temp,40.), m.temp)
+    T_QT, TEMP_QT = (20., 92.) if c.corpo else (14., 40.)    # E13: motor quente DESLIGA e esfria sozinho (1.6/passo)
+    m.avar += qt.float(); m.av_quente += qt.float(); m.tpar = torch.where(qt, torch.full_like(m.tpar,T_QT), m.tpar)
+    m.temp = torch.where(qt, torch.full_like(m.temp,TEMP_QT), m.temp)
     gs = torch.gather(m.grp_(),1,sel[:,None]).squeeze(1).float()
     fn = torch.gather(m.fase,1,m.no[:,None]).squeeze(1)
     vd = (gs==fn) | (m.tem_()==0)
     an = val & (~sf) & (~fu) & (~ol) & (~qt) & vd
     m.indo = torch.where(an, dst, m.indo)
-    m.rest = torch.where(an, (cu*m.vel()*peso).round().clamp(min=1), m.rest)  # pesado = lento
+    m.rest = torch.where(an, (cu*m.vel()*peso*saude).round().clamp(min=1), m.rest)  # pesado/ferido = lento
     m.fuel = m.fuel - cuf*c.fuel*an.float()
     m.fad  = (m.fad  + cu*c.fadiga*peso*an.float()).clamp(max=100)
     if noite is not None:
@@ -516,6 +551,13 @@ def passo(m, esc):
         m.ent_noite += (noite & ch).float()
     m.pneu = (m.pneu - cuf*c.pneu*m.txp()*an.float()).clamp(min=0)
     m.oleo = (m.oleo - cuf*c.oleo*m.txo()*an.float()).clamp(min=0)
+    if c.corpo:
+        # E13: avarias FEREM e rodar machucado fere por passo; vida<=0 = morte
+        fer = (m.pneu < 30.) | (m.temp > 80.) | (m.oleo < 20.)
+        dn = (c.D_PANE*sf.float() + c.D_FURO*fu.float() + c.D_OLEO*ol.float()
+              + c.D_QUENTE*qt.float() + c.D_RODAR*(an & fer).float())
+        m.vida = (m.vida - dn).clamp(min=0); m.dano_soma += dn
+        m.t_vida += viva.float()
     if c.com_agua:
         # radiador: sem agua o motor esquenta MAIS — pela lei OCULTA k_agua
         # do mundo (a fisica que so se aprende vivendo, doc 24)

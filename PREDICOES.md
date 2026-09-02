@@ -385,3 +385,36 @@ meio peso −0.57 — empate dentro do ruído (±1.5; `greve4 peso meio` deu +0.
 sobre greve4 sem poder). Cobertura 41% da greve, prevista pela lei 37–47%
 (estoque I/f 37–47 vs buraco S≈100). Lei da poupança em doc 26 §7.2:
 benefício = v·min(I, f·S, f·RES_MAX); ótimo I* = f·S. E12 FECHADO.
+
+## E13 — CORPO = CARRO (dano real, morte, gordura fácil, sono que come) — 2026-09-02 10:10, ANTES de rodar
+
+Leonardo: "colocar dano no carro, dano real, fura o pneu demora mais, motor
+aquecido o carro desliga, o reboque custa mais, pra que os seres tentem deixar
+o carro o mais vivo possível porque é o corpo deles" + "mais gordura, ela entra
+mais fácil, porque dormir e melhorar o cérebro custa caloria".
+
+Mundo: sobra (fuel×0.5) + reboque + pane_dinh 20 + noite + `corpo`
+(vida 100; pane −6, furo −5 e 30 passos parado com pneu→40, óleo −12,
+motor >92 DESLIGA 20 passos e −10, rodar machucado −0.15/passo; ferido =
+tempo e consumo ×(1+0.6·dano); oficina +30 por 10 dinh; vida≤0 = morte).
+Teto medido (perito, 64 réplicas): **86% morrem** em 5 dias (t_vida 60%),
+dano 137 = quente 81 + panes 44 + furos 7 + rodar ~6; oficina 7.1/vida.
+Feature nova `e_dano` (zero sem corpo); portão base bit-exato (7.9740/25.1302).
+
+14. Morte SELECIONA: campeão evoluído (G=20) morre < 10% (perito 86%) e
+    t_vida > 0.95; quente cai ≥ 50% (8.1 → ≤ 4) — a evolução aprende a não
+    ferver o motor (oficina antes dos 80 °C ou rodar menos quente). Se morrer
+    ≥ 30%: o mundo é letal demais pra política de 1 salto (dano por passo
+    domina) — recalibrar D_QUENTE/D_RODAR, não o cérebro.
+15. `corpo` custa ≥ 2.0 vs `noite s+r` mesmo evoluído (o corpo exige
+    oficina/tempo/dinheiro que antes eram grátis).
+16. Gordura fácil (`reserva_posto=20`, I ≈ 3 postos/dia × 18 = 54/dia ≥ f·S 45):
+    pela lei, regime vira "teto = buraco": panes < 3/vida e reserva_posto −
+    corpo ≥ +1.0 MESMO com peso (.10/.30). `reserva` só-meia-noite (I=10)
+    fica ≈ corpo (±0.5), como no v8.
+17. Sono come (5 fuel/descanso): gordura média cai ≥ 30% vs reserva_posto e
+    fit dentro de ±1.0 (custo ≈ 1 tanque/vida); se fit cair > 1.5, o ser está
+    dormindo com a gordura (mob sobe) — dormir virou o buraco.
+18. Emergente esperado: `n_oficina` sobe com corpo (perito 7 → evoluído
+    ≥ 8) e `vida_fim` > 50. Se vida_fim < 30 com mortos < 10%: o ser vive no
+    limite (repara só pra não morrer) — igual ao "pane como posto lento".
