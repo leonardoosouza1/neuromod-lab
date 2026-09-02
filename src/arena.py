@@ -14,7 +14,48 @@ Mesmas regras de perf (zero sync no loop quente, mascaras, sem tensor novo).
 """
 import torch, sys, os
 sys.path.insert(0, os.path.dirname(__file__))
-from lab import DEV, NF, GMAX, gerar_cidade
+from lab import DEV, GMAX, gerar_cidade
+NF = 18   # CONGELADO: a arena tem layout proprio de 18 features. O lab.py vivo
+          # e editado por outra sessao (NF virou 21 em 2026-09-01 21:27) — a
+          # arena nao pode depender dele, senao os genomas salvos viram lixo.
+
+# ---- arquiteturas congeladas (copiadas do lab.py em 2026-09-01, NF=18) ----
+class Reativo:
+    nome='reativo'; NP=NF+6+6+6
+    def reset(s,m,W): pass
+    def extra(s,m,W,viz): return 0.
+    def atualizar(s,m): pass
+class BancoEMA:
+    nome='banco EMA'; NP=NF+6+6+6
+    def reset(s,m,W):
+        s.al = torch.exp(-1/(2+30*(W[:,NF+9:NF+12].abs()+.1)))
+        s.E  = torch.zeros(m.B,3,m.n,device=DEV)
+    def extra(s,m,W,viz):
+        oc = torch.zeros(m.B,m.n,device=DEV); oc.scatter_(1,m.no[:,None],1.)
+        a = s.al[:,:,None]
+        s.E = a*s.E + (1-a)*oc[:,None,:]
+        g = s.E.gather(2, viz[:,None,:].expand(-1,3,-1))
+        return torch.einsum('bk,bkg->bg', W[:,NF+6:NF+9], g)
+    def atualizar(s,m): pass
+class MemCusto:
+    nome='mem custo'; NP=NF+6+6+6
+    def reset(s,m,W):
+        s.k = torch.sigmoid(W[:,NF+6:NF+7]); s.C = torch.zeros(m.B, m.n, device=DEV)
+    def extra(s,m,W,viz):
+        s._obs = torch.gather(m.npc, 1, m.no[:,None]); s._no = m.no
+        return W[:,NF+7:NF+8]*(-torch.gather(s.C, 1, viz))
+    def atualizar(s,m):
+        atual = torch.gather(s.C, 1, s._no[:,None])
+        s.C.scatter_(1, s._no[:,None], atual + s.k*(s._obs-atual))
+ARQS_A = [Reativo, BancoEMA, MemCusto]
+POR_A = {A.nome: A for A in ARQS_A}
+
+def perito_W(NP=36):
+    w = torch.zeros(NP, device=DEV)
+    w[0]=4.0; w[1]=0.6; w[2]=0.8; w[3]=1.2
+    w[4]=1.2; w[5]=.10; w[6]=.05; w[7]=.60; w[8]=.05
+    w[NF:NF+5] = torch.tensor([20.,14.,10.,18.,3.], device=DEV); w[NF+5] = -4.0
+    return w
 
 NPX_A = 18          # passageiros por mundo (cidade grande, mais gente)
 
@@ -57,6 +98,7 @@ class Mundo:
         s.rec=torch.zeros(B,device=DEV); s.viva=torch.ones(B,device=DEV)
         s.morte_t=torch.full((B,),-1.,device=DEV)
         s.fome_t=torch.zeros(B,device=DEV)   # ticks seguidos faminto
+        s.morte_causa=torch.zeros(B,device=DEV)  # 0 viva, 1 pane, 2 fome
         s.av_fuel=torch.zeros(B,device=DEV)
         # ---- mundo compartilhado ----
         s.po=ri(n,(M,NPX_A)); s.pd=ri(n,(M,NPX_A))
@@ -152,6 +194,7 @@ def passo_arena(m, esc):
     m.fome_t=torch.where(faminto, m.fome_t+1, torch.zeros_like(m.fome_t))
     morre_fome=(m.fome_t>=60.)&viva
     m.viva=torch.where(morre_fome, torch.zeros_like(m.viva), m.viva)
+    m.morte_causa=torch.where(morre_fome, torch.full_like(m.morte_causa,2.), m.morte_causa)
     m.morte_t=torch.where(morre_fome, m.t.float().expand_as(m.morte_t), m.morte_t)
     ap=(m.fad>=95)&viva
     m.tpar=torch.where(ap,torch.full_like(m.tpar,12.),m.tpar)
@@ -216,6 +259,7 @@ def passo_arena(m, esc):
     # MORTE: pane sem dinheiro pro guincho
     morre=sf&(m.dinh<c.guincho)
     m.viva=torch.where(morre,torch.zeros_like(m.viva),m.viva)
+    m.morte_causa=torch.where(morre,torch.full_like(m.morte_causa,1.),m.morte_causa)
     m.morte_t=torch.where(morre,m.t.float().expand_as(m.morte_t),m.morte_t)
     m.dinh=(m.dinh-c.guincho*sf.float()).clamp(min=0)
     rd=torch.rand(B,generator=m.gsim,device=DEV)

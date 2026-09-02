@@ -3,9 +3,9 @@ E o desenho que o Leonardo pediu: a briga, quem corta caminho, quem espera,
 quem morre. Usa o torneio misto do arena_aval."""
 import json, sys, os, torch
 sys.path.insert(0,'src')
-from lab import gerar_cidade, ARQS, NF, DEV
-from arena import CfgArena, Mundo, passo_arena
-from arena_aval import Mista, carrega, POR
+from lab import gerar_cidade, DEV
+from arena import CfgArena, Mundo, passo_arena, NF, POR_A as POR
+from arena_aval import Mista, carrega
 
 def grava(T=1500, seed=31):
     G=carrega()

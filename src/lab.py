@@ -107,6 +107,7 @@ class Cfg:
         #   cerebro_come  custo neural sai do TANQUE (calorias), nao do fitness
         s.relogio=False; s.noite=False; s.reserva=False; s.peso=False
         s.perda_var=True; s.cerebro_come=False
+        s.greve=0          # E12-v9: a cada N dias o posto fecha o DIA INTEIRO (escassez rara e grande)
         s.RES_MAX=60.; s.NIVEL=50.; s.PERDA_ARMAZ=.10; s.MOB=25.; s.TPAR_MOB=3.
         s.WF=.10; s.WR=.30; s.KAPPA_F=.05
 
@@ -225,6 +226,12 @@ class Lote:
         if not s.cfg.noite:
             return None
         h = s.hora(); return (h >= 22.) | (h < 6.)
+    def greve_(s):
+        """dia de greve do posto: fecha o dia inteiro a cada `greve` dias (passageiros normais)."""
+        if not s.cfg.greve:
+            return None
+        d = ((s.t.float() + s.fase_dia) // s.cfg.dia).long()
+        return (d % s.cfg.greve) == (s.cfg.greve - 1)
     def peso_(s):
         """1 + carga no chassi: tanque pesa pouco, reserva pesa muito."""
         if not s.cfg.peso:
@@ -233,8 +240,10 @@ class Lote:
     def serv_ab(s, noite=None):
         """servicos ABERTOS no no: posto fecha a noite."""
         sv = s.serva[s.cidx, s.no]
-        if noite is not None:
-            sv = sv * torch.cat([(~noite).float()[:,None], torch.ones(s.B,4,device=DEV)],1)
+        fech = noite; g = s.greve_()
+        if g is not None: fech = g if fech is None else (fech | g)
+        if fech is not None:
+            sv = sv * torch.cat([(~fech).float()[:,None], torch.ones(s.B,4,device=DEV)],1)
         return sv
     def _spawn_polo(s):
         """(B,) sorteio de no ~ exp(-dist ao polo), para TODOS os mundos de uma

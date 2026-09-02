@@ -191,3 +191,126 @@ infância, cérebro (§5.1–5.2) — aí ela vira poupança, não só airbag.
 | 9 | rico: pobreza era o gargalo | ✗ (pobre 0.09, panes iguais) |
 | 10 | Corpo: previdência era o gargalo | ✗ → pane é ESCOLHA (confirmado no v6) |
 | 11 | com sobra a gordura forma e o peso morde | ✓ (17.7–20.6/60; peso cheio −1.7, meio −0.4) |
+
+## 7. Quando a poupança PAGA — a lei (v8/v9, 2026-09-02)
+
+### 7.1 A pergunta certa não era "reserva sim ou não", era "que escassez?"
+
+O v8 tirou o subsídio (reboque) num mundo com renda (fuel×0.5): o mundo vive
+(`dia` 9.61) e a reserva, agora ÚNICO seguro da noite, dá **+0.05**. Zero.
+Li o código: o portão de mobilização é `res > 0` (mobiliza qualquer quantia),
+não é bug. É ENTRADA: a reserva só recebe a sobra da meia-noite acima de
+NIVEL — ~10 de fuel por dia — contra um buraco noturno de ~3 panes × 15 = 45
+por dia. Cobre 22% e nunca alcança. Pior: a conversão tira fuel do tanque
+exatamente quando o posto fecha e devolve com perda + 3 passos parado.
+
+Então a escassez que a gordura resolve não é a diária. É a rara e grande.
+Mundo `greve`: posto fecha o DIA INTEIRO a cada 4 dias (passageiros
+normais), sem pane grátis, com renda. A gordura acumula 3 dias e tem UM
+trabalho no 4º.
+
+### 7.2 A lei, derivada (Aula 2 — custo → derivada zero → lei)
+
+Chame de:
+- `f` a frequência da escassez (eventos por dia): noite `f=1`, greve `f=1/4`;
+- `S` o buraco por evento (fuel que o tanque não cobre): noite ~45, greve ~50–60;
+- `I` a entrada diária da reserva (sobra acima de NIVEL, líquida): 10 (N50) a 17 (N30);
+- `v` quanto vale 1 de fuel no buraco (panes evitadas × custo da pane);
+- `ℓ` a perda por unidade guardada (10% ao armazenar + 15–45% ao mobilizar);
+- `w` o custo por unidade de gordura carregada (peso: tempo, fuel, fome, sono).
+
+**Cobertura.** Entre dois eventos passam `1/f` dias; o estoque quando o
+evento chega é `R = min(I/f, RES_MAX)`. O que a reserva cobre é
+`min(R, S)`. Por dia: **benefício = v · min(I, f·S, f·RES_MAX)**.
+
+Leia com calma: o benefício é o MENOR de três tetos. Na noite, `f·S = 45/dia`
+e `I = 10/dia` → o teto é a ENTRADA. Na greve, `f·S = 15/dia` e `I = 15–17`
+→ a entrada alcança e o teto é o próprio buraco: cobertura 100%.
+
+**Custo.** `ℓ·I` (perde-se sobre tudo que entra) + `w·R̄` (carrega-se o
+estoque médio, `R̄ ≈ I/(2f)` num dente de serra).
+
+**Fitness por dia.** `F(I) = v·min(I, f·S) − ℓ·I − w·I/(2f)`.
+
+**Derivada.** Para `I < f·S`: `dF/dI = v − ℓ − w/(2f)`. Para `I > f·S`:
+`dF/dI = −ℓ − w/(2f)` — sempre negativo. Logo:
+
+> **Lei da poupança:** guarde exatamente a escassez esperada, `I* = f·S`,
+> e só se `v > ℓ + w/(2f)`. Acima de `f·S` cada unidade guardada é perda
+> pura (ℓ) mais peso (w). E o peso pesa MAIS quando a escassez é rara
+> (`w/(2f)`: carrega-se por mais tempo até usar).
+
+Três consequências que os dados já mostraram antes da lei existir:
+1. Noite (`f=1`): `I` factível (≤ sobra do tanque, ~10) < `f·S` (45) → a
+   reserva fica no regime "teto = entrada" e o ganho é `v·10 − ℓ·10`, quase
+   nada. Foi o +0.05 / +0.34.
+2. Greve (`f=1/4`): `I` (15–17) ≥ `f·S` (15) → cobre o buraco → ganho grande.
+3. Sob peso a evolução ENCOLHEU a gordura (8.9 vs 17.7 no rápido): moveu `I`
+   na direção de `I*`. A homeostase que apareceu é a derivada zero.
+
+O que a lei diz que NÃO adianta: aumentar `RES_MAX` (só entra na conta se
+`I/f > RES_MAX`, nunca aconteceu), lote da meia-noite mais cedo (não muda
+`I`), cérebro mais esperto (a variável é física, não neural).
+
+O que adiantaria: elevar `I` — abastecer a reserva no posto (não só a sobra),
+ou NIVEL menor (N30 deu +0.9 sobre N50 na greve) — e baixar `w`.
+
+### 7.3 Resultados no mundo greve (fuel×0.5, reboque, posto fecha 1 dia em 4)
+
+Longo (G=60, T_evo=1200, 3 sementes, 690 s; JSON `e12_reserva_longo_greve`):
+
+| braço | fit | por semente | vs par justo | res~/60 | mob/vida | panes |
+|---|---|---|---|---|---|---|
+| dia (sem greve) | 13.69 | 13.0 / 14.5 / 13.5 | — | – | 0 | 7.6 |
+| greve4 | 9.16 | 8.7 / 8.1 / 10.7 | greve custa **−4.53** | 0 | 0 | 13.0 |
+| greve4 reserva | **10.36** | 10.3 / 8.7 / 12.1 | **+1.20** (3/3) | 21.2 | 2.0 | 12.1 |
+| greve4 reserva N30 | **11.00** | 11.6 / 10.5 / 10.9 | **+1.84** (3/3) | 25.0 | 2.6 | 12.5 |
+| greve4 peso (só tanque) | 7.13 | 8.1 / 5.0 / 8.3 | −2.03 vs greve4 | 0 | 0 | 17.6 |
+| greve4 reserva+peso | 8.84 | 8.2 / 9.7 / 8.6 | +1.71 vs greve4 peso; −0.32 vs greve4 | 20.0 | 2.2 | 11.3 |
+| greve4 res+peso N30 | 8.63 | 8.3 / 8.5 / 9.1 | +1.50 vs greve4 peso; −0.53 vs greve4 | 20.5 | 3.0 | 12.5 |
+| greve4 peso meio (.05) | 9.81 | 10.0 / 10.6 / 8.8 | +0.65 vs greve4 (ruído: peso não ajuda) | 0 | 0 | 13.0 |
+| greve4 res+peso meio N30 | 9.24 | 9.1 / 7.2 / 11.4 | −0.57 vs peso meio | 22.6 | 2.8 | 13.9 |
+
+Rápido (G=20) tinha dado +2.0 / +3.0 sem peso e −0.3 / −0.5 com peso, mas com
+ruído de ±2 (`greve4 peso` 6.71 > `greve4` 4.78, impossível por mecanismo).
+O longo confirma a direção com 6/6 sementes positivas no seguro grátis.
+
+- **Predição 13**: ✓ greve custa ≥ 2 (4.53); ✓ reserva ≥ +1.0 (6/6 sementes);
+  ✓ N30 > N50; ✗/~ reserva+peso ≥ greve4 (−0.32 sem peso no par; +1.71 com).
+- A reserva recupera 41% do custo da greve (28% do teto de panes). A lei
+  explica o resto: estoque ao chegar a greve `I/f` = 12–16 × 3 dias = 37–47,
+  cap 60; buraco do dia de greve S ≈ 100 (4.3 panes × ração + tanque
+  esvaziado) → cobertura prevista 37–47%, medida 26–41%. Regime ainda
+  "teto = entrada", mas 5× mais perto do buraco que na noite (22%).
+- Emergente: a reserva NÃO reduz as panes (12.1–12.5 vs 13.0) — aumenta as
+  ENTREGAS (14.2 → 15.9). Mobilizar (3 passos) mantém o táxi rodando no dia de
+  greve enquanto o vizinho sem gordura fica 18 passos parado por pane.
+- O peso: com os números do Leonardo (.10/.30), a gordura paga o próprio
+  peso (+1.7 vs par justo, −0.3 vs sem peso nenhum). Meio peso: −0.6 (ruído).
+  Empate dentro de ±1.5.
+
+### 7.4 Veredito final do E12
+
+**Vale a pena — no nicho certo, e só nele.**
+
+| escassez | f·S por dia | entrada I | cobertura | ganho da reserva |
+|---|---|---|---|---|
+| noite diária (padrão) | 45 | 10 | 22% | −0.4 a +0.7 (ruído) |
+| noite diária (com sobra) | ~40 | 10–15 | ~30% | +0.05 a +1.3 |
+| greve 1 dia em 4 | 25 | 12–16 | 50% | **+1.2 a +1.8, 6/6 sementes** |
+
+1. Gordura é seguro contra escassez RARA e GRANDE. Contra a noite de todo
+   dia o tanque já é o seguro e a reserva só move fuel com perda.
+2. O peso do chassi (.10/.30) custa mais ou menos o que a gordura rende:
+   empate. Metade do peso também empate. Quem decide se a gordura "vale"
+   não é o peso, é a frequência da fome.
+3. Pra gordura render mais que empate: entrada maior que a sobra da
+   meia-noite (abastecer a reserva no posto, NIVEL menor), RES_MAX acima do
+   buraco, e greves mais raras/maiores (f menor: o `w/(2f)` sobe, mas
+   `min(I/f, S)` sobe junto).
+4. A física inteira funciona e três comportamentos emergiram sem roteiro:
+   fica magro sob peso (derivada zero da lei), usa a gordura pra continuar
+   RODANDO (não pra evitar a pane), e no mundo rico troca posto por gordura.
+
+Predições 1–13: 6 ✓ (1, 2, 6, 11, 12-metade, 13), 7 ✗ — e os 7 negativos
+apontaram, um a um, a pane subsidiada e a entrada pequena, até a lei.

@@ -99,3 +99,11 @@ listar cada subsídio do mundo e o que ele vale por vida.
 funciona e um comportamento emergiu sem roteiro: sob peso o ser fica MAGRO
 (gordura 8.9 vs 17.7, metade das visitas ao posto, mais panes aceitas).
 Homeostase de peso por seleção. O fitness só não saiu do ruído.
+
+**Fechamento (v8/v9, 2026-09-02):** a reserva PAGA quando a escassez é rara e
+grande (greve do posto 1 dia em 4: +1.2/+1.8, 6/6 sementes) e não paga contra
+a noite diária (+0.05 sem subsídio) — lei em doc 26 §7.2: benefício =
+v·min(I, f·S, f·RES_MAX), ótimo I* = f·S. **Regra 10:** antes de dar um órgão
+de estoque, calcular a razão entrada/buraco (I vs f·S). Se I ≪ f·S o órgão
+fica no regime "teto = entrada" e o ganho é ℓ-negativo; testar noutro f, não
+noutro cérebro.

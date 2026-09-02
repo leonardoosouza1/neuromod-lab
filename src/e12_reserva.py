@@ -34,7 +34,7 @@ PRESET_LONGO = dict(P=1024, G=60, T_evo=1200, T_aval=1200, R=4, seeds=(0,1,2))
 OUT = '/media/llm-data/universe-runs/neuromod-lab-taxi'
 
 def cfg_noite(noite=True, reserva=False, peso=False, cerebro_come=False, NIVEL=None, rico=False, reboque=False,
-              sobra=False, WF=None, WR=None):
+              sobra=False, WF=None, WR=None, greve=0):
     c = Cfg(1.0, mundo='base')
     if NIVEL is not None: c.NIVEL = NIVEL
     if WF is not None: c.WF = WF
@@ -42,6 +42,7 @@ def cfg_noite(noite=True, reserva=False, peso=False, cerebro_come=False, NIVEL=N
     c.reboque = reboque
     if rico: c.pane_dinh = 0.   # v4: pane sem multa em dinheiro — tira a pobreza do caminho
     if sobra: c.fuel *= 0.5     # v7: mundo COM sobra — no padrao o tanque nunca passa de ~35 as 22h
+    c.greve = greve             # v9: posto fecha o dia inteiro a cada `greve` dias (escassez rara e grande)
     c.relogio = True; c.dia = 240; c.eco2 = True   # posto enche o tanque: sem isto nao ha sobra a meia-noite
     c.pane_fuel = 15.   # eco2 puro (pane=5) mata o mundo: espiral de panes (v1: ent 0.3, todos os bracos)
     c.noite = noite; c.reserva = reserva; c.peso = peso
@@ -79,14 +80,14 @@ def main(fase, out, preset='rapido', arq='reativo'):
     sufixo = '' if preset == 'rapido' else '_longo'
     A0 = {'reativo': Reativo, 'hora': ReativoHora, 'corpo': Corpo}[arq]
     if arq != 'reativo': sufixo += '_' + arq
-    if fase in ('rico','reboque','sobra'): sufixo += '_' + fase
+    if fase in ('rico','reboque','sobra','greve'): sufixo += '_' + fase
     treino = [gerar_cidade(s) for s in range(4)]
     teste  = [gerar_cidade(1000+s) for s in range(3)]
     res = dict(preset=p, modo=modo_execucao(), NF=NF, bracos={})
     t0 = time.time()
     print(f'== E12 reserva | P={p["P"]} G={p["G"]} T={p["T_evo"]} R={p["R"]} '
           f'x{len(p["seeds"])} sementes | dia=240 noite=22h-6h ==', flush=True)
-    if fase in ('a','todas','rico','reboque','sobra'):
+    if fase in ('a','todas','rico','reboque','sobra','greve'):
         bracos = [('base',         Cfg(1.0, mundo='base')),   # ancora: mundo dos E6/E8/N13
                   ('dia',          cfg_noite(noite=False)),
                   ('noite',        cfg_noite()),
@@ -110,6 +111,19 @@ def main(fase, out, preset='rapido', arq='reativo'):
                       ('reserva+peso sobra',      cfg_noite(reserva=True, peso=True, sobra=True)),
                       ('reserva+peso meio sobra', cfg_noite(reserva=True, peso=True, sobra=True, WF=.05, WR=.15)),
                       ('noite+peso meio sobra',   cfg_noite(peso=True, sobra=True, WF=.05))]
+        if fase == 'greve':      # v9: escassez RARA e GRANDE (posto fecha 1 dia em 4), sem pane gratis, com sobra
+            G = dict(sobra=True, reboque=True, noite=False)
+            bracos = [('dia s+r',              cfg_noite(**G)),
+                      ('greve4',               cfg_noite(greve=4, **G)),
+                      ('greve4 reserva',       cfg_noite(greve=4, reserva=True, **G)),
+                      ('greve4 reserva N30',   cfg_noite(greve=4, reserva=True, NIVEL=30., **G)),
+                      ('greve4 reserva+peso',  cfg_noite(greve=4, reserva=True, peso=True, **G)),
+                      ('greve4 res+peso N30',  cfg_noite(greve=4, reserva=True, peso=True, NIVEL=30., **G)),
+                      ('greve4 peso',          cfg_noite(greve=4, peso=True, **G)),                  # ancora justa (so tanque pesa)
+                      ('greve4 peso meio',     cfg_noite(greve=4, peso=True, WF=.05, **G)),
+                      ('greve4 res+peso meio N30', cfg_noite(greve=4, reserva=True, peso=True, NIVEL=30., WF=.05, WR=.15, **G))]
+            if preset == 'rapido' and os.environ.get('E12_SO_ANCORAS'):
+                bracos = bracos[6:]
         for nome, cfg in bracos:
             t1 = time.time()
             r = braco(A0, cfg, treino, teste, p)
@@ -121,7 +135,7 @@ def main(fase, out, preset='rapido', arq='reativo'):
                   f'fuel22 {r["fuel_22"]:.0f} ent_noite {r["ent_noite"]:.1f} '
                   f'par_noite {r["par_noite_frac"]:.2f} posto {r["n_posto"]:.1f} '
                   f'pobre {r["pobre_frac"]:.2f}  ({r["segundos"]}s)', flush=True)
-            if nome.startswith('noite'):
+            if nome.startswith('noite') or nome == 'greve4':
                 # TETO da reserva (regra 1): cada pane custa 18 passos parado + 0.3
                 # de avaria; 18 passos valem (taxa de entrega * 18) entregas
                 taxa = r['ent'] / p['T_aval']

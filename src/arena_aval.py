@@ -5,9 +5,8 @@ B) TORNEIO MISTO: 2 assentos por arquitetura NO MESMO mundo -> quem vence a
 """
 import sys, os, json, torch
 sys.path.insert(0, os.path.dirname(__file__))
-from lab import gerar_cidade, ARQS, NF, DEV
-from arena import CfgArena, Mundo, rodar_arena, passo_arena
-POR={A.nome:A for A in ARQS}
+from lab import gerar_cidade, DEV
+from arena import CfgArena, Mundo, rodar_arena, passo_arena, ARQS_A as ARQS, NF, POR_A as POR
 
 class Mista:
     """roda varias arquiteturas no MESMO mundo: extra() de cada uma calculada,

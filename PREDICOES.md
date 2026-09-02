@@ -341,3 +341,47 @@ grátis +1.26 (rápido) / +0.34 (longo). Par justo reserva+peso vs noite+peso:
 −0.41 (rápido) / **−1.66** (longo, 3/3 sementes); meio peso −0.38 / −0.38.
 Emergente: sob peso o ser fica magro — 8.9 vs 17.7 no rápido, só 17.8 vs 20.6
 no longo. Fecha o E12: física funciona, vantagem não sai do ruído (doc 26 §6).
+
+**v8 (sobra + reboque: pane sem fuel grátis, mundo com renda) — 2026-09-01 22:05, ANTES de rodar**
+Fecha a porta (a) do §6.3: no mundo fuel×0.5 a economia fecha sem o subsídio?
+12. `dia sobra reboque` vivo: fit ≥ 8 e panes < 5 (rápido). Se vivo, a pane
+    agora custa fuel de verdade e a reserva vira o ÚNICO seguro da noite:
+    reserva − noite ≥ +1.0 (maior que os +0.34 do v7) e reserva+peso ≥
+    noite+peso (o peso ainda morde, mas a gordura tem trabalho real).
+    Se `dia sobra reboque` morre (fit < 3): nem com a metade do custo a renda
+    sustenta o posto — a economia do táxi é estruturalmente subsidiada e o
+    conserto é de RENDA (preço da corrida), não de física da pane.
+    Se vivo mas reserva+peso < noite+peso: a reserva como desenhada não paga
+    nem sendo o único seguro — linha fechada de vez.
+
+**v8 rodou (rápido):** `dia sobra reboque` VIVO, fit 9.61 (12 ✓ primeira
+metade; panes 9.1, não < 5). Noite 4.65; reserva 4.70 (**+0.05**, ✗ ≥ +1.0);
+noite+peso 2.96; reserva+peso 2.40 (−0.56); meio 3.40 (+0.44, ruído). A reserva
+NÃO paga nem sendo o único seguro. Mecanismo (lido no código, não é o portão
+`res>0` — mobiliza qualquer quantia): a ENTRADA é só a sobra da meia-noite
+acima de NIVEL, ~10 fuel/dia, contra 3 panes/dia × 15 = 45/dia de buraco.
+Cobre 20% e nunca alcança. Pior: a conversão tira fuel do tanque exatamente
+quando o posto fecha e devolve com perda + 3 passos. Poupança só pode pagar
+quando a escassez é RARA e GRANDE (fome), não diária e pequena (noite) — a
+noite o tanque resolve.
+
+**v9 (greve do posto: escassez rara e grande) — 2026-09-02 09:20, ANTES de rodar**
+Mundo: sobra (fuel×0.5) + reboque (pane sem fuel grátis) + SEM noite + a cada
+4 dias o posto fecha o DIA INTEIRO (passageiros normais). Gordura acumula 3
+dias e tem UM trabalho grande no 4º.
+13. `greve4` custa ≥ 2.0 de fitness vs `dia s+r` (teto). `greve4 reserva` −
+    `greve4` ≥ +1.0 (res~ ≥ 15, mobilizações concentradas no dia de greve);
+    N30 ≥ N50 (mais entrada); `greve4 reserva+peso` ≥ `greve4` (positivo MESMO
+    com peso — cada unidade de gordura vale mais aqui). Se reserva ≈ greve4
+    mesmo assim: a entrada de 10–20/dia é pequena demais pra qualquer nicho,
+    o design precisa de outra fonte (abastecer a reserva no posto) — linha
+    fechada de vez.
+
+**v9 rodou (rápido + longo, 9 braços, JSON `e12_reserva_longo_greve`):** 13 ✓
+nas 3 primeiras cláusulas — greve custa −4.53; reserva **+1.20** (N50) /
+**+1.84** (N30) sobre greve4, 6/6 sementes positivas; N30 > N50. Cláusula do
+peso: reserva+peso −0.32 vs greve4 (✗) mas +1.71 vs o par justo greve4+peso;
+meio peso −0.57 — empate dentro do ruído (±1.5; `greve4 peso meio` deu +0.65
+sobre greve4 sem poder). Cobertura 41% da greve, prevista pela lei 37–47%
+(estoque I/f 37–47 vs buraco S≈100). Lei da poupança em doc 26 §7.2:
+benefício = v·min(I, f·S, f·RES_MAX); ótimo I* = f·S. E12 FECHADO.

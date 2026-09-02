@@ -1,9 +1,8 @@
 """CLI da arena: portao (simetria + porte), smoke, evolucao por torneio."""
 import sys, os, json, time, argparse, torch
 sys.path.insert(0, os.path.dirname(__file__))
-from lab import gerar_cidade, ARQS, NF, DEV
-from rodar import perito_W
-from arena import CfgArena, rodar_arena
+from lab import gerar_cidade, DEV
+from arena import CfgArena, rodar_arena, ARQS_A as ARQS, NF, perito_W
 
 def portao(n_cid=120, K=6, M=48, T=800):
     """1) PORTE: politica identica nas 7 arqs -> resultado IDENTICO.
