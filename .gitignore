@@ -5,3 +5,4 @@ resultados/*.json
 neuromod-lab-resultados-*/
 *.log
 ckpt-*.pt
+.claude/worktrees/
