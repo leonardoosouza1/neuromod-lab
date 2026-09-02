@@ -25,7 +25,7 @@ import sys, os, json, argparse
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import torch
 from lab import DEV, NF, gerar_cidade, Reativo, ReativoNoite24, rodar
-from e13_corpo import cfg_corpo
+from e13_corpo import cfg_corpo, _R as _RECOM
 from produtos import ReativoProduto, ReativoProdutoFull
 
 PAD = '/media/llm-data/universe-runs/neuromod-lab-taxi/e17/e17_produtos.json'
@@ -47,7 +47,11 @@ def genes_de(nome):
 
 
 def convergencia(Ws, idx, nomes, limiar=.5, top=None):
-    """Ws: {semente: lista de pesos}. Devolve linhas ordenadas por |mediana|."""
+    """Ws: {semente: lista de pesos}. Devolve linhas ordenadas por |mediana|.
+
+    Criterio: mesmo SINAL em >= 80% das sementes (minimo 2) e |mediana| acima
+    do limiar. Com 1 semente NAO da pra falar em convergencia (regra 13 pede
+    n >= 5): o campo vira None e quem imprime avisa."""
     sems = sorted(Ws)
     linhas = []
     for i, g in enumerate(idx):
@@ -56,38 +60,98 @@ def convergencia(Ws, idx, nomes, limiar=.5, top=None):
         med = float(t.median())
         pos = int((t > 0).sum()); neg = int((t < 0).sum())
         conc = max(pos, neg)                      # sementes com o sinal dominante
-        ok = conc >= max(2, int(round(.8*len(v)))) and abs(med) > limiar
+        ok = None if len(v) < 2 else (conc >= max(2, int(round(.8*len(v))))
+                                      and abs(med) > limiar)
         linhas.append(dict(nome=nomes[i], idx=g, v=v, med=med,
                            conc=f'{conc}/{len(v)}', converge=ok))
     linhas.sort(key=lambda d: -abs(d['med']))
     return linhas if top is None else linhas[:top]
 
 
+METRICAS = ('fit', 'mortos', 'ent', 'panes', 'posto')
+
+
 def _tel(m, P, blocos):
-    """medias por genoma-bloco: (n_blocos,) fit e mortos."""
-    v = lambda x: x.view(P, -1).mean(1).view(blocos, -1).mean(1)
-    return v(m.ent - .3*m.avar), v((m.vida <= 0).float())
+    """medias por bloco de genomas identicos: dict de listas."""
+    v = lambda x: [float(y) for y in x.view(P, -1).mean(1).view(blocos, -1).mean(1)]
+    return dict(fit=v(m.ent - .3*m.avar), mortos=v((m.vida <= 0).float()),
+                ent=v(m.ent), panes=v(m.av_fuel), posto=v(m.n_posto))
 
 
-def ablacao(A, W0, cfg, teste, T, replicas, idx, nomes, seed=7777, chunk=4096):
-    """campeao intacto + um variante por gene zerado + tudo zerado."""
-    variantes = [W0] + [W0.clone().index_fill_(0, torch.tensor([g], device=DEV), 0.)
-                        for g in idx]
-    if len(idx) > 1:
-        variantes.append(W0.clone().index_fill_(0, torch.tensor(idx, device=DEV), 0.))
-    rot = ['(intacto)'] + [f'-{n}' for n in nomes] + (['-TODOS'] if len(idx) > 1 else [])
-    fits, mortos = [], []
+def _rodar_variantes(A, variantes, cfg, teste, T, replicas, seed=7777, chunk=4096):
+    """avalia N genomas, cada um em `replicas` x len(teste) vidas."""
+    out = {k: [] for k in METRICAS}
     passo = max(1, chunk//replicas)
     for a in range(0, len(variantes), passo):
         blocos = variantes[a:a+passo]
         W = torch.stack(blocos).repeat_interleave(replicas, 0)
         m = rodar(A, W, teste, cfg, T=T, seed=seed)
-        f, mo = _tel(m, W.shape[0], len(blocos))
-        fits += [float(x) for x in f]; mortos += [float(x) for x in mo]
-    return rot, fits, mortos
+        d = _tel(m, W.shape[0], len(blocos))
+        for k in METRICAS: out[k] += d[k]
+    return out
+
+
+def ablacao(A, W0, cfg, teste, T, replicas, idx, nomes, seed=7777):
+    """campeao intacto + um variante por gene zerado + tudo zerado."""
+    variantes = [W0] + [W0.clone().index_fill_(0, torch.tensor([g], device=DEV), 0.)
+                        for g in idx]
+    rot = ['(intacto)'] + [f'-{n}' for n in nomes]
+    if len(idx) > 1:
+        variantes.append(W0.clone().index_fill_(0, torch.tensor(idx, device=DEV), 0.))
+        rot.append('-TODOS')
+    return rot, _rodar_variantes(A, variantes, cfg, teste, T, replicas, seed)
+
+
+def perito_produtos(cfg, teste, T, replicas, valores=(1.5, 3.7), w0=None, rot0='perito puro'):
+    """REGRA 15: testar a alavanca A MAO, com ganho grande, ANTES de pedir a
+    evolucao que a ache. Parte de um genoma base (perito escrito a mao, ou o
+    campeao Reativo de um JSON) e liga um produto de cada vez."""
+    from rodar import perito_W
+    A = ReativoProduto
+    if w0 is None:
+        w0 = perito_W(A.NP)
+    variantes, rot = [w0], [rot0]
+    for p, nome in enumerate(A.NOMES[:5]):
+        for v in valores:
+            wv = w0.clone(); wv[A.B0+p] = v
+            variantes.append(wv); rot.append(f'{nome}={v}')
+    for v in valores:
+        wv = w0.clone(); wv[A.B0:A.B0+5] = v
+        variantes.append(wv); rot.append(f'os 5 = {v}')
+    return rot, _rodar_variantes(A, variantes, cfg, teste, T, replicas)
+
+
+def _tabela(rot, r, ref=0, ordenar_por=None):
+    f0, m0 = r['fit'][ref], r['mortos'][ref]
+    print(f'  {"variante":<20}{"fit":>7}{"dfit":>8}{"mortos":>8}{"dmortos":>9}'
+          f'{"ent":>7}{"panes":>7}{"posto":>7}')
+    ordem = list(range(len(rot)))
+    if ordenar_por:
+        ordem = [ref] + sorted([i for i in ordem if i != ref],
+                               key=lambda i: -(r[ordenar_por][i]-r[ordenar_por][ref]))
+    for i in ordem:
+        print(f'  {rot[i]:<20}{r["fit"][i]:>7.2f}{r["fit"][i]-f0:>+8.2f}'
+              f'{r["mortos"][i]:>8.3f}{r["mortos"][i]-m0:>+9.3f}'
+              f'{r["ent"][i]:>7.2f}{r["panes"][i]:>7.2f}{r["posto"][i]:>7.2f}')
 
 
 def main(a):
+    if a.perito:
+        cfg = cfg_corpo(continua=.02, pena_morte=5., **_RECOM)
+        teste = [gerar_cidade(a.teste_seed+s) for s in range(3)]
+        w0, rot0 = None, 'perito puro'
+        if a.base == 'reativo':
+            # base MELHOR que o perito: o campeao Reativo evoluido NESTE mundo
+            d = json.load(open(a.arquivo)); br = d['bracos']['reativo']
+            sd = sorted(br['W'])[0]
+            w0 = torch.zeros(ReativoProduto.NP, device=DEV)
+            w0[:Reativo.NP] = torch.tensor(br['W'][sd], device=DEV)
+            rot0 = f'reativo evoluido (s{sd})'
+        print(f'== alavanca A MAO sobre {rot0} (regra 15) | {a.replicas} replicas '
+              f'x {len(teste)} cidades {a.teste_seed}+ | T={a.T} ==')
+        rot, r = perito_produtos(cfg, teste, a.T, a.replicas, w0=w0, rot0=rot0)
+        _tabela(rot, r)
+        return
     d = json.load(open(a.arquivo))
     p = d['preset']; cfg = cfg_corpo(**d['mundo'])
     teste = [gerar_cidade(d['teste_seed']+s) for s in range(3)]
@@ -106,14 +170,15 @@ def main(a):
         linhas = convergencia(Ws, idx, nomes, a.limiar, a.top)
         cab = '  '.join(f's{s}' for s in sems)
         print(f'  {"gene":<18}{"mediana":>9}{"sinal":>7}  {cab}')
-        n_conv = 0
         for L in linhas:
-            n_conv += L['converge']
             vs = '  '.join(f'{x:+.2f}' for x in L['v'])
-            marca = 'OK' if L['converge'] else ''
+            marca = '?' if L['converge'] is None else ('OK' if L['converge'] else '')
             print(f'  {L["nome"]:<18}{L["med"]:>+9.2f}{L["conc"]:>7}  {vs}  {marca}')
-        tot = sum(1 for L in convergencia(Ws, idx, nomes, a.limiar) if L['converge'])
-        print(f'  convergem (|med|>{a.limiar}, sinal em >=80% das sementes): {tot}/{len(idx)}')
+        if len(sems) < 2:
+            print('  convergencia NAO avaliavel com 1 semente (regra 13: n >= 5)')
+        else:
+            tot = sum(1 for L in convergencia(Ws, idx, nomes, a.limiar) if L['converge'])
+            print(f'  convergem (|med|>{a.limiar}, sinal em >=80% das sementes): {tot}/{len(idx)}')
         if a.sem_ablacao or not idx:
             continue
         # fit_por_semente segue a ORDEM de preset['seeds'] (nao a ordenada)
@@ -125,13 +190,8 @@ def main(a):
         gn = [L['nome'] for L in linhas] if a.top else nomes
         print(f'  -- ablacao do campeao (semente {campeao}, {a.replicas} replicas x '
               f'{len(teste)} cidades, T={T}) --')
-        rot, fits, mortos = ablacao(A, W0, cfg, teste, T, a.replicas, gi, gn)
-        f0, m0 = fits[0], mortos[0]
-        ordem = sorted(range(len(rot)), key=lambda i: -(mortos[i]-m0))
-        print(f'  {"variante":<20}{"fit":>7}{"dfit":>8}{"mortos":>8}{"dmortos":>9}')
-        for i in ([0] + [j for j in ordem if j]):
-            print(f'  {rot[i]:<20}{fits[i]:>7.2f}{fits[i]-f0:>+8.2f}'
-                  f'{mortos[i]:>8.3f}{mortos[i]-m0:>+9.3f}')
+        rot, r = ablacao(A, W0, cfg, teste, T, a.replicas, gi, gn)
+        _tabela(rot, r, ref=0, ordenar_por='mortos')
 
 
 if __name__ == '__main__':
@@ -142,4 +202,10 @@ if __name__ == '__main__':
     ap.add_argument('--limiar', type=float, default=.5)
     ap.add_argument('--top', type=int, default=None, help='so os N maiores |mediana| (Full)')
     ap.add_argument('--sem-ablacao', action='store_true')
+    ap.add_argument('--perito', action='store_true',
+                    help='nao le JSON: liga os produtos A MAO sobre os pesos do perito')
+    ap.add_argument('--T', type=int, default=1200, help='T da avaliacao no modo --perito')
+    ap.add_argument('--base', default='perito', choices=('perito', 'reativo'),
+                    help='--perito: genoma base (perito a mao ou campeao Reativo do JSON)')
+    ap.add_argument('--teste-seed', type=int, default=1000, help='cidades no modo --perito')
     main(ap.parse_args())

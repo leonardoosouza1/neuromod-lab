@@ -126,6 +126,31 @@ def test_alavanca_viva():
           f'panes {p0:.2f}->{p1:.2f} vida {v0:.1f}->{v1:.1f}  OK')
 
 
+def test_equivale_noite24():
+    """o gene `pr_posto` TEM que ser o mesmo termo do `ReativoNoite24` (E14g):
+    -W * d_posto(vizinho) * (1-fuel/cap). Comparo a SAIDA de extra() nos dois,
+    passo a passo, com o resto dos genes zerado (tolerancia de ULP: a einsum
+    soma 5 termos, o Noite24 multiplica 3 fatores)."""
+    from lab import Lote, um_passo, ReativoNoite24
+    B, v = 16, 3.7
+    Wr = _W(B, Reativo.NP)
+    Wn = Wr.clone(); Wn[:, NF+6] = 0.; Wn[:, NF+7] = v      # so o gene de rota
+    Wp = torch.cat([Wr, torch.zeros(B, 7, device=DEV)], 1); Wp[:, ReativoProduto.B0] = v
+    m = Lote(CID, B, CFG, seed=9, R=1)
+    Wnb, Wpb = Wn[m.gidx], Wp[m.gidx]
+    an = ReativoNoite24(); an.reset(m, Wnb)
+    ap = ReativoProduto(); ap.reset(m, Wpb)
+    pior = 0.
+    for t in range(40):
+        viz = m.A_().clamp(min=0)
+        d = (an.extra(m, Wnb, viz) - ap.extra(m, Wpb, viz)).abs().max()
+        pior = max(pior, float(d))
+        um_passo(m, an, Wnb); an.atualizar(m)               # anda com o Noite24
+    assert pior < 1e-5, f'pr_posto != gene rota do Noite24 (max |dif| {pior:.2e})'
+    print(f'  pr_posto == gene `rota` do ReativoNoite24 em 40 passos '
+          f'(max |dif| {pior:.1e})  OK')
+
+
 def test_hora_inerte_sem_relogio():
     """sem relogio, os 2 genes de hora do ReativoProduto sao exatamente nulos."""
     cfg = Cfg(1.0, mundo='base'); cfg.pena_morte = 0.
@@ -156,6 +181,7 @@ if __name__ == '__main__':
     test_pureza()
     test_sem_sync()
     test_alavanca_viva()
+    test_equivale_noite24()
     test_hora_inerte_sem_relogio()
     test_fumaca()
     print('ok')

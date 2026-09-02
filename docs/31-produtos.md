@@ -124,8 +124,112 @@ leitura é "um produto basta; cinco brigam entre si", que é um resultado tão
 
 ## 4. Validação rápida (1 semente, G=10 — NÃO é a bateria)
 
-*(preenchido depois de rodar; regra 13 diz que efeito de mortalidade só conta
-com n ≥ 5 sementes — o que está aqui é fumaça com número, não evidência.)*
+Orçamento de GPU do agente: **uma** evolução curta (P=512, G=10, T_evo=600,
+1 semente, R=4) + avaliação em 128 réplicas × 3 cidades (1000+), T=1200.
+Levou 71 s no total (modo `compile`). **Regra 13: com 1 semente e 10 gerações
+nada aqui é evidência** — é fumaça com número. A referência do E14g/h (G=60,
+R=16, 5 sementes) é fit 8.17/mortos 0.17 (Reativo) e 8.58/0.12 (Noite24);
+tudo abaixo está 4× abaixo disso porque a busca mal começou.
+
+| braço | NP | fit | mortos | ent | panes | posto | t_vida | melhor ger 0 → 9 |
+|---|---|---|---|---|---|---|---|---|
+| reativo | 44 | **2.20** | 0.250 | 5.24 | 5.39 | 10.0 | 0.91 | −0.18 → 3.16 |
+| noite24 | 44 | 1.56 | 0.208 | 4.10 | 4.13 | 5.6 | 0.92 | +0.17 → 1.72 |
+| produto | 51 | 0.63 | 0.148 | 1.93 | 1.65 | 7.3 | 0.94 | +0.01 → 0.94 |
+| produto_full | 104 | −0.09 | **0.010** | 0.13 | 0.14 | 4.4 | 0.99 | −0.34 → 0.28 |
+
+### 4.1 O achado que muda a leitura: mortalidade é métrica de degrau aqui
+
+A ordem de `mortos` é o INVERSO exata da ordem de `fit`: quem entrega menos
+morre menos, e o `produto_full` chega a **0.010 de mortos com 0.13 entregas**
+— o melhor número de mortalidade do laboratório inteiro, produzido por um ser
+que praticamente não sai do lugar. Com `pena_morte=5` e 10 gerações, "parar"
+é o pico local mais barato, e o produto é justamente a alavanca que permite
+parar de forma barata (puxar sempre pro serviço mais perto). Consequência
+metodológica, válida para a bateria séria e para os outros agentes:
+**nenhuma conclusão do E17 pode ser lida em `mortos` sozinho** — a comparação
+tem que ser conjunta (`fit` E `mortos`, com `ent` do lado). É a mesma armadilha
+do feedback "métrica de degrau" (zero cravado = métrica batendo no limite).
+
+### 4.2 A alavanca à mão (regra 15) — 128 réplicas, sem evolução nenhuma
+
+`analise_produtos.py --perito` liga cada produto à mão sobre um genoma base.
+Base 1 = perito escrito à mão (não é deste mundo: 0.773 de mortos);
+base 2 = campeão `reativo` desta corrida (fit 2.20).
+
+| produto ligado à mão (=3.7) sobre o **reativo evoluído** | fit | mortos | ent | panes |
+|---|---|---|---|---|
+| (nenhum: campeão intacto) | 2.20 | 0.250 | 5.24 | 5.39 |
+| pr_posto | −2.30 | 0.604 | 0.62 | 5.28 |
+| pr_comida | −2.06 | 0.646 | 0.98 | 6.29 |
+| pr_descanso | 0.63 | **0.016** | 1.13 | **0.59** |
+| pr_oficina | −3.70 | 0.812 | 0.22 | 9.11 |
+| pr_loja | 0.91 | 0.268 | 3.33 | 4.58 |
+| os 5 juntos | −1.06 | 0.221 | 0.22 | 2.22 |
+
+Três leituras, todas com mecanismo:
+
+- **A alavanca não é decorativa** (o modo de falha do gene de timing, regra
+  15): mexer um único gene move mortalidade de 0.25 para 0.02 ou para 0.81,
+  panes de 5.4 para 0.6 ou 9.1. Escala certa, efeito enorme.
+- **Enxertar produto em genoma que não co-adaptou SEMPRE custa fitness**
+  (13/13 variantes, nas duas bases). Faz sentido: os pesos lineares foram
+  selecionados sem o produto, e o produto reordena os vizinhos justamente
+  quando a necessidade aparece — que é quando o peso linear já estava
+  decidindo. **O produto precisa co-evoluir com o resto**; o mesmo gene que
+  no E14g valia −5 pp de mortos, ligado à mão no campeão errado vale +35 pp.
+  É a regra 5 dos NEGATIVOS (co-adaptação) com o sinal invertido: aqui a
+  co-adaptação não é o risco, é a condição.
+- **`nec` sem portão vira atração constante.** `1−fuel/cap` é ~0 com o tanque
+  cheio (o gene do Noite24 se desliga sozinho), mas `fome/100`, `fad/100` e
+  `1−pneu/100` quase nunca são zero: `pr_comida`/`pr_oficina`/`pr_descanso`
+  puxam pro serviço o tempo todo e o táxi para de trabalhar. Se a bateria
+  séria confirmar, a correção não é tirar o produto, é dar-lhe LIMIAR
+  (`relu(nec − θ)`, θ gene) — a alavanca do posto funciona porque o
+  denominador já a desliga.
+
+### 4.3 Ablação dos campeões desta corrida (128 réplicas)
+
+| campeão (G=10) | zerar TODOS os produtos | gene mais causal |
+|---|---|---|
+| noite24 (fit 1.56 / 0.208) | fit 0.20 / **mortos 0.383** | `rota_posto`: +19 pp de mortos, −1.39 de fit |
+| produto (0.63 / 0.148) | −2.47 / **0.758** | `pr_oficina` +9.6 pp; `pr_posto` +6.5 pp |
+| produto_full (−0.09 / 0.010) | −4.06 / **0.927** | `fome×descanso` +10 pp; `tem_pax×descanso` +7 pp |
+
+Os produtos são causais nos três: sem eles a política inteira cai. Mas nos dois
+campeões do E17 eles sustentam uma política de *não trabalhar*, então a
+causalidade aqui não valida a alavanca — valida que o gene tem força.
+
+### 4.4 Placar das predições até onde a fumaça alcança
+
+| # | status | número |
+|---|---|---|
+| 17.1 | **não avaliável** (1 semente; regra 13 pede 5) | `pr_posto` = +0.51 (E14g dá 3.7 em 5/5 — G=10 é 1/6 da busca) |
+| 17.2 | não avaliável | `pr_comida` −0.18, `pr_oficina` +0.41 |
+| 17.3 | **✗ nesta escala** | produto 0.63/0.148 vs noite24 1.56/0.208: mortos menor mas fitness menor — vitória por não trabalhar, não conta |
+| 17.4 | **✓ (fraco)** | full −0.09 < produto 0.63 < noite24 1.56 em fit |
+| 17.5 | parcial | zerar todos: +61 pp (produto). `pr_posto` sozinho +6.5 pp (< 10 pp); o mais causal foi `pr_oficina` |
+| 17.6 | ✗ (fraco) | `pr_loja` foi o MAIOR gene de movimento (+1.06) e à mão é o único benigno (fit −0.22) |
+| 17.7 | ✓ (fraco) | genes de hora: ablação +0.8 pp e −2.1 pp = ruído. 5ª vez que a família reativa não usa a hora |
+| 17.8 | **✓ (fraco)** | melhor da geração 0: full −0.34 < produto +0.01 < noite24 +0.17 |
+| 17.9 | não avaliável | (precisa de sementes) |
+| 17.10 | ✓ na direção | produto faz 1.65 panes vs 5.39 do reativo, com 1/3 das entregas |
+
+**O que ficou provado sem depender de evolução:** `pr_posto` é bit a bit o
+gene `rota` do `ReativoNoite24` (`testes_e17.py`: max \|dif\| 9.5e-07 em 40
+passos), os genes zerados reproduzem o `Reativo` exatamente em dois mundos, e
+`extra()` roda em `compile` e em `eager` sem sync.
+
+### 4.5 O que a bateria séria tem de responder (ordem)
+
+1. G=60 / R=16 / 5 sementes: `produto` bate `noite24` em fitness *e* mortos?
+   Sem isso, 17.3 fica aberta — G=10 só mostrou o atrator "parar".
+2. O atrator "parar" é do orçamento de busca ou dos 5 produtos? Controle
+   barato: mesma corrida com `pena_morte=0` (se o standstill sumir, era a
+   pena; se ficar, é a atração constante do `nec`).
+3. Variante com LIMIAR (`relu(nec − θ)`) contra a versão crua — é a correção
+   que §4.2 prevê.
+4. `produto_full` com R=16 e G=60: 17.4 e 17.9 (esparsidade) só existem lá.
 
 ## 5. O que a bateria séria precisa rodar (depois do merge)
 
