@@ -126,6 +126,9 @@ class Cfg:
         s.reserva_continua=0.
         # E13l: sono em BLOCO — a noite, descansar = dormir ate as 6h (fadiga zera; nao roda de madrugada)
         s.sono_bloco=False
+        # E14b: a VIDA no fitness — pena por morrer (0 = identidade). Sem isto a morte nao custa
+        #       fitness (quem morre no dia 4 entrega quase o mesmo) e nao e selecionada.
+        s.pena_morte=0.
         s.RES_MAX=60.; s.NIVEL=50.; s.PERDA_ARMAZ=.10; s.MOB=25.; s.TPAR_MOB=3.
         s.WF=.10; s.WR=.30; s.KAPPA_F=.05
 
@@ -1178,6 +1181,8 @@ def avaliar(Arq, W, cidades, cfg, T, seed=0, R=1):
     m = rodar(Arq, W, cidades, cfg, T, seed, R=R)
     # custo_neural: arq que paga por orgao ativo (SerVital) deposita aqui; 0 p/ demais
     fit = m.ent - 0.3*m.avar - getattr(m, 'custo_neural', 0.)
+    if cfg.pena_morte:
+        fit = fit - cfg.pena_morte*(m.vida <= 0).float()
     return fit.view(W.shape[0], m.NC*m.R).mean(1)
 
 def evoluir(Arq, cidades, cfg, P=512, ger=25, T=1500, seed=0, elite=.15,

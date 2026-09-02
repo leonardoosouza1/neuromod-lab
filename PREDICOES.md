@@ -793,3 +793,23 @@ achar só 2 números.
     evoluem em G=60 — a seleção por morte é fraca demais (18% morrem e o
     resto entrega igual) e a alavanca só aparece com pressão maior (vida
     mais longa ou morte mais cara). Se piorar: o gene atrapalha de dia.
+
+**E14a rodou (ReativoNoite, 5 sementes):** 7.25 / mortos 0.23 [.25 .23 .25
+.29 .13] vs Reativo 8.76 / 0.18 → **−1.5 e +5 pp** (38 ✗, pior). Genes: posto
+(0.96, −1.96, −1.20, 0.96, −1.81), rota (0.40, 0.43, −0.24, 0.32, 0.65) — 3/5
+puxam CONTRA o posto ao anoitecer. Não é evolvabilidade: é AUSÊNCIA DE
+GRADIENTE. No teto à mão (E13t) a regra tirou 5 pp de mortos com fitness
+idêntico (8.75 = 8.75): quem morre no dia 4 entrega quase o mesmo que quem
+vive 5. **A morte não custa fitness → não é selecionada.** É o mecanismo do
+piso do dia inteiro (6 alavancas nulas): o objetivo não contém a vida.
+
+**E14b (a vida no fitness) — 2026-09-02 15:00, ANTES de rodar**
+`cfg.pena_morte` (0 = identidade): fit_evolução = ent − 0.3·avar − pena·[morreu].
+Pena 5 ≈ 40% do fitness médio. Reativo e ReativoNoite, 5 sementes, mundo
+recomendado. Reporto o fitness SEM a pena (comparável) e os mortos.
+39. Com pena 5: Reativo mortos 0.18 → ≤ 0.15 (a evolução acha o que puder
+    com os pesos que tem); ReativoNoite → ≤ 0.13 com gene do posto > 0 em
+    ≥ 4/5 (o gradiente agora aponta pro posto às 21h); fit sem pena ≥ 8.3
+    (custa pouco). Se mortos não caem nem com pena: as mortes são AZAR
+    irredutível pra política de 1 salto e o teto de 5 pp da regra à mão só
+    existe por injeção. Se caem só no Reativo: o gene certo não é hora.
