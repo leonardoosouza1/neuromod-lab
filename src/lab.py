@@ -626,6 +626,16 @@ class ReativoNoite(Reativo):
         g = s._g(m); z = torch.zeros_like(g)
         return torch.stack([s.W[:,NF+6]*g, z, z, z, z], 1)
     def reset(s,m,W): s.W = W
+class ReativoNoite24(ReativoNoite):
+    """E14g controle: os mesmos 2 genes do ReativoNoite, sem hora — g = 1 - fuel/cap a qualquer hora."""
+    nome='reativo-noite24'
+    def _g(s, m):
+        return 1. - m.fuel/m.capf()
+class ReativoRuido(ReativoNoite):
+    """E14g controle: os 2 genes multiplicam ruido uniforme por passo (alavanca sem informacao)."""
+    nome='reativo-ruido'
+    def _g(s, m):
+        return torch.rand(m.B, generator=m.gsim, device=DEV)
 class ReativoHora(Reativo):
     """E12b: o Reativo NAO tem alavanca pra "encher antes da noite": o score
     de servico e w*necessidade*disponivel, e hora/reserva (features de estado)

@@ -14,7 +14,7 @@ Telemetria por vida: mortos, t_vida, vida_fim, dano, oficina, avarias por causa.
 import sys, os, time, argparse, json
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import torch
-from lab import DEV, NF, gerar_cidade, Cfg, Reativo, ReativoHora, ReativoNoite, Corpo, SerTalamo, SerTalamoNoite, evoluir_sementes, rodar, modo_execucao
+from lab import DEV, NF, gerar_cidade, Cfg, Reativo, ReativoHora, ReativoNoite, ReativoNoite24, ReativoRuido, Corpo, SerTalamo, SerTalamoNoite, evoluir_sementes, rodar, modo_execucao
 
 PRESET = dict(P=1024, G=20, T_evo=600, T_aval=1200, R=4, seeds=(0,1,2))
 PRESET_LONGO = dict(P=1024, G=60, T_evo=1200, T_aval=1200, R=4, seeds=(0,1,2))
@@ -126,7 +126,7 @@ def main(preset, out, so=None, fase='a', arq='reativo', T_aval=None, teste_seed=
     elif arq == 'talamo_noite':
         A0 = SerTalamoNoite
     else:
-        A0 = {'reativo': Reativo, 'hora': ReativoHora, 'corpo': Corpo, 'noite': ReativoNoite}[arq]
+        A0 = {'reativo': Reativo, 'hora': ReativoHora, 'corpo': Corpo, 'noite': ReativoNoite, 'noite24': ReativoNoite24, 'ruido': ReativoRuido}[arq]
     if arq != 'reativo': sufixo += '_' + arq
     if tag: sufixo += '_' + tag
     bracos = {'a': BRACOS, 'b': BRACOS_B, 'c': BRACOS_C, 'd': BRACOS_D, 'e': BRACOS_E, 'f': BRACOS_F,
@@ -168,6 +168,6 @@ if __name__ == '__main__':
     ap.add_argument('--teste-seed', type=int, default=1000)
     ap.add_argument('--seeds', type=int, nargs='*', default=None)
     ap.add_argument('--tag', default='')
-    ap.add_argument('--arq', default='reativo', choices=('reativo','hora','corpo','talamo','sempre','talamo_noite','noite'))
+    ap.add_argument('--arq', default='reativo', choices=('reativo','hora','corpo','talamo','sempre','talamo_noite','noite','noite24','ruido'))
     a = ap.parse_args()
     main(a.preset, a.out, a.so, a.fase, a.arq, a.T_aval, a.teste_seed, a.seeds, a.tag, a.G, a.T_evo, a.R)

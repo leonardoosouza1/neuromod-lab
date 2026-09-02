@@ -904,3 +904,22 @@ Referência: recomendado R=4 sem pena em 10 dias = 18.70 / mortos 0.29 (n=5).
 43. mortos ≤ 0.25 e fit/dia ≥ 1.75 (17.5 em 10 dias). Se mortos ≥ 0.29:
     em vida longa a vantagem some (o risco constante de 4%/dia domina e a
     pena fixa por morte não pesa mais que 10 dias de entregas).
+
+**E14f rodou (ReativoNoite, pena 5, R=16, G=100, vida de 10 dias, 5 sementes, 1782 s):**
+fit **19.64** [20.3 18.4 21.7 20.3 17.5] = 1.96/dia (vs 18.70 do R=4 sem pena),
+**mortos 0.24** [.26 .21 .18 .27 .29] vs 0.29 → −5 pp, 3/5 sementes. 43 ✓
+(≤ 0.25; ≥ 1.75/dia). Em vida longa a direção persiste; tamanho sugestivo.
+
+**E14g (controle de paisagem: é a hora, é a alavanca, ou é diversidade?) — ANTES de rodar**
+Duas paisagens com 2 genes nos pesos mortos, pena 5, R=16, 5 sementes, 1000+:
+(i) `ReativoNoite24`: os mesmos 2 genes, mas g = (1 − fuel/cap) em TODAS as
+horas (sem informação de hora); (ii) `ReativoRuido`: os 2 genes multiplicam
+um ruído uniforme por passo (alavanca sem informação nenhuma).
+Referências (mesmo protocolo): Reativo 8.17 / 0.17; ReativoNoite 9.11 / 0.11.
+44. Se é DIVERSIDADE de busca (qualquer gene extra abre caminho): ambas
+    ≤ 0.14. Se é a ALAVANCA "puxa pro posto quando o tanque baixa" (sem
+    hora): só (i) ≤ 0.14, (ii) ~0.17. Se é a HORA (contradizendo a ablação):
+    nenhuma; e o 0.11 pede outra explicação. Aposta: (i) chega, (ii) não —
+    a ablação zerou os genes DEPOIS de evoluir; durante a evolução a
+    alavanca "tanque baixo → posto" (a qualquer hora) pode ter guiado a
+    população e depois virado redundante com os pesos de serviço.
