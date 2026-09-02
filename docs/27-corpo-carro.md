@@ -295,3 +295,25 @@ Predição 23 em PREDICOES.md.
   0.16. O recomendado é 1 ponto pior e 5 pp mais mortal — porque acumula
   devagar (o que o Leonardo pediu) e porque o passageiro agora pesa. Física
   mais honesta, número um pouco menor; ambos declarados.
+
+### 6.4 E13g — de onde vem o custo do peso (longo)
+
+| braço | fit | mortos | res~ | panes | fervura |
+|---|---|---|---|---|---|
+| recomendado (.02, pax 80 kg, gordura 2.5 kg/u) | 8.16 | 0.21 | 45 | 7.3 | 4.7 |
+| taxa .01 | 7.58 | 0.22 | 35 | 8.7 | 3.8 |
+| passageiro 0 kg | 8.79 | 0.17 | 42 | 7.7 | 4.0 |
+| gordura 1.5 kg/u | 7.77 | 0.20 | 49 | 7.1 | 4.3 |
+| sem peso (§6.3) | 10.42 | 0.17 | 51 | 7.3 | 2.7 |
+
+- **Taxa .02 é o vale**: .01 acumula pouco (35) e pane mais; .05 drena o
+  tanque e pane mais. A poupança boa é lenta mas não lenta demais — o ótimo
+  é a taxa em que a gordura chega ao buraco da noite sem esvaziar o dia.
+- **Passageiro pesando** explica ¼ do custo (+0.63 sem ele). Gordura mais
+  leve não muda nada (o ser carrega 45 em média = 112 kg → 68 kg, ruído).
+- **O canal é o limiar de fervura.** Todo braço com peso ferve 4.0–4.7×/vida
+  contra 2.7 sem peso, inclusive com passageiro 0 kg. Um tanque cheio pesa
+  só +7.5%, mas o ser evoluído roda com o motor encostado nos 92 °C — um
+  empurrão de 7% vira +50% de fervuras (20 passos + 10 de vida cada). O peso
+  custa pouco em linha reta e muito no limiar. É a mesma lição do N15 (vive
+  no limite) vista pelo lado do calor.

@@ -542,3 +542,11 @@ cap 120 + reboque 0.
 28. Greve custa ≥ 3 vs recomendado; `com gordura` − `sem gordura` ≥ +1.5 na
     greve (maior que os +0.8 sem greve: gordura contínua acumula 3 dias e
     cobre a fome rara — lei do E12 §7); mortos sem gordura ≥ 0.40.
+
+**E13g rodou:** 24 ✗ nos três. taxa .01 → 7.58 (−0.58: menos gordura, res~ 35,
+panes 8.7 — .02 é o VALE entre .01 e .05); pax 0 kg → 8.79 (+0.63, previa
++1.0–1.5: passageiro é ¼ do custo); gordura 1.5 kg → 7.77 (−0.4, ruído). O
+custo restante (~1.7) é o TANQUE (+7.5%) cruzando o limiar de fervura: fervura
+4.0–4.3 em todo braço com peso vs 2.7 sem — o limiar (92 °C) amplifica um
+peso pequeno porque o ser evoluído roda encostado nele (N15 de novo: vive no
+limite). "Gordo esquenta" é não-linear.
