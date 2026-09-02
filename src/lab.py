@@ -132,6 +132,34 @@ class Cfg:
         # [E15 economia] flags/constantes — SO o agente E15 edita este bloco
         # [E15 fim]
         # [E16 glandulas] flags/constantes — SO o agente E16 edita este bloco
+        # Doc 30. O hormonio e do CORPO, nao do cerebro: K integradores com
+        # vazamento vivem no Lote, sao alimentados por DEFICITS (tonicos) e
+        # EVENTOS de ganho do passo anterior (fasicos), e devolvem GANHOS
+        # MULTIPLICATIVOS. tau/a/b sao GENES (src/glandulas.py). O cerebro so
+        # SENTE h (features e16_a/e16_b) e e modulado por ele.
+        # glandulas=False => identidade bit-exata (nada alocado, nada roda).
+        s.glandulas=False
+        s.GL_K=2               # numero de glandulas (sem nome: a selecao decide)
+        s.KAPPA_H=.25          # calorias/passo por unidade de h (gordura primeiro)
+        s.H_MAX=2.             # teto de cada h: clamp [0, H_MAX]
+        s.GL_TAU_MIN=10.; s.GL_TAU_MAX=2000.   # tau em PASSOS (gene -> sigmoide -> log-uniforme)
+        s.GL_GAMMA_EV=.5       # ganho dos EVENTOS (impulso). Deficits entram
+                               # normalizados por 1/tau: amplitude e tau viram
+                               # genes independentes (regra 15: escala do gene).
+        s.GL_ESCALA_B=.25      # escala dos ganhos de saida (EXP10: 0.5-1.0 ajuda, 8.0 destroi)
+        # botoes moduláveis, na ordem das colunas de b:
+        #   0 necessidade  ganho do score de servico   (arquitetura, extra_serv)
+        #   1 exploracao   ruido Gumbel na decisao     (arquitetura, opt-in)
+        #   2 metabolismo  consumo de COMBUSTIVEL      (bloco 2 do passo)
+        #   3 sono         recuperacao de fadiga       (bloco 2 do passo)
+        #   4 velocidade   CALCULADO, NAO aplicado     (precisa de 1 linha fora do bloco; doc 30 §6)
+        s.GL_CANAIS=('necessidade','exploracao','metabolismo','sono','velocidade')
+        s.GL_LIM=((.25,2.5),(0.,3.),(.70,1.30),(.50,2.),(.70,1.30))  # clamp por canal (N9/regra 5: limitar a alavanca)
+        s.gl_censo=True        # acumuladores de correlacao h x sinal (diagnostico)
+        s.gl_regime=0.         # >0: REGIME oculto — o consumo do combustivel oscila
+                               # por dia (fase por mundo). "Preco variavel" na moeda
+                               # de energia, sem tocar no E15.
+        s.gl_regime_dias=2.    # periodo do regime, em dias
         # [E16 fim]
         # [E17 produtos] flags/constantes — SO o agente E17 edita este bloco
         # [E17 fim]
@@ -243,6 +271,35 @@ class Lote:
         # [E15 economia] estado (distrito por no, precos, divida, censo) — SO E15
         # [E15 fim]
         # [E16 glandulas] estado (h, genes copiados no reset, censo) — SO E16
+        # NAO consome o Generator `g`: ligar as glandulas nao desloca nenhum
+        # sorteio do mundo (`s.perda` logo abaixo continua identico).
+        if cfg.glandulas:
+            K = cfg.GL_K; s.GL_NX = 10        # 6 deficits + 4 eventos do passo anterior
+            s.h    = torch.zeros(B, K, device=DEV)            # hormonios (estado do CORPO)
+            s.tau  = torch.full((B, K), 100., device=DEV)     # gene: constante de tempo
+            s.G_a  = torch.zeros(B, K, s.GL_NX, device=DEV)   # gene: pesos de entrada
+            s.G_b  = torch.zeros(B, K, 5, device=DEV)         # gene: pesos de saida
+            s.mult = torch.ones(B, 5, device=DEV)             # ganhos (lidos pelo cerebro no passo seguinte)
+            s.ev   = torch.zeros(B, 4, device=DEV)            # entregou, abasteceu, consertou, descansou
+            s.GL_LO = torch.tensor([a for a, _ in cfg.GL_LIM], device=DEV)
+            s.GL_HI = torch.tensor([b for _, b in cfg.GL_LIM], device=DEV)
+            s.h_custo = torch.zeros(B, device=DEV)   # calorias gastas com hormonio
+            s.h_sono  = torch.zeros(B, device=DEV)   # quanto o sono limpou de h
+            s.h_soma  = torch.zeros(B, K, device=DEV)
+            s.mult_soma = torch.zeros(B, 5, device=DEV)
+            s.h_n = torch.zeros((), device=DEV)
+            if cfg.gl_censo:
+                # somas para correlacao exata h_k x sinal_i, sem nenhum sync
+                s.h2_soma = torch.zeros(B, K, device=DEV)
+                s.x_soma  = torch.zeros(B, s.GL_NX, device=DEV)
+                s.x2_soma = torch.zeros(B, s.GL_NX, device=DEV)
+                s.hx_soma = torch.zeros(B, K, s.GL_NX, device=DEV)
+        else:
+            s.h = None; s.mult = None
+        if cfg.gl_regime:
+            # regime OCULTO do combustivel: do mundo, nao das glandulas —
+            # existe tambem no braco de referencia (fase por mundo via fase_dia)
+            s.gl_reg = torch.ones(B, device=DEV)
         # [E16 fim]
         if cfg.perda_var:
             s.perda = .15 + .30*torch.rand(B, generator=g, device=DEV)   # 15..45%
@@ -368,8 +425,11 @@ class Lote:
                            1. - s.vida/100.,
                            # [E15 features] 2 slots reservados (zero ate o E15 preencher)
                            torch.zeros_like(s.fuel), torch.zeros_like(s.fuel),
-                           # [E16 features] 2 slots reservados (zero ate o E16 preencher)
-                           torch.zeros_like(s.fuel), torch.zeros_like(s.fuel)], -1)   # E12: reserva+hora; E13: dano
+                           # [E16 features] h/H_MAX de cada glandula: o cerebro SENTE o
+                           # hormonio (nao o controla). Zero sem cfg.glandulas.
+                           (s.h[:,0]/s.cfg.H_MAX) if s.cfg.glandulas else torch.zeros_like(s.fuel),
+                           (s.h[:,1]/s.cfg.H_MAX) if (s.cfg.glandulas and s.cfg.GL_K > 1)
+                           else torch.zeros_like(s.fuel)], -1)   # E12: reserva+hora; E13: dano
         F = torch.cat([(-dal/6.)[...,None], (-cus/4.)[...,None], (-cong/2.)[...,None],
                        vd[...,None], (-ds.permute(0,2,1)/6.),
                        est[:,None,:].expand(-1,G,-1),
@@ -432,6 +492,34 @@ def passo(m, esc):
         m.fuel_22 += m.fuel*h22; m.n_22 += h22
     # entrega
     # [E16 glandulas: atualizar h e calcular multiplicadores (metab, sono, vel) — SO E16]
+    if c.gl_regime:
+        # REGIME OCULTO DO MUNDO (nao das glandulas): o combustivel fica caro/
+        # barato por dia, com fase POR MUNDO. Vive fora do `if c.glandulas` de
+        # proposito — senao o braco de referencia nao roda no mesmo mundo e a
+        # comparacao vira placebo (foi o que aconteceu na 1a rodada da fase a).
+        dia_ = (m.t.float() + m.fase_dia) / c.dia
+        m.gl_reg = 1. + c.gl_regime*torch.cos(6.2831853*dia_/c.gl_regime_dias)
+    if c.glandulas:
+        # x = 6 DEFICITS (tonicos, continuos) + 4 EVENTOS do passo ANTERIOR
+        # (fasicos: entregou/abasteceu/consertou/descansou). Ninguem da nome as
+        # glandulas: quem correlaciona com o que e resultado da selecao.
+        xd = torch.stack([(1. - m.fuel/m.capf()).clamp(0., 1.), m.fome/100., m.fad/100.,
+                          1. - m.vida/100., m.temp/120., (m.dinh < 2.).float()], -1)
+        inv = 1./m.tau                                    # (B,K)
+        # deficit entra NORMALIZADO por 1/tau (regime permanente h* = Sigma a*x,
+        # independente de tau) e evento entra como IMPULSO de ganho fixo: assim
+        # tau governa so a MEMORIA da glandula, nao a amplitude (regra 15).
+        drive = (m.G_a[:,:,:6]*xd[:,None,:]).sum(-1)*inv \
+              + (m.G_a[:,:,6:]*m.ev[:,None,:]).sum(-1)*c.GL_GAMMA_EV
+        m.h = (m.h*(1. - inv) + drive).clamp(0., c.H_MAX)
+        # ganho_j = 1 + Sigma_k b_kj h_k, limitado por canal (N9: alavanca nova
+        # x peso evoluido = co-adaptacao; o clamp e o que impede o 8.0 do EXP10)
+        m.mult = torch.clamp(1. + (m.G_b*m.h[:,:,None]).sum(1), m.GL_LO, m.GL_HI)
+        m.h_soma += m.h; m.mult_soma += m.mult; m.h_n = m.h_n + 1.
+        if c.gl_censo:
+            x = torch.cat([xd, m.ev], -1)                 # (B,10)
+            m.h2_soma += m.h*m.h; m.x_soma += x; m.x2_soma += x*x
+            m.hx_soma += m.h[:,:,None]*x[:,None,:]
     # [E16 fim]
     ch = (m.pd_>=0) & (m.no==m.pd_) & (m.rest<=0)
     if viva is not None: ch = ch & viva
@@ -594,6 +682,32 @@ def passo(m, esc):
     m.rest = torch.where(an, (cu*m.vel()*peso*saude).round().clamp(min=1), m.rest)  # pesado/ferido = lento
     m.fuel = m.fuel - cuf*c.fuel*an.float()
     # [E16 glandulas: custo calorico dos hormonios; sono limpa h — SO E16]
+    if c.glandulas or c.gl_regime:
+        # (a) METABOLISMO x REGIME: o consumo do passo ja saiu acima com fator
+        #     1; aqui entra a DIFERENCA. So o TANQUE — pneu/oleo/calor usam
+        #     `cuf` mais abaixo, FORA do bloco (doc 30 §3 lista a linha exata).
+        #     O REGIME vale para todo mundo (inclusive o braco de referencia,
+        #     senao a comparacao e placebo); o GANHO, so com glandulas.
+        fmet = m.mult[:,2] if c.glandulas else 1.
+        freg = m.gl_reg if c.gl_regime else 1.
+        m.fuel = m.fuel - cuf*c.fuel*an.float()*(fmet*freg - 1.)
+    if c.glandulas:
+        # (b) SONO: a recuperacao de fadiga ja saiu com 30./peso; aqui a diferenca.
+        m.fad = torch.where(o3, (m.fad - (30./peso)*(m.mult[:,3] - 1.)).clamp(0., 100.), m.fad)
+        # (c) CUSTO CALORICO, TODO passo (parado tambem): gordura primeiro (com
+        #     perda), depois tanque. E o que faz o TIMING valer: o beneficio so
+        #     aparece andando, a conta chega sempre.
+        q = c.KAPPA_H*m.h.sum(1)
+        if viva is not None: q = q*viva.float()
+        q2 = torch.minimum(m.res, q/(1. - m.perda)); m.res = m.res - q2
+        q1 = (q - q2*(1. - m.perda)).clamp(min=0.)
+        m.fuel = (m.fuel - q1).clamp(min=0.)
+        m.h_custo += q
+        # (d) SONO LIMPA: descansar corta o hormonio pela metade
+        m.h_sono += .5*o3.float()*m.h.sum(1)
+        m.h = torch.where(o3[:,None], m.h*.5, m.h)
+        # (e) eventos DESTE passo — as glandulas leem no proximo (hormonio atrasa)
+        m.ev = torch.stack([ch, o1, o4, o3], -1).float()
     # [E16 fim]
     m.fad  = (m.fad  + cu*c.fadiga*peso*an.float()).clamp(max=100)
     if noite is not None:

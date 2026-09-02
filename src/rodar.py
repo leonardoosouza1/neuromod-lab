@@ -18,7 +18,7 @@ NOMES_F = (['d_alvo','custo_rua','congestao','semaforo',
             'd_posto','d_comida','d_descanso','d_oficina','d_loja',
             'e_fuel','e_fome','e_fadiga','e_pneu','e_temp','e_oleo',
             'e_dinheiro','e_tem_pax','e_reserva','h_sin','h_cos','e_dano',
-            'e15_a','e15_b','e16_a','e16_b','bias']   # slots reservados (E15 economia, E16 glandulas)
+            'e15_a','e15_b','h_gl0','h_gl1','bias']   # e15_* reservado (E15 economia); h_gl* = E16 glandulas
            + ['sv_posto','sv_comida','sv_descanso','sv_oficina','sv_loja','sv_bias']
            + [f'mem_{i}' for i in range(6)] + [f'corpo_{i}' for i in range(6)])
 
