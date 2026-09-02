@@ -579,13 +579,15 @@ em 16 vidas tem desvio ≈ 10 pontos; a pena de 5 por morte vira um sinal de
 
 | | pena 0, R=4 | pena 5, R=4 | pena 5, R=16 | pena 0, R=16 |
 |---|---|---|---|---|
-| Reativo | 8.76 / **0.18** | 7.18 / 0.22 | 8.17 / **0.17** | (E14d) |
+| Reativo | 8.76 / **0.18** | 7.18 / 0.22 | 8.17 / **0.17** | **9.12** / 0.18 |
 | ReativoNoite | 7.25 / 0.23 | 7.51 / 0.16 | 9.11 / **0.11** | – |
 
 (fit sem pena / mortos, 5 sementes, cidades 1000+)
 
-- **Pena sozinha não basta** (Reativo 0.18 → 0.22): a seleção não enxerga
-  um efeito de 5 pontos afogado em 10 de ruído. **R=16 + pena** dá 0.17 no
+- **Pena sozinha não basta** (Reativo 0.18 → 0.22) e **R sozinho compra
+  fitness, não vida** (9.12 / 0.18): mais vidas por genoma reduzem o ruído
+  do que o objetivo já vê — entregas — e a morte continua fora dele. No
+  Reativo, nenhuma célula do 2×2 move a morte mais que 1 ponto. **R=16 + pena** dá 0.17 no
   Reativo e **0.11** no ReativoNoite (4/5 sementes abaixo do Reativo).
 - **Não foi o gene de timing.** Ablação do campeão 0.11: genes zerados →
   0.126, genes ×10 → 0.137. Contribuem ~1 ponto. O gene é O(1) contra pesos

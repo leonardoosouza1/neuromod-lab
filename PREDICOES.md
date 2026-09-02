@@ -878,3 +878,10 @@ timing".
     ≤ 0.24 (vs 0.30 com R=4 sem pena) em ambos; ReativoNoite ≤ Reativo em
     ≥ 3/5 (se a trajetória repetir); fit sem pena ≥ 5.0. Média honesta (6
     cidades) do Reativo pena+R16: mortos ≈ 0.20; do ReativoNoite ≈ 0.17.
+
+**E14d rodou (Reativo, R=16, sem pena):** fit **9.12** [9.5 8.6 9.8 10.0 7.6]
+(melhor fitness do Reativo até aqui: +0.36 sobre R=4), **mortos 0.18** [.16
+.17 .16 .14 .30] — 41 ✓. R sozinho compra fitness, não vida. 2×2 do Reativo
+completo: (R4,p0) 0.18 · (R4,p5) 0.22 · (R16,p0) 0.18 · (R16,p5) 0.17 — no
+Reativo nada move a morte mais que 1 pp. O 0.11 é do ReativoNoite com pena e
+R=16 (trajetória; 4/5 sementes). E14e testa em 2000+.
