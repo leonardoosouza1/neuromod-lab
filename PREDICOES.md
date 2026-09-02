@@ -765,3 +765,31 @@ serviço posto ganha +50 no score. Mesmo genoma, mesma cidade, mesma semente.
     Se mortos ≥ 0.15 mesmo com a regra: encher às 21h não atravessa a noite
     + manhã com tanque de 100 — o piso é FÍSICO (tanque pequeno vs noite
     longa) e a alavanca seria capacidade do tanque, não cérebro.
+
+**E13t rodou (campeões 5 sementes + regra à mão, mesma cidade/semente):**
+só o bônus no serviço: nada (0.181 → 0.178 — a regra não roteia). Com rota
+puxada pro posto na janela: **20–22h fuel<70 → mortos 0.134 (−4.7 pp, 5/5),
+panes 7.6 → 5.5, fit igual (8.75)**; 18–22h fuel<90 → 0.135, panes 3.1, fit
+−0.6; "sempre encher" (24h fuel<40) → 0.319, fit 4.65 (vive no posto, e morre
+mais). 37: ✗ no limiar (≤ 0.10), ✓ panes −28/−60%, ✓ fit. Veredito: a alavanca
+existe e vale ~5 pp — o ReativoHora não a achou (evolvabilidade); os ~13%
+restantes são FÍSICOS (tanque 100 cheio às 21h não atravessa noite + manhã;
+fuel22 74 e ainda 3 panes/vida). Próxima peça: capacidade do tanque (a loja
+vende +35 por 26 dinh — o ser compra?).
+
+**E13t (upgrade) rodou:** o campeão JÁ compra o tanque grande — 3.6 upgrades
+por vida, capacidade média 130 (135 no 1º upgrade). Regra "compra tanque"
+não acrescenta (cap igual, fit −2 por viagens à loja). O piso de ~13% é
+físico COM tanque de 135. Linha fechada: teto da alavanca de hora = 5 pp.
+
+**E14a (evolvabilidade: 2 genes pra hora em vez de 12) — 2026-09-02 14:45, ANTES de rodar**
+`ReativoNoite`: mesmo NP do Reativo; usa 2 pesos mortos: ss_posto += W[NF+6]
+· g e movimento += −W[NF+7] · d_posto(vizinho) · g, com g = [20h ≤ h < 22h] ·
+(1 − fuel/cap). A regra à mão (k=8, +50) deu −4.7 pp; a evolução tem que
+achar só 2 números.
+38. G=60, 5 sementes, mundo recomendado: mortos ≤ 0.15 com ≥ 4/5 sementes
+    abaixo do Reativo (0.18) e fit ≥ 8.5; W[NF+7] > 0 na maioria (aprendeu a
+    puxar a rota). Se mortos ≈ 0.18 e os 2 pesos ≈ 0: nem 2 genes de timing
+    evoluem em G=60 — a seleção por morte é fraca demais (18% morrem e o
+    resto entrega igual) e a alavanca só aparece com pressão maior (vida
+    mais longa ou morte mais cara). Se piorar: o gene atrapalha de dia.

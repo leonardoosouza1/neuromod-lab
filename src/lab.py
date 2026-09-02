@@ -609,6 +609,20 @@ class Reativo:
     def reset(s,m,W): pass
     def extra(s,m,W,viz): return 0.
     def atualizar(s,m): pass
+class ReativoNoite(Reativo):
+    """E14a: 2 genes de TIMING nos pesos mortos do Reativo (mesmo NP). g = [20h<=h<22h]*(1-fuel/cap):
+    servico posto += W[NF+6]*g ; movimento += -W[NF+7]*d_posto(vizinho)*g (puxa a rota pro posto ao anoitecer)."""
+    nome='reativo-noite'
+    def _g(s, m):
+        h = m.hora()
+        return ((h >= 20.) & (h < 22.)).float() * (1. - m.fuel/m.capf())
+    def extra(s,m,W,viz):
+        dp = m.dposto[m.cidx[:,None].expand(-1, viz.shape[1]), viz]
+        return -W[:,NF+7:NF+8]*dp*s._g(m)[:,None]
+    def extra_serv(s, m):
+        g = s._g(m); z = torch.zeros_like(g)
+        return torch.stack([s.W[:,NF+6]*g, z, z, z, z], 1)
+    def reset(s,m,W): s.W = W
 class ReativoHora(Reativo):
     """E12b: o Reativo NAO tem alavanca pra "encher antes da noite": o score
     de servico e w*necessidade*disponivel, e hora/reserva (features de estado)
