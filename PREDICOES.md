@@ -736,3 +736,32 @@ não mais um sinal.
     (o vale replica, ≥ 3/5 sementes abaixo em cada); sono come 5: fit
     ≤ 8.76 − 0.8 e mortos ≥ +3 pp (≥ 3/5). Se .01 ou .05 ≥ 8.76: a "taxa
     ótima" era ruído e qualquer taxa serve.
+
+**E13s05 rodou (taxa .05, 5 sementes):** 7.39 / mortos 0.18 vs taxa .02 8.76
+/ 0.18 → **−1.37, 5/5 sementes abaixo** ✓ (36, cláusula .05). Acumular
+depressa drena o tanque (panes 7.1 ≈ igual, mas ent 11.3 vs 12.8: o ser
+anda menos). Mortalidade não muda.
+
+**E13s01 rodou (taxa .01, 5 sementes):** 8.16 / mortos 0.22 vs .02 8.76 / 0.18
+→ −0.60 mas só **2/5 sementes abaixo** (✗ ≥ 3/5); mortos +4 pp (4/5 acima).
+O vale é ASSIMÉTRICO: .05 é pior com certeza (5/5), .01 é marginal (menos
+gordura, res~ 35 vs 46, um pouco mais de mortes). Escolha .02 fica, sem
+alarde: "entre .01 e .02 tanto faz no fitness; .05 custa".
+
+**E13ssono rodou (sono come 5, 5 sementes):** 6.75 / mortos 0.27 vs 8.76 /
+0.18 → **−2.01 (5/5), +9 pp (5/5)** ✓ (36). Dormir queimando caloria é
+nocivo com certeza: o ser dorme 4×/vida, paga 22 de fuel, pane 9.6 vezes.
+Predição 36 fechada: .05 pior (5/5), .01 marginal (2/5), sono come pior (5/5).
+
+**E13t (TETO da alavanca "encher antes da noite") — 2026-09-02 14:25, ANTES de rodar**
+Regra 1: antes de gastar evolução em hora-condicionada (ReativoHora falhou 3×),
+medir o teto à mão. `ReativoRegra`: o campeão do recomendado (5 sementes,
+JSON 5sem_f) com uma regra injetada — entre 20h e 22h, se fuel < 70, o
+serviço posto ganha +50 no score. Mesmo genoma, mesma cidade, mesma semente.
+37. Se a alavanca existe: mortos 0.18 → ≤ 0.10 e panes −40% (7.6 → ≤ 4.6),
+    fit ≥ 8.76 − 0.5 (o desvio às 21h custa pouco). Aí o problema é
+    EVOLVABILIDADE (G=60 não acha os 12 pesos da hora) e vale um E14 com
+    hora no genoma de forma mais barata (1 peso: "posto × noite-chegando").
+    Se mortos ≥ 0.15 mesmo com a regra: encher às 21h não atravessa a noite
+    + manhã com tanque de 100 — o piso é FÍSICO (tanque pequeno vs noite
+    longa) e a alavanca seria capacidade do tanque, não cérebro.

@@ -486,3 +486,15 @@ sono em bloco, tálamo, tálamo-noite — **seis, nenhuma move**. O piso é do
 mundo (posto fechado + tanque vazio) cruzado com a política de 1 salto; a
 única saída declarada é memória de rota ou replanejamento (N2/N10), que a
 família linear não tem.
+
+### 6.13 E13s — as últimas afirmações do recomendado, com 5 sementes
+
+| afirmação | n=3 | n=5 | veredito |
+|---|---|---|---|
+| taxa .05 pior que .02 | −0.48 | **−1.37 (5/5)** | ✓ |
+| taxa .01 pior que .02 | −0.58 | −0.60 (2/5), mortos +4 pp | marginal |
+| sono come custa | −1.25, +5 pp | **−2.01 (5/5), +9 pp (5/5)** | ✓ |
+
+O vale da taxa é assimétrico: acumular depressa custa com certeza; devagar
+demais custa pouco. Dormir queimando caloria é nocivo em todas as sementes —
+nesta economia o sono perde pra gordura, sempre.
