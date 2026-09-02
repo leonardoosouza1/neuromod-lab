@@ -563,3 +563,10 @@ Perito (independe da política) por conjunto: 0+ −1.12 / ent 4.1; **1000+ −0
 3.4. O campeão cai −42%: ~⅔ é cidade mais dura, ~⅓ pode ser overfit ao
 treino. Consequência: TODOS os números em 1000+ são otimistas ~30%. Daqui pra
 frente avaliar em 6 cidades (1000+ e 2000+) — `--teste-seed` já existe.
+
+**E13i rodou (5 sementes, mega-lote de 5 ≠ bit-igual ao de 3):** noite s+r
+7.33 [5.9, 8.0, 8.5, 6.7, 7.6]; corpo 6.88 [6.8, 8.5, 5.9, 7.3, 5.9] →
+**−0.45** (26 ✗: previa ≥ +0.4). 3/5 positivas mas média negativa; o +0.75 do
+n=3 era ruído (replicação > σ: efeito seguiu o n). O que REPLICA 5/5: panes
+13.3 → 8.3 e oficina 0 → 6.9 — a dor muda o comportamento; os 38% de mortos
+comem o ganho. Corrigido em doc 27 §4.3 e N16.

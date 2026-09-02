@@ -80,15 +80,13 @@ não secar.
 
 ### 4.3 Três achados
 
-**1. A dor ensina (corpo > sem corpo, +0.75, 2 de 3 sementes).** Mesma
-física, mesmo fitness, mesmo genoma. No mundo sem corpo a evolução aceita
-15.5 panes por vida (cada uma custa 18 passos + 20 dinh + 0.3) e nunca vai à
-oficina. No mundo com corpo, onde a pane FERE, o ser faz metade das panes,
-vai à oficina 7.5 vezes e — mesmo com 39% morrendo — entrega mais fitness.
-A política do mundo-corpo aplicada ao mundo sem corpo renderia ≥ 7.2 > 6.45:
-a evolução sem dor estava presa num ótimo local ("pane como posto lento",
-N15). O dano é um sinal DENSO que aponta pro ótimo do mesmo fitness. Isto
-é a versão do táxi do que o Leonardo pediu: o ser cuida do carro porque dói.
+**1. A dor muda o comportamento — não o fitness (corrigido em §6.6).**
+Com 3 sementes corpo > sem corpo (+0.75); com 5 sementes **−0.45** (3/5
+positivas, média negativa): o ganho era ruído. O que replica 5/5: no mundo
+sem corpo a evolução aceita 13–15 panes por vida e nunca vai à oficina; com
+corpo, onde a pane FERE, faz 8 panes e vai à oficina 7 vezes. O ser cuida do
+carro porque dói — mas os 38% que morrem comem exatamente o que os cuidados
+rendem. Sinal denso muda a política; não sai de graça.
 
 **2. Morte seleciona, mas só se está no treino.** 86% (perito) → 52% (G=20,
 2.5 dias, sem morte no treino) → 39% (G=60, 5 dias, com morte). O que resta
@@ -335,3 +333,15 @@ Predição 23 em PREDICOES.md.
   −42% em 2000+ — ⅔ dificuldade, ⅓ possível overfit. **Todos os números em
   1000+ estão ~30% otimistas.** Decisão: avaliar em 6 cidades daqui pra
   frente (predição 25 ✗ na cláusula de generalização).
+
+### 6.6 E13i — replicação com 5 sementes: "a dor ensina" não paga
+
+| braço | fit (5 sementes) | por semente | mortos | panes | oficina |
+|---|---|---|---|---|---|
+| noite s+r (sem corpo) | 7.33 | 5.9 / 8.0 / 8.5 / 6.7 / 7.6 | 0 | 13.3 | 0 |
+| corpo | 6.88 | 6.8 / 8.5 / 5.9 / 7.3 / 5.9 | 0.38 | 8.3 | 6.9 |
+
+Diferença **−0.45** (n=3 dava +0.75). Regra da replicação (feedback
+"replicação > σ"): o efeito seguiu o n e trocou de sinal — era ruído. O que
+sobrevive: o corpo muda o COMPORTAMENTO em 5/5 sementes (metade das panes,
+oficina de 0 pra 7), e a morte cobra o que o cuidado rende. Predição 26 ✗.
