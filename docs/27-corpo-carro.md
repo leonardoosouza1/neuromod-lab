@@ -665,3 +665,15 @@ média de 6.
 
 Predições registradas antes de rodar: 1–43 (E12 1–13, E13 14–38, E14
 39–43). Placar: ~45% ✓ — e cada ✗ apontou o mecanismo seguinte.
+
+### 6.19 E14f — vida de 10 dias com a morte visível (ReativoNoite, pena 5, R=16)
+
+| avaliação em 10 dias | fit | fit/dia | mortos | por semente |
+|---|---|---|---|---|
+| recomendado padrão (R=4, sem pena, n=5) | 18.70 | 1.87 | 0.29 | .36 .35 .22 .26 .26 |
+| **ReativoNoite, pena 5, R=16** (G=100, 30 min) | **19.64** | **1.96** | **0.24** | .26 .21 .18 .27 .29 |
+
+Em vida longa a direção persiste (−5 pp, 3/5 sementes; +0.9 de fitness).
+Predição 43 ✓. O risco por dia cai de ~3.4% pra ~2.7%. Sugestivo, como o
+resto da linha E14: o mecanismo é trajetória, e E14g testa se qualquer
+paisagem com 2 genes extras chega ao mesmo lugar.
