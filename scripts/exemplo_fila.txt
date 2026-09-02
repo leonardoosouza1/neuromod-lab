@@ -1,0 +1,21 @@
+# Exemplo de arquivo de fila para scripts/fila.sh (E18, doc 32-avaliacao.md).
+# Formato: tag | comando shell completo. Linha em branco/# é ignorada.
+#
+# Rodar:
+#   scripts/fila.sh scripts/exemplo_fila.txt --out /tmp/exemplo_fila_teste
+# (o --out acima é só para este exemplo não sujar a partição real; em uso de
+# verdade OMITA --out e deixe o default
+# /media/llm-data/universe-runs/neuromod-lab-taxi/e18)
+#
+# As duas primeiras linhas são fumaça (não tocam GPU, servem para testar a
+# fila em si — é o que scripts/testes_e18... er, src/testes_e18.py exercita).
+# As linhas comentadas abaixo mostram o padrão real de uso com runner_comum.py
+# (troque <SEU_RUNNER> por src/e15_economia.py, src/e16_glandulas.py etc. —
+# cada um desses scripts vai expor --preset/--seeds/--R/--tag como descrito
+# em docs/32-avaliacao.md).
+
+smoke_a | echo "etapa a ok"
+smoke_b | echo "etapa b ok"
+
+# preset_rapido | /home/leonardo/projects/LLM/.venv-rocm/bin/python /home/leonardo/projects/LLM/neuromod-lab/src/<SEU_RUNNER>.py --preset rapido --tag exemplo
+# preset_honesto | /home/leonardo/projects/LLM/.venv-rocm/bin/python /home/leonardo/projects/LLM/neuromod-lab/src/<SEU_RUNNER>.py --preset honesto --seeds 0 1 2 3 4 --R 16 --tag exemplo
