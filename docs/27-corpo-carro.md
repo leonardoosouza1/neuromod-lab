@@ -498,3 +498,27 @@ família linear não tem.
 O vale da taxa é assimétrico: acumular depressa custa com certeza; devagar
 demais custa pouco. Dormir queimando caloria é nocivo em todas as sementes —
 nesta economia o sono perde pra gordura, sempre.
+
+### 6.14 E13t — o teto da alavanca "encher antes da noite" (regra à mão nos campeões)
+
+Regra 1 antes de gastar mais evolução: injetar a regra no campeão de 5
+sementes (mesma cidade, mesma semente) e medir o teto.
+
+| política | fit | mortos | por semente (mortos) | panes | tanque às 22h |
+|---|---|---|---|---|---|
+| campeão | 8.75 | 0.181 | .15 .18 .23 .17 .17 | 7.6 | 46 |
+| + bônus no serviço posto às 20–22h (sem rota) | 8.79 | 0.178 | — | 7.4 | 48 |
+| + **rota puxada pro posto às 20–22h com tanque < 70** | 8.75 | **0.134** | .12 .15 .17 .11 .12 | 5.5 | 61 |
+| + rota 18–22h com tanque < 90 | 8.13 | 0.135 | — | 3.1 | 74 |
+| "sempre encher" (24h, tanque < 40) | 4.65 | 0.319 | — | 3.1 | 56 |
+
+- **A alavanca existe e vale 5 pp** (5/5 sementes, fitness intacto). O
+  ReativoHora tinha 12 pesos pra achá-la e não achou — evolvabilidade.
+- **Os 13% restantes são físicos.** Com o tanque a 74 às 22h ainda há 3
+  panes por vida e 13% de mortos. O campeão já compra o tanque grande
+  (3.6 upgrades/vida, capacidade 130): mesmo com 135 de tanque a noite +
+  manhã não fecha em toda cidade. Forçar a compra não acrescenta.
+- "Sempre encher" mata mais: vive no posto, entrega pouco, e morre de
+  fervura no vai-e-vem. Timing certo > cautela constante.
+- Teste de evolvabilidade em E14a: 2 genes de timing nos pesos mortos do
+  Reativo (predição 38) — a evolução acha 2 números onde não achou 12?
