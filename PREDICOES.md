@@ -961,3 +961,12 @@ antes ("(i) chega, (ii) não") ✓.
 7.44 / 0.175; Reativo pena+R16 6.73 / 0.22). Onde o posto é longe a alavanca
 "puxa pro posto" leva o ser a atravessar a cidade com o tanque baixo — ajuda
 menos. Cláusula prevista: "só funciona onde o posto é perto" — meio ✓.
+
+**E14i (a alavanca precisa da pena? Noite24 SEM pena, R=16) — 2026-09-02 16:50, ANTES de rodar**
+Referências (R=16, 1000+, 5 sementes): Reativo sem pena 9.12 / 0.18; Noite24
+com pena 8.58 / 0.12.
+46. Sem pena, os genes ainda convergem (posto ≈ 3–4 em ≥ 4/5) porque panes
+    custam avarias (0.3 cada) e tempo, que o fitness vê mesmo sem a morte:
+    mortos ≤ 0.14 e fit ≥ 9.0 (melhor dos dois mundos). Se mortos ~0.18 e
+    genes dispersos: a alavanca só é selecionada quando a MORTE conta —
+    então pena + R=16 são ambos necessários (regra 14 completa).
