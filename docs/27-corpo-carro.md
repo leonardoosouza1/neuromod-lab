@@ -345,3 +345,32 @@ Diferença **−0.45** (n=3 dava +0.75). Regra da replicação (feedback
 "replicação > σ"): o efeito seguiu o n e trocou de sinal — era ruído. O que
 sobrevive: o corpo muda o COMPORTAMENTO em 5/5 sementes (metade das panes,
 oficina de 0 pra 7), e a morte cobra o que o cuidado rende. Predição 26 ✗.
+
+### 6.7 E13j/k — sono que come, cérebro que come, fome rara (longo)
+
+| braço | fit | mortos | res~ | panes | notas |
+|---|---|---|---|---|---|
+| recomendado | 8.16 | 0.21 | 45 | 7.3 | referência |
+| + sono come (5 fuel/descanso) | 6.91 | 0.26 | 40 | 8.9 | dorme 3×/vida; queima tanque → pane |
+| + cérebro come, Reativo | 8.16 | 0.21 | 45 | 7.3 | controle: bit-igual (sem custo neural) |
+| + cérebro come, **Tálamo** | 7.45 | 0.22 | 46 | 7.2 | paga o cérebro em caloria e vive |
+| + cérebro come, **Sempre** | −0.52 | 0.28 | 19 | 4.2 | ent 1.0, pobre 0.47: PARALISIA |
+| greve 1 em 4, com gordura | 6.49 | 0.30 | 39 | 9.4 | greve custa −1.67 |
+| greve 1 em 4, sem gordura | 5.45 | 0.28 | – | 11.2 | gordura vale +1.04 na fome |
+
+- **Dormir custa mais do que engordar rende.** Com sono comendo 5 de fuel, o
+  ser dorme só 3 vezes por vida e mesmo assim perde 1.25 e +5 pp de mortos —
+  ele não troca gordura por sono (gordura −11%), troca sono por vida e paga
+  em panes. O trade-off que o Leonardo descreveu existe; nesta economia o
+  sono perde.
+- **Cérebro que come, com morte no mundo: tálamo 7.45 × sempre −0.52** — gap
+  de 8.0, o maior de todas as fases B (E6: 6.3 no fitness; E12: 1.7). Ligar
+  tudo não mata: PARALISA — o cérebro come o tanque antes de o ser andar, e
+  ele fica parado, pobre e magro. O tálamo (10% dos órgãos ligados) paga
+  0.7 de fitness pelo cérebro e vive igual.
+- **Fome rara no mundo-corpo: a gordura já foi gasta na noite.** A greve
+  custa só −1.67 (E12 sem noite: −4.5) e a gordura acrescenta +0.2 sobre o
+  que já valia sem greve. Res~ 39 e 4 mobilizações/vida: a noite diária
+  consome a poupança antes de o dia de greve chegar. Duas escassezes
+  competem pelo mesmo estoque e a mais frequente ganha (lei do E12 §7: o
+  estoque na greve é I/f_noite, não I/f_greve).

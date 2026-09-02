@@ -124,6 +124,8 @@ class Cfg:
         #            vira gordura (com PERDA_ARMAZ) — substitui o lote da meia-noite
         s.massa=False; s.M_CHASSI=1000.; s.KG_FUEL=.75; s.KG_RES=2.5; s.KG_PAX=80.
         s.reserva_continua=0.
+        # E13l: sono em BLOCO — a noite, descansar = dormir ate as 6h (fadiga zera; nao roda de madrugada)
+        s.sono_bloco=False
         s.RES_MAX=60.; s.NIVEL=50.; s.PERDA_ARMAZ=.10; s.MOB=25.; s.TPAR_MOB=3.
         s.WF=.10; s.WR=.30; s.KAPPA_F=.05
 
@@ -228,6 +230,7 @@ class Lote:
         s.vida = torch.full((B,), 100., device=DEV)
         s.t_vida = torch.zeros(B, device=DEV); s.n_oficina = torch.zeros(B, device=DEV)
         s.sono_soma = torch.zeros(B, device=DEV); s.dano_soma = torch.zeros(B, device=DEV)
+        s.n_bloco = torch.zeros(B, device=DEV)   # E13l: noites dormidas em bloco
         if cfg.perda_var:
             s.perda = .15 + .30*torch.rand(B, generator=g, device=DEV)   # 15..45%
         else:
@@ -447,6 +450,13 @@ def passo(m, esc):
     m.fome = torch.where(o2, (m.fome-45).clamp(min=0), m.fome)
     o3 = pode & (esc==GMAX+2) & (sv[:,2]>0)
     m.fad = torch.where(o3, (m.fad-30./peso).clamp(min=0), m.fad)   # pesado dorme pior
+    if c.sono_bloco and noite is not None:
+        # E13l: a noite, descansar vira SONO EM BLOCO ate as 6h — decisao do ser, nao roteiro
+        ate6 = ((6. - m.hora()) % 24.) / 24. * c.dia
+        bloco = o3 & noite
+        m.tpar = torch.where(bloco, ate6.round().clamp(min=1.), m.tpar)
+        m.fad = torch.where(bloco, torch.zeros_like(m.fad), m.fad)
+        m.n_bloco += bloco.float()
     if c.sono_come:
         # E13: dormir custa caloria — do tanque, e se faltar, da gordura (com a perda)
         q  = c.sono_come*o3.float()

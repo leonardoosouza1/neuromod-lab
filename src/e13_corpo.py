@@ -21,8 +21,10 @@ PRESET_LONGO = dict(P=1024, G=60, T_evo=1200, T_aval=1200, R=4, seeds=(0,1,2))
 OUT = '/media/llm-data/universe-runs/neuromod-lab-taxi'
 
 def cfg_corpo(corpo=True, reserva=False, reserva_posto=0., sono_come=0., peso=None, noite=True, RES_MAX=None, pane_dinh=20.,
-              WF=None, WR=None, massa=False, continua=0., KG_RES=None, KG_PAX=None, cerebro_come=False, greve=0):
+              WF=None, WR=None, massa=False, continua=0., KG_RES=None, KG_PAX=None, cerebro_come=False, greve=0,
+              sono_bloco=False):
     c = Cfg(1.0, mundo='base')
+    c.sono_bloco = sono_bloco
     c.massa = massa; c.reserva_continua = continua
     if KG_RES is not None: c.KG_RES = KG_RES
     if KG_PAX is not None: c.KG_PAX = KG_PAX
@@ -46,6 +48,7 @@ def telemetria(m, T):
         n_oficina=f(m.n_oficina), n_posto=f(m.n_posto), pobre_frac=f(m.t_pobre/T), dinh=f(m.dinh),
         n_mob=f(m.n_mob), conv_por_dia=f(m.conv_soma/(T/m.cfg.dia)), res_media=f(m.res_soma/T),
         sono=f(m.sono_soma), par_fad=f(m.par_fad), fuel_22=f(m.fuel_22/m.n_22.clamp(min=1)),
+        n_bloco=f(m.n_bloco), par_noite_frac=f(m.par_noite/(T*8/24.)), ent_noite=f(m.ent_noite),
     )
 
 def braco(A, cfg, treino, teste, p):
@@ -99,6 +102,8 @@ BRACOS_J = [('recomendado sono 5',      dict(continua=.02, sono_come=5., **_R)),
 # E13k: greve (fome rara) no recomendado — a gordura continua cobre?
 BRACOS_K = [('recomendado greve4',             dict(continua=.02, greve=4, **_R)),
             ('recomendado sem gordura greve4',  dict(reserva=False, RES_MAX=120., pane_dinh=0., massa=True, peso=True, greve=4))]
+# E13l: sono em bloco a noite (rodar com --arq reativo e --arq hora)
+BRACOS_L = [('recomendado sono bloco', dict(continua=.02, sono_bloco=True, **_R))]
 BRACOS_D = [('vencedor peso .03/.10', dict(peso=True, WF=.03, WR=.10, **_V)),
             ('vencedor peso .05/.15', dict(peso=True, WF=.05, WR=.15, **_V)),
             ('vencedor peso .10/.30', dict(peso=True, **_V))]
@@ -115,7 +120,7 @@ def main(preset, out, so=None, fase='a', arq='reativo', T_aval=None, teste_seed=
     if arq != 'reativo': sufixo += '_' + arq
     if tag: sufixo += '_' + tag
     bracos = {'a': BRACOS, 'b': BRACOS_B, 'c': BRACOS_C, 'd': BRACOS_D, 'e': BRACOS_E, 'f': BRACOS_F,
-              'g': BRACOS_G, 'h': BRACOS_H, 'i': BRACOS_I, 'j': BRACOS_J, 'k': BRACOS_K}[fase]
+              'g': BRACOS_G, 'h': BRACOS_H, 'i': BRACOS_I, 'j': BRACOS_J, 'k': BRACOS_K, 'l': BRACOS_L}[fase]
     if fase != 'a': sufixo += '_' + fase
     treino = [gerar_cidade(s) for s in range(4)]
     teste  = [gerar_cidade(teste_seed+s) for s in range(3)]
@@ -132,7 +137,7 @@ def main(preset, out, so=None, fase='a', arq='reativo', T_aval=None, teste_seed=
               f'mortos {r["mortos"]:.2f} {r["mortos_por_semente"]} t_vida {r["t_vida"]:.2f} vida_fim {r["vida_fim"]:5.1f} '
               f'dano {r["dano"]:5.1f} | panes {r["av_fuel"]:4.1f} furos {r["av_furo"]:3.1f} quente {r["av_quente"]:4.1f} '
               f'oficina {r["n_oficina"]:4.1f} posto {r["n_posto"]:4.1f} pobre {r["pobre_frac"]:.2f} | '
-              f'res~ {r["res_media"]:4.1f} mob {r["n_mob"]:.2f} sono {r["sono"]:4.0f} ({r["segundos"]}s)', flush=True)
+              f'res~ {r["res_media"]:4.1f} mob {r["n_mob"]:.2f} sono {r["sono"]:4.0f} bloco {r["n_bloco"]:.1f} par_noite {r["par_noite_frac"]:.2f} ({r["segundos"]}s)', flush=True)
         os.makedirs(out, exist_ok=True)
         tmp = os.path.join(out, f'e13_corpo{sufixo}.json.tmp')
         with open(tmp, 'w') as fh: json.dump(res, fh, indent=1)
@@ -144,7 +149,7 @@ if __name__ == '__main__':
     ap.add_argument('--preset', default='rapido', choices=('rapido','longo'))
     ap.add_argument('--out', default=OUT)
     ap.add_argument('--so', nargs='*', default=None)
-    ap.add_argument('--fase', default='a', choices=tuple('abcdefghijk'))
+    ap.add_argument('--fase', default='a', choices=tuple('abcdefghijkl'))
     ap.add_argument('--T-aval', type=int, default=None)
     ap.add_argument('--teste-seed', type=int, default=1000)
     ap.add_argument('--seeds', type=int, nargs='*', default=None)

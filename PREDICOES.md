@@ -570,3 +570,44 @@ frente avaliar em 6 cidades (1000+ e 2000+) — `--teste-seed` já existe.
 n=3 era ruído (replicação > σ: efeito seguiu o n). O que REPLICA 5/5: panes
 13.3 → 8.3 e oficina 0 → 6.9 — a dor muda o comportamento; os 38% de mortos
 comem o ganho. Corrigido em doc 27 §4.3 e N16.
+
+**E13j rodou:** sono 5 → 6.91 (−1.25; 27 previa −0.5 ✗), mortos 0.26 (+5 pp),
+gordura −11% (previa −20% ✗), sono 16 = 3 descansos/vida — dormir custa
+tanque → pane → morte; o ser dorme pouco em vez de engordar menos.
+`cerebro come` + Reativo = 8.16 bit-igual ao recomendado ✓ (controle limpo:
+sem custo neural, a flag não muda nada).
+
+**E13jt rodou (SerTalamo, custo neural sai do tanque):** 7.45 [6.2, 8.6, 7.5],
+mortos 0.22, res~ 46 — ✓ (≥ 6.66 e ≤ 0.25): o tálamo paga o cérebro em
+caloria e vive. 421 s (5× o Reativo).
+
+**E13js rodou (sempre, todos os órgãos ligados, comendo do tanque):** fit
+−0.52, ent 1.0, mortos 0.28, pobre 0.47, panes 4.2 — colapso ✓ (< 3) mas
+não por morte (✗ > 0.5): PARALISIA. O cérebro come o tanque antes de o ser
+andar; ele fica parado, pobre, e não engorda (res~ 19). Tálamo 7.45 vs sempre
+−0.52 = gap 8.0 — o maior de todas as fases B (E6 6.3, E12 1.7): no mundo
+onde a caloria é finita e o corpo morre, ligar tudo é fatal de outro jeito.
+
+**E13l (sono em bloco à noite — os 17–21% que restam) — 2026-09-02, ANTES de rodar, implementar só após a fila k**
+Mecanismo: à noite (22h–6h), escolher `descanso` vira SONO EM BLOCO — o ser
+para até as 6h, recupera a fadiga inteira, e não roda de madrugada com o
+tanque baixo (as mortes do §4.5 são panes noturnas longe do posto). É decisão
+(o ser escolhe dormir), não roteiro; o Reativo só tem a fadiga como gatilho
+do descanso, então a pergunta é se a evolução aprende a "ir dormir" quando
+o tanque está baixo à noite.
+29. Recomendado + sono em bloco: mortos 0.21 → ≤ 0.15 e panes 7.3 → ≤ 5.5,
+    com `par_noite` ≥ 0.85 (dorme mais) e entregas noturnas caindo; fit
+    dentro de ±0.5 (perde a madrugada, ganha vida). ReativoHora com o mesmo
+    bloco: mortos ≤ 0.12 (tem alavanca de hora pro descanso). Se mortos
+    ficam ~0.21: o Reativo não consegue condicionar o descanso à hora — o
+    bloco existe mas ninguém entra nele (par_noite igual) — e a alavanca
+    precisa ser um órgão (SerVital/tálamo com sinal noite), não a física.
+
+**E13k rodou (greve 1 dia em 4 no recomendado):** greve custa −1.67 (28 previa
+≥ 3 ✗); com gordura 6.49 vs sem 5.45 = **+1.04** (previa ≥ +1.5 ✗; sem greve
+era +0.82 → a fome rara acrescenta só +0.2); mortos 0.30 vs 0.28 (✗ previa
+sem gordura ≥ 0.40). Mecanismo: no mundo-corpo a noite diária JÁ gasta a
+gordura (res~ 39, 3.95 mobilizações/vida) — não sobra estoque pro dia de
+greve. Duas escassezes competem pela mesma poupança; a diária ganha porque
+vem primeiro. Lei do E12 §7 com dois f: o estoque ao chegar a greve é
+I/f_noite, não I/f_greve.
