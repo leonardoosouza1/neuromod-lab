@@ -947,3 +947,9 @@ convergência 5/5 dos genes, ablação. É o mecanismo mais limpo do dia.
     10 dias (G=100) → mortos ≤ 0.22 (Noite 0.24, padrão 0.29), fit ≥ 19. Se
     2000+ ficar ≥ 0.26: a alavanca só funciona onde o posto é perto (cidades
     fáceis) — e a média honesta decide.
+
+**E14g ReativoRuido rodou (2 genes × ruído por passo, pena 5, R=16):** fit
+7.63, mortos 0.19 [.16 .22 .26 .13 .20] — igual ao Reativo (0.17). **44 fechada:
+é a ALAVANCA "tanque baixo × distância ao posto" (Noite24 0.12), não hora
+(Noite: genes inertes), não diversidade (Ruído 0.19).** Aposta registrada
+antes ("(i) chega, (ii) não") ✓.

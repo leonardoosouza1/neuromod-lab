@@ -688,6 +688,7 @@ Controle de paisagem: os mesmos 2 genes do ReativoNoite, **sem hora**
 | Reativo | 8.17 | 0.17 | 7.7 | – |
 | ReativoNoite (20–22h) | 9.11 | 0.11 | 6.4 | ~0 (inertes) |
 | **ReativoNoite24 (sem hora)** | 8.58 | **0.12** | **5.2** | **3.7 · 0.3 em 5/5** |
+| ReativoRuido (2 genes × ruído) | 7.63 | 0.19 | 7.2 | – (controle: diversidade não basta) |
 
 Ablação do campeão Noite24: genes zerados → mortos 0.35, fit 4.9; só a rota
 zerada → 0.25; só o posto → 0.19.
