@@ -107,3 +107,8 @@ Yerkes-Dodson: imposto intermediário produz MAIS que zero.
   confirmação). N19 candidato no doc 30 §5.2. Decisão pendente (minha):
   liberar as 3 linhas com multiplicadores default 1.0 (identidade) e rodar a
   bateria honesta com os 5 canais.
+- **E16, 3 linhas liberadas** → `12906ac`: sono `×mult[:,3]`, metabolismo pleno
+  em `cuf ×mult[:,2]` (fuel/água/calor/pneu/óleo), tempo de viagem
+  `×mult[:,4]`; o bloco (a) passou a aplicar só o regime. Fator 1.0 sem
+  glândulas: portão bit-exato, testes e15/e16 ok. Bateria honesta das
+  glândulas (fase a: reativo, K=2, K=1, regime) enfileirada atrás da onda 1.
