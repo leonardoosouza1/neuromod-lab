@@ -635,3 +635,9 @@ E13e, E13l). Sono em bloco = −3 pp com n=3; replicar com 5 sementes.
 31. recomendado vs sono-bloco em 5 sementes: mortos −3 pp ± 2 (≥ 4/5
     sementes com menos mortos), fit +0.1 ± 0.5, bloco ~1.1/vida. Se mortos
     ≈ 0: o −3 pp de n=3 era ruído e o bloco é inerte pro Reativo.
+
+**E13m2000 rodou:** recomendado 4.71 (bit-igual ao h20 ✓), sono bloco 4.74
+(+0.03; ✗ ≥ +0.3), mortos 0.35 → 0.32 (✓ −3 pp — mesmo efeito que em 1000+:
+0.21 → 0.18). **Números honestos (6 cidades):** recomendado 6.44 / mortos
+0.28 (✓ ≈ 6.4); com bloco 6.52 / 0.25. O bloco não rende fitness; rende 3 pp
+de vida, consistente em 2 conjuntos de cidades (falta o n=5).
