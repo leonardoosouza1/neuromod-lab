@@ -14,7 +14,7 @@ Telemetria por vida: mortos, t_vida, vida_fim, dano, oficina, avarias por causa.
 import sys, os, time, argparse, json
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import torch
-from lab import DEV, NF, gerar_cidade, Cfg, Reativo, evoluir_sementes, rodar, modo_execucao
+from lab import DEV, NF, gerar_cidade, Cfg, Reativo, ReativoHora, Corpo, evoluir_sementes, rodar, modo_execucao
 
 PRESET = dict(P=1024, G=20, T_evo=600, T_aval=1200, R=4, seeds=(0,1,2))
 PRESET_LONGO = dict(P=1024, G=60, T_evo=1200, T_aval=1200, R=4, seeds=(0,1,2))
@@ -74,14 +74,17 @@ BRACOS_C = [('R120 reboque 8',  dict(reserva=True, reserva_posto=20., peso=False
             ('R120 reboque 0',  dict(reserva=True, reserva_posto=20., peso=False, RES_MAX=120., pane_dinh=0.))]
 # E13d: calibracao do peso na config vencedora (reboque 0, cap 120)
 _V = dict(reserva=True, reserva_posto=20., RES_MAX=120., pane_dinh=0.)
+BRACOS_E = [('vencedor peso .10/.30', dict(peso=True, **_V))]   # E13e: rodar com --arq hora|corpo
 BRACOS_D = [('vencedor peso .03/.10', dict(peso=True, WF=.03, WR=.10, **_V)),
             ('vencedor peso .05/.15', dict(peso=True, WF=.05, WR=.15, **_V)),
             ('vencedor peso .10/.30', dict(peso=True, **_V))]
 
-def main(preset, out, so=None, fase='a'):
+def main(preset, out, so=None, fase='a', arq='reativo'):
     p = PRESET if preset == 'rapido' else PRESET_LONGO
     sufixo = '' if preset == 'rapido' else '_longo'
-    bracos = {'a': BRACOS, 'b': BRACOS_B, 'c': BRACOS_C, 'd': BRACOS_D}[fase]
+    A0 = {'reativo': Reativo, 'hora': ReativoHora, 'corpo': Corpo}[arq]
+    if arq != 'reativo': sufixo += '_' + arq
+    bracos = {'a': BRACOS, 'b': BRACOS_B, 'c': BRACOS_C, 'd': BRACOS_D, 'e': BRACOS_E}[fase]
     if fase != 'a': sufixo += '_' + fase
     treino = [gerar_cidade(s) for s in range(4)]
     teste  = [gerar_cidade(1000+s) for s in range(3)]
@@ -91,7 +94,7 @@ def main(preset, out, so=None, fase='a'):
     for nome, kw in bracos:
         if so and nome not in so: continue
         t1 = time.time()
-        r = braco(Reativo, cfg_corpo(**kw), treino, teste, p)
+        r = braco(A0, cfg_corpo(**kw), treino, teste, p)
         r['segundos'] = round(time.time()-t1)
         res['bracos'][nome] = r
         print(f'  {nome:<22} fit {r["fit"]:6.2f} {r["fit_por_semente"]} ent {r["ent"]:5.1f} '
@@ -110,6 +113,7 @@ if __name__ == '__main__':
     ap.add_argument('--preset', default='rapido', choices=('rapido','longo'))
     ap.add_argument('--out', default=OUT)
     ap.add_argument('--so', nargs='*', default=None)
-    ap.add_argument('--fase', default='a', choices=('a','b','c','d'))
+    ap.add_argument('--fase', default='a', choices=('a','b','c','d','e'))
+    ap.add_argument('--arq', default='reativo', choices=('reativo','hora','corpo'))
     a = ap.parse_args()
-    main(a.preset, a.out, a.so, a.fase)
+    main(a.preset, a.out, a.so, a.fase, a.arq)

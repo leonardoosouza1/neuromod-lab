@@ -470,3 +470,20 @@ com peso ligado em duas escalas.
     ≥ 9.2, mortos ≤ 0.25. Se .03/.10 já perde > 1.5: o peso não tem escala
     viável nesta economia (a margem é fina demais) — mudar a renda antes de
     insistir no peso.
+
+**E13d rodou (longo, config vencedora reboque 0 = 10.67 s/peso):** .03/.10 →
+9.78 (−0.89; ≥ 9.9 ✗ por 0.1; mortos 0.18 ✓; fervura 3.4 ✓; res~ 53 vs 52 —
+não emagreceu ✗); .05/.15 → 9.46 (✓); **.10/.30 → 9.23, mortos 0.16** — com a
+multa zerada o peso cheio custa −1.44 (custava −3.9 com reboque 20). O peso
+era amplificado pela armadilha: pesado → pane → quebrado → morte. Os números
+do Leonardo são viáveis sem a multa em dinheiro.
+
+**E13e (os 17% que restam: rota noturna?) — 2026-09-02 12:35, ANTES de rodar**
+Config vencedora (res-posto, cap 120, reboque 0, peso .10/.30) com arqs que
+têm alavanca de HORA (ReativoHora: serviço × sin/cos da hora) e de ROTA
+(Corpo: desvia pro serviço da maior necessidade).
+22. Se a morte restante é rodar de noite sem posto: ReativoHora aprende
+    "descansar à noite / posto às 21h" → mortos ≤ 0.10, par_fad/par_noite
+    sobem, panes ≤ 4. Corpo (rota pro posto) → mortos ≤ 0.12. Se ambos ~0.16:
+    o resto é azar de cidade (1002 mata 2× a 1001) — teto da política de
+    1 salto, próxima alavanca é sono em bloco (doc 24) ou memória de posto.

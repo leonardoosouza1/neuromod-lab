@@ -167,6 +167,27 @@ Predição 20 ✓ na direção (mortos −45%, fit +1.1, pobreza 0.28 → 0.07),
 no limiar (0.17 > 0.12). Metade das mortes era dinheiro; a outra metade é
 rota/noite — o ser roda de noite sem posto e seca onde está.
 
+### 4.6 E13d — o peso, sem a armadilha (longo, config vencedora: res-posto, cap 120, reboque 0)
+
+| peso (WF/WR) | fit | por semente | vs sem peso (10.67) | mortos | fervura | res~ | oficina |
+|---|---|---|---|---|---|---|---|
+| sem peso | 10.67 | 10.4 / 11.1 / 10.5 | — | 0.17 | 3.2 | 52.0 | 10.2 |
+| .03/.10 | 9.78 | 10.4 / 9.8 / 9.1 | −0.89 | 0.18 | 3.4 | 53.4 | 10.1 |
+| .05/.15 | 9.46 | 8.1 / 10.5 / 9.8 | −1.21 | 0.17 | 4.1 | 51.5 | 12.0 |
+| **.10/.30 (Leonardo)** | **9.23** | 10.5 / 8.8 / 8.4 | **−1.44** | **0.16** | 3.8 | 49.7 | 8.1 |
+
+- Predição 21 ✓ em mortos e fervura, ✗ por 0.1 no fit de .03/.10 e ✗ em
+  "emagrece" (res~ 50–53 em todas: com cap 120 o peso não faz o ser encolher
+  a gordura — a homeostase do E12 só apareceu com cap 60).
+- **O achado é a interação.** Com reboque 20, o peso .10/.30 custava −3.9 e
+  +12 pp de mortos; com reboque 0 custa −1.4 e 0 pp. O peso não matava — a
+  armadilha matava e o peso era o empurrão (pesado → 1ª pane → quebrado). Os
+  números do Leonardo são viáveis e SENTIDOS (fervura +20%, −1.4 de fitness)
+  assim que a carteira deixa de pagar a pane duas vezes.
+- Trajetória do design, mesma física, só calibração: cap 60 + reboque 20 +
+  peso .10/.30 = **4.74, 44% mortos** → cap 120 + reboque 0 + peso .10/.30 =
+  **9.23, 16% mortos**. Duas decisões de mundo, ×2 no fitness, ÷3 nas mortes.
+
 ## 5. Veredito e regras
 
 **O corpo funciona como o Leonardo pediu:** a dor ensina (corpo > sem corpo,
@@ -176,9 +197,9 @@ esquenta" apareceu sozinho, e o ser vive no limite (repara o suficiente).
 
 **Três decisões de calibração pro Leonardo (a física está certa, os números
 não):**
-1. **Peso .10/.30 é 3–5× forte** pra esta economia: só o tanque pesando custa
-   −1.7 e +10 pp de mortos; gordura pesando derruba a config vencedora de
-   9.57 pra 5.68. Calibração em E13d (a rodar): .03/.10 e .05/.15.
+1. **Peso .10/.30 é viável — desde que a multa em dinheiro suma** (§4.6):
+   com reboque 20 custava −3.9 e +12 pp de mortos; com reboque 0 custa −1.4
+   e 0 pp. Manter os números do Leonardo; o peso é sentido (fervura +20%).
 2. **Reboque caro em DINHEIRO cria armadilha de pobreza** — a multa cobra na
    mesma moeda que compra o conserto (posto, oficina), então a 1ª pane vira
    espiral. Eco da lei da moeda cruzada (doc EXP10): o corpo já paga a pane
