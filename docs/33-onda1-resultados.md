@@ -45,3 +45,18 @@ ReativoProduto tinha panes 4.9 e agora 6.7 — sem a pena ele não se esconde
 tanto no descanso, mas continua orbitando. Veredito da onda 1 pro cérebro:
 **produtos sim, mas um de cada vez e com limiar** (só ligam quando a
 necessidade passa de um ponto). Predição 17.3 ✗ nos dois controles.
+
+## E15 — economia real (pena 5, R=16) — parcial, falta a âncora "sem economia"
+
+| mundo | fit | mortos | panes | renda bruta | imposto (receber+gastar) | aluguel+água | dívida máx | leitura |
+|---|---|---|---|---|---|---|---|---|
+| economia, reboque sem custo calórico (só −3 de vida) | 6.89 | **0.09** | 9.2 | 220 | 44 + 25 | 39 | 2.5 | menos mortos de toda a linha; mas pane volta a ser "posto grátis" (9.2/vida) |
+| economia, reboque cobra 3 de gordura e o resto da VIDA | 6.11 | **0.28** | 5.7 | 179 | 36 + 22 | 36 | 1.5 | menos panes, muito mais mortos: cobrar da vida mata |
+
+Com 5 sementes e a morte visível, a leitura do agente (n=1) inverte: **cobrar
+o reboque da vida é o que mata** (0.28), e cobrar nada mata pouco (0.09) mas
+devolve a pane como posto grátis (N15). Falta o braço do meio — cobrar do
+tanque (3 de gordura, resto do tanque) e só da gordura — que está na fila
+(onda 1c), e a âncora sem economia. A carga tributária ficou em 49–53 % da
+renda bruta e a dívida quase não aparece (máx 2.5 de 60): com aluguel 6+2 o
+táxi não quebra, só fica magro de dinheiro (pobre 0.08).
