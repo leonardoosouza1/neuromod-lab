@@ -471,3 +471,18 @@ Afirmações do E13, replicadas com 5 sementes (1000+):
 Três de sete sobreviveram — as três que têm mecanismo físico direto
 (gordura cobre pane; peso esquenta; multa quebra). As quatro que caíram
 eram efeitos de MORTALIDADE ou ganhos sem mecanismo próprio. Regra 13.
+
+### 6.12 E13r — o portão do tálamo lendo a noite (5 sementes)
+
+| arquitetura (cérebro come do tanque) | fit | mortos | por semente (mortos) |
+|---|---|---|---|
+| Tálamo | 7.26 | 0.24 | 0.26 / 0.11 / 0.21 / 0.37 / 0.24 |
+| Tálamo + noite no portão | 7.01 | 0.23 | 0.15 / 0.21 / 0.19 / 0.24 / 0.35 |
+
+Efeito zero, como previsto (predição 35 — a primeira predição honestamente
+negativa que acertou). O sinal de noite no órgão não abre o posto. Placar
+das alavancas contra o piso de mortalidade: treino de 10 dias, hora, rota,
+sono em bloco, tálamo, tálamo-noite — **seis, nenhuma move**. O piso é do
+mundo (posto fechado + tanque vazio) cruzado com a política de 1 salto; a
+única saída declarada é memória de rota ou replanejamento (N2/N10), que a
+família linear não tem.

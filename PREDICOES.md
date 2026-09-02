@@ -718,3 +718,21 @@ Referência: tálamo n=3 = 7.45 / mortos 0.22.
     um padrão noturno (ver duty por órgão à noite) e é a 1ª alavanca neural
     que mexe no piso. Se subir: 5 genes a mais que G=60 não ajusta (ReativoHora
     de novo).
+
+**E13r_tal rodou (tálamo, 5 sementes, cérebro come):** 7.26 / mortos 0.24
+[0.26, 0.11, 0.21, 0.37, 0.24] — espalhamento ±13 pp entre sementes (a maior
+variância do dia). Referência para o tálamo-noite.
+
+**E13r_noite rodou (tálamo com noite no portão, 5 sementes):** 7.01 / mortos
+0.23 [0.15, 0.21, 0.19, 0.24, 0.35] vs tálamo 7.26 / 0.24 → **−0.25 de fit,
+−1 pp** — 35 ✓ (previsão honesta: efeito ≈ 0). Sexta alavanca que não move o
+piso (treino longo, hora, rota, sono em bloco, tálamo, tálamo-noite). O piso
+de ~0.18–0.24 (5 dias) é do MUNDO × política reativa: posto fechado + tanque
+vazio + 1 salto. Mexer nele exige memória de rota ou replanejamento (N2/N10),
+não mais um sinal.
+
+**E13s (últimas afirmações n=3 do recomendado, 5 sementes) — ANTES de rodar**
+36. taxa .01 e .05 vs .02 (8.76 / 0.18 com 5 sementes): ambas ≤ 8.76 − 0.3
+    (o vale replica, ≥ 3/5 sementes abaixo em cada); sono come 5: fit
+    ≤ 8.76 − 0.8 e mortos ≥ +3 pp (≥ 3/5). Se .01 ou .05 ≥ 8.76: a "taxa
+    ótima" era ruído e qualquer taxa serve.
