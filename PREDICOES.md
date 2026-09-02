@@ -854,3 +854,21 @@ o sinal. Controle em curso: Reativo puro, pena 5, R=16.
     baixa a morte porque ela não está no objetivo (E13t: fit idêntico com −5
     pp). Se mortos ≤ 0.12 sem pena: o objetivo já valorizava a vida o
     suficiente e o ruído era a história inteira — aí a "lei" é só R.
+
+**E14c Reativo (controle) rodou (pena 5, R=16):** fit 8.17, mortos **0.17**
+[.17 .18 .19 .19 .13]. Reativo puro com pena e R=16 NÃO chega a 0.11; o
+ReativoNoite chegou (4/5 sementes abaixo). Mas os genes de timing do campeão
+R16 são ~0 (escala: gene O(1)·g contra pesos de serviço O(20) → inerte?).
+Teste: zerar os 2 genes do campeão e reavaliar — se mortos ficam 0.11, o
+ganho veio da TRAJETÓRIA (paisagem diferente), não do gene, e o "0.11" é
+sugestivo sem mecanismo identificado (não vender).
+
+**Ablação do campeão R16 (ReativoNoite pena 5):** genes de timing = 0 →
+mortos 0.126 (+1.2 pp), fit 8.98; genes ×10 → 0.137, fit 8.20. **Os genes de
+timing são inertes** (~1 pp). O 0.11 está nos OUTROS pesos: a paisagem do
+ReativoNoite + pena + R=16 levou a população a uma política sobrevivente que o
+Reativo puro (mesmo pena, mesmo R) não achou em 4/5 sementes. Mecanismo =
+trajetória evolutiva, não alavanca de hora. Veredito honesto: R=16 + pena
+torna a morte VISÍVEL à seleção (Reativo 0.22 → 0.17; Noite 0.16 → 0.11), e
+o ponto de chegada depende da paisagem. Não vender 0.11 como "achou o
+timing".
