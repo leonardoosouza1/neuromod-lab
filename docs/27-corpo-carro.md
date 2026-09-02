@@ -570,3 +570,31 @@ exige que viver valha pontos, não só entregar.
   quase tudo. Candidatos a objetivo: pena fixa por morte (testado), ou
   fitness por dia vivido (entregas/dia × dias), ou vida como moeda do
   torneio (arena).
+
+### 6.17 E14c — a morte só é selecionada quando é VISÍVEL: pena × vidas por genoma
+
+Cada genoma era avaliado em 16 vidas (4 cidades × R=4). Mortalidade de 18%
+em 16 vidas tem desvio ≈ 10 pontos; a pena de 5 por morte vira um sinal de
+±0.5 num fitness com ruído de ±1.5. R=16 → 64 vidas por genoma, desvio ≈ 5.
+
+| | pena 0, R=4 | pena 5, R=4 | pena 5, R=16 | pena 0, R=16 |
+|---|---|---|---|---|
+| Reativo | 8.76 / **0.18** | 7.18 / 0.22 | 8.17 / **0.17** | (E14d) |
+| ReativoNoite | 7.25 / 0.23 | 7.51 / 0.16 | 9.11 / **0.11** | – |
+
+(fit sem pena / mortos, 5 sementes, cidades 1000+)
+
+- **Pena sozinha não basta** (Reativo 0.18 → 0.22): a seleção não enxerga
+  um efeito de 5 pontos afogado em 10 de ruído. **R=16 + pena** dá 0.17 no
+  Reativo e **0.11** no ReativoNoite (4/5 sementes abaixo do Reativo).
+- **Não foi o gene de timing.** Ablação do campeão 0.11: genes zerados →
+  0.126, genes ×10 → 0.137. Contribuem ~1 ponto. O gene é O(1) contra pesos
+  de serviço O(20): inerte por escala. O 0.11 mora nos outros pesos — a
+  paisagem diferente levou a população a uma política sobrevivente que o
+  Reativo puro não achou com a mesma pena e o mesmo R. Trajetória, não
+  alavanca. Dito com o tamanho certo: sugestivo.
+- **Lei prática (regra 14):** seleção por evento raro exige que o evento
+  seja visível no fitness de UM genoma — vidas por genoma ≥ 1/p²-ish (p =
+  taxa do evento). Com p ≈ 0.18, 16 vidas não bastam; 64 começam a bastar.
+  Isto e a regra 13 (n ≥ 5 sementes) são a mesma coisa em dois níveis: o
+  ruído da morte engana tanto o experimentador quanto a seleção.
