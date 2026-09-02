@@ -18,7 +18,7 @@ NOMES_F = (['d_alvo','custo_rua','congestao','semaforo',
             'd_posto','d_comida','d_descanso','d_oficina','d_loja',
             'e_fuel','e_fome','e_fadiga','e_pneu','e_temp','e_oleo',
             'e_dinheiro','e_tem_pax','e_reserva','h_sin','h_cos','e_dano',
-            'e_divida','e_preco_local','e16_a','e16_b','bias']   # E15 economia (usados); E16 glandulas (reservados)
+            'e_divida','e_preco_local','h_gl0','h_gl1','bias']   # E15 economia (divida, preco local); E16 glandulas (h/H_MAX)
            + ['sv_posto','sv_comida','sv_descanso','sv_oficina','sv_loja','sv_bias']
            + [f'mem_{i}' for i in range(6)] + [f'corpo_{i}' for i in range(6)])
 
