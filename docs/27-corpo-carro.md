@@ -422,3 +422,10 @@ mortes (2/5 sementes abaixo). O −3 pp de n=3 — repetido em 2000+ — era
 ruído. Em vidas de 5 dias o bloco é inerte. O −10 pp em 10 dias (n=3) só
 vale se sobreviver ao E13o (5 sementes). Quarta vez que n=3 enganou hoje:
 regra de casa a partir daqui, **efeito de mortalidade só conta com n ≥ 5**.
+
+**Replicação em vida de 10 dias (E13o, 5 sementes):** recomendado 18.70 /
+mortos 0.29; com bloco 17.68 / 0.31 — 1/5 sementes com menos mortos. O
+−10 pp de n=3 era ruído. **Sono em bloco: encerrado** (inerte a nocivo em 5
+e 10 dias). O piso de mortalidade não cedeu a nenhuma das cinco alavancas
+testadas (treino longo, hora, rota, sono em bloco, cérebro por tálamo): é o
+teto da política reativa de 1 salto neste mundo.

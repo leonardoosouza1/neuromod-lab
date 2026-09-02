@@ -662,3 +662,19 @@ menos mortos). 31 ✗: o −3 pp de n=3 (e sua repetição em 2000+) era ruído.
 vida de 5 dias o bloco é inerte ou levemente nocivo (perde a madrugada, não
 evita morte). O −10 pp em 10 dias (n=3, §6.9) fica sob suspeita — E13o (5
 sementes, 10 dias) decide. 4ª vez que n=3 enganou nesta sessão.
+
+**E13o rodou (5 sementes, vida de 10 dias):** recomendado 18.70 / mortos 0.29
+[0.36, 0.35, 0.22, 0.26, 0.26]; sono bloco 17.68 / 0.31 [0.21, 0.31, 0.34,
+0.29, 0.42] → **−1.0 de fit, +2 pp de mortos, 1/5 sementes abaixo.** 32 ✗. O
+−10 pp de n=3 era ruído. Sono em bloco: inerte-a-nocivo em 5 e 10 dias.
+Piso de mortalidade (0.18–0.21 em 5 d, 0.29–0.39 em 10 d) não cede a treino
+longo, hora, rota nem sono — teto da política reativa de 1 salto.
+
+**E13p (replicar as DUAS decisões recomendadas, 5 sementes) — 2026-09-02 13:30, ANTES de rodar**
+Cap 120 (+2.37, 3/3) e reboque 0 (mortos 0.31 → 0.17) foram n=3, e n=3
+enganou 4× hoje. Braços: `corpo res-posto s/peso` (cap 60, reboque 20),
+`… R120` (cap 120, reboque 20), `R120 reboque 0`.
+33. Cap 120 − cap 60 ≥ +1.5 com ≥ 4/5 sementes e mortos −5 pp; reboque 0 −
+    reboque 20 (ambos R120): mortos −10 pp com 5/5 e fit ≥ +0.8. Se cap 120
+    < +0.8 ou reboque 0 < −5 pp: a recomendação ao Leonardo cai e o doc 27
+    §5 é reescrito.

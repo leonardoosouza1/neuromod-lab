@@ -129,3 +129,24 @@ sem corpo = −0.45 (n=5) contra +0.75 (n=3); efeito seguiu o n e trocou de
 sinal. O que replica 5/5 é o comportamento (panes 13 → 8, oficina 0 → 7); a
 morte come o ganho. 3ª vez que n=3 enganou (ver feedback replicação > σ). Gordura que cabe (cap 120, sem peso): +2.4, −8 pp de
 mortes. "Gordo esquenta" (fervura 2.2 → 3.5 com peso) emergiu sem roteiro.
+
+## N17 — Sono em bloco é inerte; n=3 enganou 5 vezes num dia (E13, 2026-09-02)
+
+**Afirmação:** dar ao ser a opção de dormir a noite inteira (descanso à noite
+= bloco até as 6h) não reduz mortalidade: n=3 deu −3 pp (5 dias) e −10 pp
+(10 dias); n=5 deu +3 pp e +2 pp, com fit −1.2 e −1.0. O Reativo e o
+ReativoHora entram no bloco ~1 noite em 5 e perdem a madrugada sem evitar
+a pane. Mecanismo: a morte noturna é pane LONGE do posto com res=0; dormir
+só evita se o ser dorme ANTES de o tanque zerar, e nenhuma feature de hora
+condiciona isso na família reativa (3ª–4ª vez que o ReativoHora não usa a
+hora).
+
+**Regra 13 (a mais cara do dia):** efeito de MORTALIDADE só conta com n ≥ 5
+sementes. Hoje n=3 inverteu de sinal 5 vezes ("a dor ensina" +0.75 → −0.45;
+bloco −3 pp → +3 pp em dois conjuntos de cidades; bloco −10 pp → +2 pp;
+greve). Mortalidade é bimodal (quem pane cedo morre) e a variância entre
+sementes é ±8 pp: qualquer efeito < 10 pp precisa de 5 sementes ou mais.
+Fitness também: ±1.5 entre sementes em todo mundo-corpo.
+
+**O que sobrou (e vai ser replicado com n=5, E13p):** cap da gordura 120 e
+reboque só no corpo — as duas decisões recomendadas ao Leonardo.
