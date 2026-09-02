@@ -62,3 +62,17 @@ este mundo só precisa de um eixo.
 Lei da moeda cruzada → população bimodal e desigualdade; arrecadação em U
 invertido cujo pico desloca pra esquerda quando a reserva média é menor;
 Yerkes-Dodson: imposto intermediário produz MAIS que zero.
+
+## 5. Diário de merge (onda 1)
+
+- **E18 avaliação** → `3eed84a`: só arquivos novos (`avaliacao.py`, `runner_comum.py`,
+  `scripts/fila.sh`, `testes_e18`, doc 32). Portão bit-exato, testes ok.
+- **E17 produtos** → `0664907`: só arquivos novos (`produtos.py`, `e17_produtos.py`,
+  `analise_produtos.py`, `testes_e17` 9/9, doc 31). Achado do agente na
+  validação curta (G=10, 1 semente, pena 5): a ordem de mortos é o inverso da
+  de fitness — `ReativoProdutoFull` faz 0.01 de mortos com 0.13 entregas: com
+  pena, PARAR vira o atrator barato e o produto é a alavanca que deixa parar
+  barato. Nenhuma conclusão do E17 pode ser lida em mortos sozinho; a bateria
+  séria precisa do controle `pena_morte=0` e do limiar `relu(nec−θ)` proposto
+  no doc 31. Alavanca à mão (regra 15) é viva (mortos 0.25 → 0.02 ou 0.81),
+  mas enxertada num genoma não co-adaptado custa fitness em 13/13.
