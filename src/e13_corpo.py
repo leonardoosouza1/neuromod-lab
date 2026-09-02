@@ -104,13 +104,18 @@ BRACOS_K = [('recomendado greve4',             dict(continua=.02, greve=4, **_R)
             ('recomendado sem gordura greve4',  dict(reserva=False, RES_MAX=120., pane_dinh=0., massa=True, peso=True, greve=4))]
 # E13l: sono em bloco a noite (rodar com --arq reativo e --arq hora)
 BRACOS_L = [('recomendado sono bloco', dict(continua=.02, sono_bloco=True, **_R))]
+# E13m: numeros honestos (--teste-seed 2000) e treino de 10 dias (--G 100 --T-evo 2400 --T-aval 2400)
+BRACOS_M = [('recomendado (taxa .02)',  dict(continua=.02, **_R)),
+            ('recomendado sono bloco',  dict(continua=.02, sono_bloco=True, **_R))]
 BRACOS_D = [('vencedor peso .03/.10', dict(peso=True, WF=.03, WR=.10, **_V)),
             ('vencedor peso .05/.15', dict(peso=True, WF=.05, WR=.15, **_V)),
             ('vencedor peso .10/.30', dict(peso=True, **_V))]
 
-def main(preset, out, so=None, fase='a', arq='reativo', T_aval=None, teste_seed=1000, seeds=None, tag=''):
+def main(preset, out, so=None, fase='a', arq='reativo', T_aval=None, teste_seed=1000, seeds=None, tag='', G=None, T_evo=None):
     p = dict(PRESET if preset == 'rapido' else PRESET_LONGO)
     if T_aval: p['T_aval'] = T_aval
+    if G: p['G'] = G
+    if T_evo: p['T_evo'] = T_evo
     if seeds: p['seeds'] = tuple(seeds)
     sufixo = '' if preset == 'rapido' else '_longo'
     if arq in ('talamo','sempre'):
@@ -120,7 +125,8 @@ def main(preset, out, so=None, fase='a', arq='reativo', T_aval=None, teste_seed=
     if arq != 'reativo': sufixo += '_' + arq
     if tag: sufixo += '_' + tag
     bracos = {'a': BRACOS, 'b': BRACOS_B, 'c': BRACOS_C, 'd': BRACOS_D, 'e': BRACOS_E, 'f': BRACOS_F,
-              'g': BRACOS_G, 'h': BRACOS_H, 'i': BRACOS_I, 'j': BRACOS_J, 'k': BRACOS_K, 'l': BRACOS_L}[fase]
+              'g': BRACOS_G, 'h': BRACOS_H, 'i': BRACOS_I, 'j': BRACOS_J, 'k': BRACOS_K, 'l': BRACOS_L,
+              'm': BRACOS_M}[fase]
     if fase != 'a': sufixo += '_' + fase
     treino = [gerar_cidade(s) for s in range(4)]
     teste  = [gerar_cidade(teste_seed+s) for s in range(3)]
@@ -149,11 +155,13 @@ if __name__ == '__main__':
     ap.add_argument('--preset', default='rapido', choices=('rapido','longo'))
     ap.add_argument('--out', default=OUT)
     ap.add_argument('--so', nargs='*', default=None)
-    ap.add_argument('--fase', default='a', choices=tuple('abcdefghijkl'))
+    ap.add_argument('--fase', default='a', choices=tuple('abcdefghijklm'))
+    ap.add_argument('--G', type=int, default=None)
+    ap.add_argument('--T-evo', type=int, default=None)
     ap.add_argument('--T-aval', type=int, default=None)
     ap.add_argument('--teste-seed', type=int, default=1000)
     ap.add_argument('--seeds', type=int, nargs='*', default=None)
     ap.add_argument('--tag', default='')
     ap.add_argument('--arq', default='reativo', choices=('reativo','hora','corpo','talamo','sempre'))
     a = ap.parse_args()
-    main(a.preset, a.out, a.so, a.fase, a.arq, a.T_aval, a.teste_seed, a.seeds, a.tag)
+    main(a.preset, a.out, a.so, a.fase, a.arq, a.T_aval, a.teste_seed, a.seeds, a.tag, a.G, a.T_evo)

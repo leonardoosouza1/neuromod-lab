@@ -611,3 +611,17 @@ gordura (res~ 39, 3.95 mobilizações/vida) — não sobra estoque pro dia de
 greve. Duas escassezes competem pela mesma poupança; a diária ganha porque
 vem primeiro. Lei do E12 §7 com dois f: o estoque ao chegar a greve é
 I/f_noite, não I/f_greve.
+
+**E13l rodou (Reativo + sono em bloco):** 8.30 (+0.14 ✓ ±0.5), mortos 0.18
+(✗ ≤ 0.15, mas −3 pp), panes 7.5 (✗ ≤ 5.5), bloco 1.1 noites de 5, par_noite
+0.69 (✗ ≥ 0.85). Cláusula de fallback confirmada: o Reativo não condiciona o
+descanso à hora — entra no bloco uma vez por vida. Falta o ReativoHora.
+
+**E13m (números honestos + treino de 10 dias) — 2026-09-02 13:05, ANTES de rodar**
+30. (a) Recomendado e sono-bloco em cidades 2000+: sono-bloco ≥ recomendado
+    +0.3 e mortos −3 pp (o bloco vale mais onde a noite é mais dura). Média
+    honesta (6 cidades) do recomendado ≈ 6.4. (b) Treino com vida de 10 dias
+    (G=100, T_evo=2400, avaliado em 10 dias): mortos ≤ 0.30 (vs 0.39 do
+    campeão de 5 dias em 10 dias) — a seleção vê as mortes tardias e baixa o
+    risco; fit/dia ≥ 1.47. Se mortos ~0.39: o risco de 4%/dia é o piso do
+    mundo pra política de 1 salto, não falta de treino.
