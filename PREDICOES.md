@@ -493,3 +493,52 @@ têm alavanca de HORA (ReativoHora: serviço × sin/cos da hora) e de ROTA
 (✗ igual). Nenhuma alavanca de hora ou rota reduz os 17%: teto da política de
 1 salto neste mundo (cidade 1002 mata 2× a 1001). Próxima alavanca: sono em
 BLOCO à noite (doc 24) ou memória de posto — mecanismo novo, não peso novo.
+
+**E13f (RECOMENDADO: massa + gordura contínua) — 2026-09-02 13:10, ANTES de rodar**
+Leonardo: "gordura acumulável ao longo do tempo, peso influenciando, cálculo
+base geral e o peso extra afeta". Peso = massa/chassi com massa = 1000 kg +
+0.75·fuel + 2.5·res + 80·(carregando) — tanque cheio +7.5%, gordura cheia
+(120) +30%, passageiro +8%; tudo (tempo, fuel, calor, fome, fadiga, sono)
+deriva daí. Gordura: a cada passo 2% da sobra acima de NIVEL=50 vira reserva
+(perda 10%) — acumula devagar, sem lote, sem compra no posto. Mundo: corpo +
+cap 120 + reboque 0.
+23. `recomendado` fit ≥ 8.5 e mortos ≤ 0.20 (perto do 9.23/0.16 do res-posto
+    com peso .10/.30); gordura FORMA devagar (res~ 25–50, conv em ≥ 60% dos
+    passos — não 5 lotes/vida). Taxa .05 ≥ taxa .02 (se a entrada limita).
+    `sem gordura` ≤ recomendado − 1.0 e mortos +5 pp (gordura vale). `sem
+    peso` ≈ recomendado + 1.0 (peso custa, não mata — como no E13d). O
+    passageiro pesando é novo: se `sem gordura` cair > 2 abaixo do `corpo
+    reboque 0` equivalente, o passageiro (+8%) é o custo, não a gordura.
+
+**E13f rodou (longo):** recomendado 8.16 / mortos 0.21 (23: ≥ 8.5 ✗ por 0.3,
+≤ 0.20 ✗ por 0.01); gordura forma devagar ✓ (res~ 45, mob 3.2); taxa .05 →
+7.68 ✗ (pior: tira fuel do tanque rápido, panes 8.2); sem gordura 7.34
+(−0.82, ✗ por 0.2; mortos +6 pp ✓); sem peso 10.42 (**+2.26**, ✗ previa +1.0
+— o peso por massa custa mais; fervura 2.7 → 4.7). Suspeito do passageiro.
+
+## Fila autônoma (Leonardo saiu 2026-09-02 13:40) — predições ANTES, em bloco
+
+**E13g (de onde vem o custo do peso por massa):**
+24. `taxa .01` ≥ `.02` +0.3 (acumular mais devagar drena menos o tanque);
+    `pax 0 kg` = +1.0 a +1.5 (o passageiro é a maior parte do custo: pesa 8%
+    em quase todo passo carregado); `gordura 1.5 kg` = +0.5 (gordura média 45
+    → 112 kg vs 68 kg: pouca diferença). Se `pax 0` ≈ recomendado: o custo é
+    a fervura por peso do tanque+gordura, não o passageiro.
+**E13h (vida longa: T_aval 2400 = 10 dias; e cidades 2000+ nunca vistas):**
+25. Recomendado treinado 5 dias, avaliado 10: mortos ≤ 0.35 (não dobra —
+    quem passa do dia 3 vive; morte é cedo), gordura no fim ≥ 60 (acumula
+    "ao longo do tempo"), fit/dia igual ao dos 5 dias ± 15%. Cidades 2000+:
+    fit dentro de ±1.5 do 1000+ (generaliza; cidade pesa até 2×).
+**E13i (replicação "a dor ensina", 5 sementes):**
+26. corpo − noite s+r ≥ +0.4 na média de 5 sementes, ≥ 3 de 5 positivas;
+    panes corpo ≤ 60% das de noite s+r em todas. Se ≤ 0: o +0.75 era ruído.
+**E13j (sono come; cérebro come — tálamo × sempre no recomendado):**
+27. `sono 5`: gordura −20% e fit −0.5 (dormir compete com engordar);
+    `cerebro come` com Reativo: nada muda (Reativo não tem custo neural) —
+    controle. `--arq talamo`: fit ≥ recomendado −1.5 e mortos ≤ 0.25;
+    `--arq sempre`: colapsa (fit < 3, mortos > 0.5: o cérebro come o tanque
+    e a noite mata) — o E12 fase B no mundo-corpo, agora com morte.
+**E13k (greve 1 dia em 4 no recomendado):**
+28. Greve custa ≥ 3 vs recomendado; `com gordura` − `sem gordura` ≥ +1.5 na
+    greve (maior que os +0.8 sem greve: gordura contínua acumula 3 dias e
+    cobre a fome rara — lei do E12 §7); mortos sem gordura ≥ 0.40.

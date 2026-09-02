@@ -235,3 +235,63 @@ coisa, a multa mata por espiral, não por seleção.
 não resolvem (§4.7); candidatos: sono em bloco à noite com tanque baixo
 (doc 24), memória de posto. Também: dano permanente por idade, oficina com
 preço por HP, greve no mundo-corpo.
+
+## 6. Mundo recomendado (E13f): massa como cálculo base + gordura contínua
+
+**Leonardo:** *"não sei o que é melhor, faça o recomendado; gordura mais ao
+longo do tempo, acumulável; peso influenciando; precisa ter um cálculo base
+geral e o peso extra afeta."*
+
+### 6.1 Cálculo base: massa
+
+Uma fórmula, tudo deriva dela:
+
+```
+massa  = 1000 kg (chassi) + 0.75·fuel + 2.5·res + 80·(carregando passageiro)
+peso   = massa / 1000
+```
+
+| carga | kg | efeito no peso |
+|---|---|---|
+| tanque cheio (100) | 75 | +7.5% |
+| gordura cheia (120) | 300 | +30% |
+| passageiro | 80 | +8% |
+
+O `peso` multiplica tempo de viagem, consumo (fuel/água/calor/pneu), fome e
+fadiga, e divide a recuperação do descanso — os mesmos canais de antes, agora
+com uma massa física por trás. Gordura pesa 3.3× mais por unidade que
+gasolina (o "combustível rápido pesa pouco, a poupança pesa" do doc 26). O
+passageiro pesando é novo: carregar custa.
+
+### 6.2 Gordura acumulável ao longo do tempo
+
+A cada passo, 2% da sobra do tanque acima de NIVEL=50 vira gordura (perda de
+10%). Sem lote da meia-noite, sem compra no posto: quem anda com o tanque
+acima da metade engorda devagar, quem vive no reserva não engorda. Metade
+da sobra se converte em ~35 passos (3.5 h); um tanque cheio parado rende
+~45 de gordura num dia.
+
+Mundo: corpo + cap 120 + reboque só no corpo (as duas decisões do §5).
+Predição 23 em PREDICOES.md.
+
+### 6.3 Resultados (longo, G=60, 3 sementes)
+
+| braço | fit | por semente | mortos | res~ | mob | panes | fervura | dano |
+|---|---|---|---|---|---|---|---|---|
+| **recomendado** (taxa .02) | **8.16** | 8.7 / 8.6 / 7.2 | **0.21** | 45 | 3.2 | 7.3 | 4.7 | 104 |
+| taxa .05 | 7.68 | 7.5 / 7.9 / 7.6 | 0.20 | 50 | 4.2 | 8.2 | 4.3 | 106 |
+| sem peso | 10.42 | 11.0 / 9.6 / 10.7 | 0.17 | 51 | 2.9 | 7.3 | 2.7 | 80 |
+| sem gordura | 7.34 | 7.8 / 6.3 / 7.9 | 0.27 | – | – | 9.2 | 3.4 | 103 |
+
+- **Gordura contínua vale**: +0.82 e −6 pp de mortos sobre o mesmo mundo sem
+  gordura; forma devagar (45/120 em média, 3.2 mobilizações por vida contra
+  2 lotes/vida do modelo antigo).
+- **Mais rápido não é melhor**: taxa .05 perde 0.5 — converter depressa tira
+  fuel do tanque e vira pane (8.2 vs 7.3). A poupança boa é lenta.
+- **O peso por massa custa −2.3** (previa −1.0) e o canal é o calor: fervura
+  2.7 → 4.7 = +20 de dano. Tanque cheio +7.5%, gordura média +11%, passageiro
+  +8% quase sempre — E13g separa os três.
+- Comparado ao vencedor anterior (posto enche a reserva, peso .10/.30): 9.23 /
+  0.16. O recomendado é 1 ponto pior e 5 pp mais mortal — porque acumula
+  devagar (o que o Leonardo pediu) e porque o passageiro agora pesa. Física
+  mais honesta, número um pouco menor; ambos declarados.

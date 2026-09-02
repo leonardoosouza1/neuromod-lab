@@ -117,6 +117,13 @@ class Cfg:
         s.REPARO=30.; s.K_SAUDE=.6
         s.reserva_posto=0.   # >0: posto tambem enche a reserva com este tanto (gordura entra facil)
         s.sono_come=0.       # >0: cada descanso custa este tanto de fuel (dormir custa caloria)
+        # E13f (Leonardo): "calculo base geral e o peso extra afeta" + "gordura acumulavel ao longo do tempo"
+        #   massa    peso = massa/chassi, massa = chassi + kg_fuel*fuel + kg_res*res + kg_pax*(carregando)
+        #            (gasolina 0.75 kg/L; gordura pesa 3.3x mais por unidade; passageiro 80 kg)
+        #   reserva_continua  >0: a CADA passo esta fracao da sobra do tanque acima de NIVEL
+        #            vira gordura (com PERDA_ARMAZ) — substitui o lote da meia-noite
+        s.massa=False; s.M_CHASSI=1000.; s.KG_FUEL=.75; s.KG_RES=2.5; s.KG_PAX=80.
+        s.reserva_continua=0.
         s.RES_MAX=60.; s.NIVEL=50.; s.PERDA_ARMAZ=.10; s.MOB=25.; s.TPAR_MOB=3.
         s.WF=.10; s.WR=.30; s.KAPPA_F=.05
 
@@ -249,7 +256,11 @@ class Lote:
         """1 + carga no chassi: tanque pesa pouco, reserva pesa muito."""
         if not s.cfg.peso:
             return 1.
-        return 1. + s.cfg.WF*s.fuel/s.capf() + s.cfg.WR*s.res/s.cfg.RES_MAX
+        c = s.cfg
+        if c.massa:   # E13f: calculo base geral — tudo deriva de massa/chassi
+            kg = c.KG_FUEL*s.fuel + c.KG_RES*s.res + c.KG_PAX*(s.pd_ >= 0).float()
+            return 1. + kg/c.M_CHASSI
+        return 1. + c.WF*s.fuel/s.capf() + c.WR*s.res/c.RES_MAX
     def serv_ab(s, noite=None):
         """servicos ABERTOS no no: posto fecha a noite."""
         sv = s.serva[s.cidx, s.no]
@@ -384,7 +395,10 @@ def passo(m, esc):
         pos_prev = (m.t - 1 + m.fase_dia.long()) % c.dia
         pos_now  = (m.t + m.fase_dia.long()) % c.dia
         meia = (pos_now < pos_prev).float()
-        sobra = (m.fuel - c.NIVEL).clamp(min=0) * meia
+        if c.reserva_continua:   # E13f: acumula devagar, a cada passo, so a fracao da sobra
+            sobra = (m.fuel - c.NIVEL).clamp(min=0) * c.reserva_continua
+        else:
+            sobra = (m.fuel - c.NIVEL).clamp(min=0) * meia
         cabe = (c.RES_MAX - m.res) / (1 - c.PERDA_ARMAZ)
         conv = torch.minimum(sobra, cabe)
         m.res = m.res + conv*(1 - c.PERDA_ARMAZ)
