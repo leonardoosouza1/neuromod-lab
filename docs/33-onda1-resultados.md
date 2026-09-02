@@ -68,3 +68,26 @@ saída fixa que o Leonardo pediu, e ela pesa: carga de ~50 % da renda bruta.
 Sobre a morte, a economia em si não mata: o que decide é **como o reboque
 cobra** — nada (0.09) < âncora (0.19) < da vida (0.28). O braço do tanque e
 o só-gordura fecham a escada (onda 1c).
+
+### A escada do reboque (economia ligada, pena 5, R=16, 5 sementes)
+
+Como o guincho cobra, em ordem de dureza:
+
+| o reboque cobra… | fit | mortos | panes | o que acontece |
+|---|---|---|---|---|
+| nada (só −3 de vida na pane) | 6.89 | **0.09** | 9.2 | pane vira "posto grátis lento" de novo (N15): pouca morte, muita pane |
+| gordura primeiro; o que faltar vira VIDA (1 por caloria) | 6.36 | 0.17 | 8.7 | ≈ âncora: a gordura paga o guincho e a vida raramente entra |
+| 3× isso, resto na vida | 6.11 | 0.28 | 5.7 | menos panes, muito mais mortos: a vida paga |
+| gordura primeiro; o que faltar sai do TANQUE (3×) | **−0.74** | 0.11 | 2.4 | **paralisia**: renda 4.7, posto 1.1 — o táxi para de andar pra nunca precisar do guincho |
+| âncora sem economia | 8.54 | 0.19 | 7.9 | referência |
+
+**O que aprendemos:** o reboque tem que cobrar de algo que o táxi tem e
+que não seja o remédio. Cobrar do **tanque** recria a espiral (a ração do
+guincho é exata) e, com a morte visível, a evolução foge da espiral do
+único jeito que sabe: **parando** — é o mesmo atrator da pena com muitos
+produtos e do "sempre" das fases B. Cobrar da **vida** mata. Cobrar da
+**gordura** (e só dela) é o meio-termo honesto: mortalidade igual à âncora,
+pane ainda custa, e dá trabalho à poupança — exatamente o que o Leonardo
+pediu ("cobrar calorias"). Falta o braço padrão do agente (gordura, resto
+no tanque, 1×) pra saber se a paralisia é do 3× ou de qualquer cobrança no
+tanque — está na fila.
