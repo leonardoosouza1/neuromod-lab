@@ -107,3 +107,24 @@ v·min(I, f·S, f·RES_MAX), ótimo I* = f·S. **Regra 10:** antes de dar um ór
 de estoque, calcular a razão entrada/buraco (I vs f·S). Se I ≪ f·S o órgão
 fica no regime "teto = entrada" e o ganho é ℓ-negativo; testar noutro f, não
 noutro cérebro.
+
+## N16 — Reboque caro em dinheiro = armadilha de pobreza; rápido não vê a morte (E13, 2026-09-02)
+
+**Afirmação 1:** no mundo-corpo, 31% dos campeões morrem — e morrem QUEBRADOS
+(dinh 0.6–1.0, 16 panes até morrer) enquanto os vivos fazem 1.3 panes/vida com
+a mesma política. O reboque de 20 dinh cobra na moeda que compra o conserto
+(posto 2, oficina 10): a 1ª pane tira o dinheiro do posto → 2ª pane → morte.
+Zerar a multa (o corpo já paga −6 vida): mortos 0.31 → 0.17, fit +1.1.
+**Regra 12:** antes de pôr multa, perguntar com que o ser paga a recuperação;
+se for a mesma moeda, a multa mata por espiral, não por seleção (eco da lei
+da moeda cruzada, EXP10).
+
+**Afirmação 2:** o preset rápido (treino 2.5 dias) "evoluiu" 52% de
+mortalidade porque ninguém morre antes do dia 3 — a seleção nunca viu a morte.
+Longo (5 dias): 39%. **Regra 11:** medir o dia em que o perito morre e treinar
+mais longo que isso antes de qualquer seleção por morte.
+
+**O que NÃO é negativo:** a dor ensina — corpo > sem corpo (+0.75) no MESMO
+fitness, porque o dano é sinal denso que tira a evolução do ótimo local "pane
+como posto lento" (N15). Gordura que cabe (cap 120, sem peso): +2.4, −8 pp de
+mortes. "Gordo esquenta" (fervura 2.2 → 3.5 com peso) emergiu sem roteiro.

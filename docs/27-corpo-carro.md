@@ -45,3 +45,155 @@ Perito (mesmo genoma à mão) no mundo corpo: **86% morrem em 5 dias**, vida
 média no fim 9.7, dano 137 = fervura 81 + panes 44 + furos 7 + rodar 6. O
 mundo é letal pra quem não muda de comportamento. Predições 14–18 em
 PREDICOES.md §E13.
+
+## 4. Resultados (2026-09-02)
+
+### 4.1 Rápido (G=20, treino 2.5 dias) — a evolução nunca viu a morte
+
+| braço | fit | mortos | t_vida | vida_fim | dano | panes | fervura | oficina |
+|---|---|---|---|---|---|---|---|---|
+| noite s+r (sem corpo) | 3.56 | 0 | – | 100 | 0 | 15.7 | 2.4 | 0 |
+| corpo | 2.96 | **0.52** | 0.81 | 34 | 94 | 8.3 | 3.0 | 5.8 |
+| corpo reserva | 2.23 | 0.55 | 0.80 | 29 | 104 | 9.1 | 3.5 | 5.6 |
+| corpo res-posto | 2.99 | 0.44 | 0.84 | 39 | 97 | 6.6 | 4.2 | 6.2 |
+| corpo res-posto sono | 2.01 | 0.37 | 0.85 | 47 | 77 | 6.5 | 2.9 | 4.7 |
+
+Perito morre 86%; evoluído 52%. Mas as mortes caem no dia 4 (t_vida 0.81)
+e o treino rápido vive 2.5 dias: **a seleção nunca viu ninguém morrer**. O
+rápido é inválido pra morte por construção — regra nova (§5).
+
+### 4.2 Longo (G=60, treino 5 dias, morte dentro do treino)
+
+| braço | fit | por semente | mortos | vida_fim | dano | panes | fervura | oficina | res~ |
+|---|---|---|---|---|---|---|---|---|---|
+| noite s+r (sem corpo) | 6.45 | 7.2 / 6.1 / 6.0 | 0 | 100 | 0 | 15.5 | 1.9 | 0 | – |
+| corpo | **7.20** | 6.9 / 7.3 / 7.4 | 0.39 | 47 | 83 | **8.0** | 2.4 | **7.5** | – |
+| corpo reserva (meia-noite, peso) | 4.80 | 6.7 / 3.2 / 4.5 | 0.35 | 49 | 82 | 7.7 | 2.4 | 5.5 | 17.5 |
+| corpo res-posto (peso) | 4.74 | 4.8 / 4.0 / 5.5 | 0.44 | 42 | 102 | 8.3 | **4.0** | 7.5 | 23.2 |
+| corpo res-posto sono (peso) | 4.42 | 3.4 / 4.8 / 5.1 | 0.41 | 45 | 93 | 8.2 | 3.3 | 5.8 | 18.3 |
+
+De onde vem o dano (evoluído, corpo): panes 48 (58%), fervura 24 (29%),
+furos 6, óleo 3, rodar machucado 2. **A pane é a assassina** — não a fervura
+que matava o perito (81). A evolução aprendeu a não ferver (8.1 → 2.4) e a
+reparar (oficina 0 → 7.5 por vida, +225 de vida comprada); não aprendeu a
+não secar.
+
+### 4.3 Três achados
+
+**1. A dor ensina (corpo > sem corpo, +0.75, 2 de 3 sementes).** Mesma
+física, mesmo fitness, mesmo genoma. No mundo sem corpo a evolução aceita
+15.5 panes por vida (cada uma custa 18 passos + 20 dinh + 0.3) e nunca vai à
+oficina. No mundo com corpo, onde a pane FERE, o ser faz metade das panes,
+vai à oficina 7.5 vezes e — mesmo com 39% morrendo — entrega mais fitness.
+A política do mundo-corpo aplicada ao mundo sem corpo renderia ≥ 7.2 > 6.45:
+a evolução sem dor estava presa num ótimo local ("pane como posto lento",
+N15). O dano é um sinal DENSO que aponta pro ótimo do mesmo fitness. Isto
+é a versão do táxi do que o Leonardo pediu: o ser cuida do carro porque dói.
+
+**2. Morte seleciona, mas só se está no treino.** 86% (perito) → 52% (G=20,
+2.5 dias, sem morte no treino) → 39% (G=60, 5 dias, com morte). O que resta
+morre de pane: vive no limite (vida_fim 47, N15 de novo: repara só o
+suficiente).
+
+**3. Gordura no mundo-corpo: pesa, esquenta, e é bimodal.** Perito
+instrumentado: 0 panes com `res > 0` (sem bug). A reserva passa 30% do tempo
+CHEIA (cap 60, entrada do posto desperdiçada) e 46–59% VAZIA: uma noite drena
+os 60 em 2–3 mobilizações e o resto da noite vira pane; o posto só é visitado
+4–7×/vida (pobre 0.35). E os braços com reserva carregam o peso (.10/.30):
+no mundo-corpo o peso FERVE o motor (2.4 → 4.0 fervuras = +16 de dano) —
+"gordo esquenta" apareceu sozinho, como o Leonardo descreveu. Resultado: as
+reservas perdem 2.4–2.8 pra `corpo` sem reserva. Decomposição peso × reserva
+× cap em §4.4 (E13b).
+
+**Sono que come**: gordura −21%, fit −0.32 vs res-posto (predição 17 ✓);
+o ser dormiu menos (sono 15 = 3 descansos/vida contra 7.6 no rápido) — trocou
+sono por gordura, não gordura por sono.
+
+### 4.4 E13b — decomposição peso × reserva × cap (longo, G=60)
+
+| braço | fit | por semente | vs corpo (7.20) | mortos | vida_fim | dano | panes | fervura | res~ |
+|---|---|---|---|---|---|---|---|---|---|
+| corpo peso (só tanque pesa) | 5.48 | 4.8 / 4.6 / 7.1 | **−1.72** | 0.49 | 38 | 96 | 10.0 | 2.6 | – |
+| corpo reserva s/peso (meia-noite) | 7.46 | 6.4 / 7.8 / 8.2 | +0.26 | 0.44 | 46 | 87 | 8.2 | 2.4 | 20.5 |
+| corpo res-posto s/peso | 7.82 | 7.6 / 7.9 / 8.0 | +0.62 | 0.36 | 53 | 84 | 7.4 | 3.0 | 25.5 |
+| **corpo res-posto s/peso, cap 120** | **9.57** | 10.4 / 8.3 / 10.0 | **+2.37 (3/3)** | **0.31** | 59 | **74** | **5.9** | 2.2 | 54.8 |
+| corpo res-posto peso, cap 120 | 5.68 | 4.0 / 6.2 / 6.8 | −1.52 | 0.43 | 45 | 96 | 7.7 | 3.5 | 38.1 |
+
+- **Cap mordia.** Com 120 de gordura a noite cabe: res~ 55, 2 mobilizações
+  por vida, panes 8.0 → 5.9, dano −9, mortos −8 pp, e fitness +2.4 (3/3).
+  Predição 19 ✓ na direção; ✗ nos limiares (panes 5.9 > 4, mortos 0.31 > 0.25).
+- **Meia-noite sozinha ≈ 0** (+0.26, lei: I=10 ≪ f·S). Posto enchendo a
+  reserva +0.62; posto + cap 120 +2.37. A cadeia inteira da lei do E12 vale
+  aqui: entrada → estoque que cabe → cobre o buraco.
+- **O peso é o custo dominante do mundo-corpo.** Só o tanque pesando
+  (.10): −1.72 e mortos 0.39 → 0.49. Gordura pesando (.30 do cap): a mesma
+  configuração vencedora cai de 9.57 pra 5.68 (−3.9). Mecanismo: pesado
+  anda mais devagar e ESQUENTA (fervura 2.2 → 3.5, +13 de dano), come mais,
+  cansa mais — as quatro coisas que o Leonardo pediu, e todas cobram no
+  mundo onde a margem é fina (pobre 0.3, tanque de 100 com noite fechada).
+- Veredito da gordura no corpo: **vale, e muito, quando (a) entra fácil,
+  (b) cabe, e (c) não pesa como calibrado.** Os números do peso (.10/.30)
+  estão 3–5× fortes pra esta economia; a física está certa.
+
+### 4.5 Quem morre: a armadilha de pobreza (E13c)
+
+Campeão R120 (3 sementes × 128 réplicas), rodado com contadores:
+
+| | vivos (69%) | mortos (31%) |
+|---|---|---|
+| panes por vida | **1.3** | **16** |
+| dinheiro no fim | – | **0.6–1.0** |
+| oficina | 6–12 | 4–7 |
+| vida no fim | 83–90 | 0 |
+| fit | 12–15 | – |
+| causa (dano nos últimos ~50 passos) | – | pane 16, fervura 0.4, furo 0.4, óleo 0.6 |
+
+Morte no dia 2–3, por volta do meio-dia. A perda oculta da conversão NÃO
+importa (mortos 0.26–0.37 nos três terços). A cidade importa (1001: 17–23%;
+1002: 30–47%). População BIMODAL com a mesma política: quem não pane nos
+primeiros dias vive bem; quem pane uma vez paga o reboque de 20, fica sem os
+2 do posto e os 10 da oficina, pane de novo, e morre quebrado. Gatilho
+aleatório, espiral determinística.
+
+Teste (mesma config vencedora, só a multa muda):
+
+| reboque | fit | mortos | pobre | vida_fim | panes | dano |
+|---|---|---|---|---|---|---|
+| 20 | 9.57 | 0.31 | 0.28 | 59 | 5.9 | 74 |
+| 8 | 9.35 | 0.27 | 0.22 | 61 | 5.7 | 80 |
+| **0 (só o corpo paga)** | **10.67** | **0.17** | **0.07** | **72** | 6.5 | 84 |
+
+Predição 20 ✓ na direção (mortos −45%, fit +1.1, pobreza 0.28 → 0.07), ✗
+no limiar (0.17 > 0.12). Metade das mortes era dinheiro; a outra metade é
+rota/noite — o ser roda de noite sem posto e seca onde está.
+
+## 5. Veredito e regras
+
+**O corpo funciona como o Leonardo pediu:** a dor ensina (corpo > sem corpo,
+metade das panes, oficina 0 → 7.5), a morte seleciona (86% → 52% → 39% → 31%
+→ 17% conforme o treino vê a morte, a gordura cabe e a multa some), "gordo
+esquenta" apareceu sozinho, e o ser vive no limite (repara o suficiente).
+
+**Três decisões de calibração pro Leonardo (a física está certa, os números
+não):**
+1. **Peso .10/.30 é 3–5× forte** pra esta economia: só o tanque pesando custa
+   −1.7 e +10 pp de mortos; gordura pesando derruba a config vencedora de
+   9.57 pra 5.68. Calibração em E13d (a rodar): .03/.10 e .05/.15.
+2. **Reboque caro em DINHEIRO cria armadilha de pobreza** — a multa cobra na
+   mesma moeda que compra o conserto (posto, oficina), então a 1ª pane vira
+   espiral. Eco da lei da moeda cruzada (doc EXP10): o corpo já paga a pane
+   (−6 vida); a carteira não devia pagar de novo. Reboque 0 = −45% de mortes.
+3. **Cap da gordura ≥ buraco da noite** (120, não 60): +2.4 e −8 pp.
+
+**Regra 11 (00-NEGATIVOS):** morte só seleciona se cabe no treino — o
+rápido (2.5 dias) viu 0 mortes e "evoluiu" 52% de mortalidade; o longo (5
+dias) viu a morte e caiu pra 39%. Antes de rodar seleção por morte, medir o
+dia em que o perito morre e treinar mais longo que isso.
+
+**Regra 12:** penalidade na moeda que compra a recuperação = armadilha. Ao
+adicionar multa, perguntar "com que o ser paga o conserto?" — se for a mesma
+coisa, a multa mata por espiral, não por seleção.
+
+**Fica pra depois (declarado):** os 17% que ainda morrem (rota noturna: sono
+em bloco à noite quando o tanque está baixo, doc 24), dano permanente por
+idade, oficina com preço por HP, greve no mundo-corpo.

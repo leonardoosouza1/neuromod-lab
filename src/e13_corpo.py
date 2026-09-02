@@ -20,10 +20,14 @@ PRESET = dict(P=1024, G=20, T_evo=600, T_aval=1200, R=4, seeds=(0,1,2))
 PRESET_LONGO = dict(P=1024, G=60, T_evo=1200, T_aval=1200, R=4, seeds=(0,1,2))
 OUT = '/media/llm-data/universe-runs/neuromod-lab-taxi'
 
-def cfg_corpo(corpo=True, reserva=False, reserva_posto=0., sono_come=0., peso=None, noite=True):
+def cfg_corpo(corpo=True, reserva=False, reserva_posto=0., sono_come=0., peso=None, noite=True, RES_MAX=None, pane_dinh=20.,
+              WF=None, WR=None):
     c = Cfg(1.0, mundo='base')
+    if RES_MAX is not None: c.RES_MAX = RES_MAX
+    if WF is not None: c.WF = WF
+    if WR is not None: c.WR = WR
     c.relogio = True; c.dia = 240; c.eco2 = True; c.pane_fuel = 15.
-    c.fuel *= 0.5; c.reboque = True; c.pane_dinh = 20.
+    c.fuel *= 0.5; c.reboque = True; c.pane_dinh = pane_dinh
     c.noite = noite; c.corpo = corpo
     c.reserva = reserva; c.reserva_posto = reserva_posto; c.sono_come = sono_come
     c.peso = reserva if peso is None else peso
@@ -51,6 +55,7 @@ def braco(A, cfg, treino, teste, p):
     med['fit_por_semente'] = [d['fit'] for d in por_sem]
     med['mortos_por_semente'] = [d['mortos'] for d in por_sem]
     med['hist'] = {sd: champs[sd][1] for sd in p['seeds']}
+    med['W'] = {sd: [round(float(x), 5) for x in champs[sd][0]] for sd in p['seeds']}   # campeao (diagnostico)
     return med
 
 BRACOS = [('noite s+r',            dict(corpo=False)),
@@ -58,16 +63,32 @@ BRACOS = [('noite s+r',            dict(corpo=False)),
           ('corpo reserva',        dict(reserva=True)),
           ('corpo res-posto',      dict(reserva=True, reserva_posto=20.)),
           ('corpo res-posto sono', dict(reserva=True, reserva_posto=20., sono_come=5.))]
+# E13b: decomposicao peso x reserva x cap (o peso .10/.30 ferve o motor no mundo corpo)
+BRACOS_B = [('corpo peso',                 dict(peso=True)),
+            ('corpo reserva s/peso',       dict(reserva=True, peso=False)),
+            ('corpo res-posto s/peso',     dict(reserva=True, reserva_posto=20., peso=False)),
+            ('corpo res-posto s/peso R120',dict(reserva=True, reserva_posto=20., peso=False, RES_MAX=120.)),
+            ('corpo res-posto peso R120',  dict(reserva=True, reserva_posto=20., peso=True, RES_MAX=120.))]
+# E13c: armadilha de pobreza — o reboque de 20 dinh transforma a 1a pane em sentenca
+BRACOS_C = [('R120 reboque 8',  dict(reserva=True, reserva_posto=20., peso=False, RES_MAX=120., pane_dinh=8.)),
+            ('R120 reboque 0',  dict(reserva=True, reserva_posto=20., peso=False, RES_MAX=120., pane_dinh=0.))]
+# E13d: calibracao do peso na config vencedora (reboque 0, cap 120)
+_V = dict(reserva=True, reserva_posto=20., RES_MAX=120., pane_dinh=0.)
+BRACOS_D = [('vencedor peso .03/.10', dict(peso=True, WF=.03, WR=.10, **_V)),
+            ('vencedor peso .05/.15', dict(peso=True, WF=.05, WR=.15, **_V)),
+            ('vencedor peso .10/.30', dict(peso=True, **_V))]
 
-def main(preset, out, so=None):
+def main(preset, out, so=None, fase='a'):
     p = PRESET if preset == 'rapido' else PRESET_LONGO
     sufixo = '' if preset == 'rapido' else '_longo'
+    bracos = {'a': BRACOS, 'b': BRACOS_B, 'c': BRACOS_C, 'd': BRACOS_D}[fase]
+    if fase != 'a': sufixo += '_' + fase
     treino = [gerar_cidade(s) for s in range(4)]
     teste  = [gerar_cidade(1000+s) for s in range(3)]
     res = dict(preset=p, modo=modo_execucao(), NF=NF, bracos={})
     t0 = time.time()
     print(f'== E13 corpo | P={p["P"]} G={p["G"]} T={p["T_evo"]} R={p["R"]} x{len(p["seeds"])} sementes ==', flush=True)
-    for nome, kw in BRACOS:
+    for nome, kw in bracos:
         if so and nome not in so: continue
         t1 = time.time()
         r = braco(Reativo, cfg_corpo(**kw), treino, teste, p)
@@ -89,5 +110,6 @@ if __name__ == '__main__':
     ap.add_argument('--preset', default='rapido', choices=('rapido','longo'))
     ap.add_argument('--out', default=OUT)
     ap.add_argument('--so', nargs='*', default=None)
+    ap.add_argument('--fase', default='a', choices=('a','b','c','d'))
     a = ap.parse_args()
-    main(a.preset, a.out, a.so)
+    main(a.preset, a.out, a.so, a.fase)

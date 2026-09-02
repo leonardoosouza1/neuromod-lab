@@ -418,3 +418,55 @@ Feature nova `e_dano` (zero sem corpo); portão base bit-exato (7.9740/25.1302).
 18. Emergente esperado: `n_oficina` sobe com corpo (perito 7 → evoluído
     ≥ 8) e `vida_fim` > 50. Se vida_fim < 30 com mortos < 10%: o ser vive no
     limite (repara só pra não morrer) — igual ao "pane como posto lento".
+
+**E13 longo rodou (G=60, T_evo=1200):** noite s+r 6.45; **corpo 7.20** (15 ✗
+invertida: +0.75 — a dor ensina: panes 15.5→8.0, oficina 0→7.5); mortos 0.39
+(14 ✗: < 10% previsto; treino com morte baixou 52→39); reserva 4.80, res-posto
+4.74 (16 ✗), sono 4.42 (17 ✓ gordura −21%, fit −0.3). Perito instrumentado:
+0 panes com res>0 (sem bug); reserva BIMODAL — cheia (cap 60) 30% do tempo,
+vazia 46–59%; uma noite drena os 60 e o resto vira pane; posto 4.4×/vida.
+Braços de reserva carregam peso .10/.30 e fervem mais (2.4→4.0) — falta o par
+justo.
+
+**E13b (decomposição peso × reserva × cap) — 2026-09-02 11:05, ANTES de rodar**
+19. `corpo peso` (só tanque pesa) = corpo −0.5 a −1.5. `res-posto SEM peso`
+    ≥ corpo +0.5 e panes ≤ 6 (a reserva ajuda quando não pesa). `res-posto
+    SEM peso, RES_MAX 120`: panes ≤ 4, mortos ≤ 0.25 (cap deixa de morder: a
+    noite cabe na gordura). `res-posto COM peso, R120`: entre os dois. Se nem
+    sem peso e cap 120 as panes caem: o buraco não é o tanque, é a ROTA
+    (o ser roda à noite sem posto e pane onde está) — a gordura não resolve
+    rota.
+
+**E13b rodou (longo):** corpo peso 5.48 (−1.72 ✓ faixa); reserva s/peso 7.46
+(+0.26, ≥ +0.5 ✗ — lei: I=10); res-posto s/peso 7.82 (+0.62 ✓, panes 7.4 ✗
+> 6); **res-posto s/peso cap 120: 9.57 (+2.37, 3/3), panes 5.9, mortos 0.31**
+(✓ direção, ✗ limiares 4 / 0.25); res-posto peso cap 120: 5.68 (−1.5 vs corpo,
+✗ "entre os dois" — o peso come tudo). Cap mordia; peso é o custo dominante.
+
+**E13c (armadilha de pobreza) — 2026-09-02 11:50, ANTES de rodar**
+Diagnóstico do campeão R120 (3 sementes, 384 réplicas): mortos morrem de PANE
+(16 até morrer; causa nas últimas 50 passos = pane 16, resto 0.4) e quebrados
+(dinh 0.6–1.0); vivos fazem 1.3 panes/vida com vida 83–90. Morte no dia 2–3,
+meio-dia. Perda oculta não pesa (0.26–0.37); cidade pesa (1001: 17–23%,
+1002: 30–47%). Mecanismo: reboque 20 → pobre → sem posto (2) nem oficina (10)
+→ pane → morte. Armadilha com gatilho aleatório (a 1ª pane).
+20. Mesma config vencedora (res-posto s/peso cap 120) com `pane_dinh` 8:
+    mortos 0.31 → ≤ 0.20; com `pane_dinh` 0 (só o corpo paga a pane, −6 vida):
+    mortos ≤ 0.12, dinh dos mortos > 5, panes sobem (pane barata) mas dano
+    total cai. Fit sobe ≥ +1.0 nos dois. Se mortos ficam ~0.3 com multa 0:
+    não é dinheiro, é rota/noite (o ser roda sem posto) — a alavanca seria
+    o sono noturno, não a economia.
+
+**E13c rodou (longo):** reboque 8: 9.35, mortos 0.27 (≤ 0.20 ✗); **reboque 0:
+10.67 (+1.1 ✓), mortos 0.17** (≤ 0.12 ✗ perto), pobre 0.28 → 0.07 ✓, panes
+5.9 → 6.5 ✓ (pane barata), dano 74 → 84 (✗ previa cair). Metade das mortes
+era a multa em dinheiro; o resto é rota/noite. Regras 11 e 12 em 00-NEGATIVOS.
+
+**E13d (calibração do peso) — 2026-09-02 12:05, ANTES de rodar**
+Config vencedora (res-posto s/peso, cap 120, reboque 0 = 10.67, mortos 0.17)
+com peso ligado em duas escalas.
+21. WF/WR = .03/.10: fit ≥ 9.9 (perde ≤ 0.8), mortos ≤ 0.22, fervura ≤ 3.5 —
+    o peso é SENTIDO (res~ cai ≥ 15% vs sem peso) sem matar. .05/.15: fit
+    ≥ 9.2, mortos ≤ 0.25. Se .03/.10 já perde > 1.5: o peso não tem escala
+    viável nesta economia (a margem é fina demais) — mudar a renda antes de
+    insistir no peso.
