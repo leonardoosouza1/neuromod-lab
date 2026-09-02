@@ -641,3 +641,17 @@ E13e, E13l). Sono em bloco = −3 pp com n=3; replicar com 5 sementes.
 0.21 → 0.18). **Números honestos (6 cidades):** recomendado 6.44 / mortos
 0.28 (✓ ≈ 6.4); com bloco 6.52 / 0.25. O bloco não rende fitness; rende 3 pp
 de vida, consistente em 2 conjuntos de cidades (falta o n=5).
+
+**E13m10d rodou (G=100, T_evo=2400 = vidas de 10 dias no treino, avaliado 10 dias):**
+recomendado 16.98 (1.70/dia, ✓ ≥ 1.47), **mortos 0.39** (✗ ≤ 0.30: igual ao
+campeão de 5 dias em 10 dias — o risco de ~4%/dia é PISO do mundo pra política
+de 1 salto, não falta de treino). **Sono em bloco: 18.02 (+1.04) e mortos 0.29
+(−10 pp, 3/3 sementes: 0.32/0.29/0.27 vs 0.40/0.42/0.35)**, bloco 1.9 noites
+de 10, vida_fim 63 vs 53. O efeito do bloco CRESCE com a vida (5 d: −3 pp;
+10 d: −10 pp): o bloco evita as mortes tardias.
+
+**E13o (replicação do bloco em vida de 10 dias, 5 sementes) — ANTES de rodar**
+32. G=100, T_evo=T_aval=2400, 5 sementes: sono-bloco − recomendado: mortos
+    −7 pp ± 3 (≥ 4/5 sementes com menos mortos), fit +0.7 ± 0.7, bloco ~2
+    noites de 10. Se −10 pp segurar em 5/5: é o primeiro mecanismo que
+    reduz a mortalidade tardia — vale virar padrão do mundo-corpo.

@@ -393,3 +393,25 @@ não usa a hora (E12b, E13e, E13l): 12 pesos a mais que a evolução de G=60
 não aprende a apontar. Predição 29 ✗. O piso de ~18% de mortes é da família
 reativa de 1 salto; a próxima alavanca teria de ser um órgão com sinal de
 noite no portão (tálamo), não a física do sono.
+
+### 6.9 E13m — números honestos e vida longa
+
+**Seis cidades (1000+ e 2000+):** recomendado **6.44 / mortos 0.28**; com
+sono em bloco 6.52 / 0.25. O bloco rende −3 pp de mortos nos dois conjuntos
+de cidades e nada de fitness.
+
+**Treino com vida de 10 dias (G=100, T_evo=2400), avaliado em 10 dias:**
+
+| braço | fit | fit/dia | mortos | vida_fim | bloco (noites de 10) |
+|---|---|---|---|---|---|
+| campeão de 5 dias, vivendo 10 (§6.5) | 14.66 | 1.47 | 0.39 | 52 | – |
+| treinado 10 dias | 16.98 | 1.70 | **0.39** | 53 | – |
+| treinado 10 dias + **sono em bloco** | **18.02** | 1.80 | **0.29** | 63 | 1.9 |
+
+- **O risco de 4%/dia é piso do mundo**, não falta de treino: dobrar a vida
+  no treino melhora o fitness/dia (+16%) e não move a mortalidade (0.39 =
+  0.39). Predição 30b ✗.
+- **O sono em bloco cresce com a vida.** −3 pp em 5 dias, **−10 pp em 10
+  dias** (3/3 sementes), +1.0 de fitness. Dormir uma noite inteira a cada
+  5 evita as mortes tardias — é a primeira alavanca que mexe no piso.
+  Replicação com 5 sementes em E13o.
