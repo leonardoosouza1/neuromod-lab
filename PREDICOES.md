@@ -678,3 +678,21 @@ enganou 4× hoje. Braços: `corpo res-posto s/peso` (cap 60, reboque 20),
     reboque 20 (ambos R120): mortos −10 pp com 5/5 e fit ≥ +0.8. Se cap 120
     < +0.8 ou reboque 0 < −5 pp: a recomendação ao Leonardo cai e o doc 27
     §5 é reescrito.
+
+**E13p_b rodou (5 sementes):** cap 60: 8.06 / mortos 0.33; cap 120: 8.46 /
+0.34 → **+0.40, 2/5 sementes acima, mortos +1 pp.** 33 (cláusula do cap) ✗:
+o +2.37 (3/3) de n=3 era ruído. A gordura acumula mais (res~ 51 vs 27) e não
+muda panes (6.4 vs 6.8) nem mortes. Recomendação "cap 120" ao Leonardo CAI.
+
+**E13p_c rodou (5 sementes):** R120 reboque 0: 9.78 / mortos 0.23
+[0.26, 0.23, 0.21, 0.23, 0.23] vs reboque 20: 8.46 / 0.34 [0.38, 0.31, 0.42,
+0.27, 0.33] → **+1.32 (4/5), −11 pp (5/5)**. 33 (cláusula do reboque) ✓. A
+armadilha de pobreza REPLICA; o cap não. Placar das decisões: reboque 0 ✓
+(n=5), peso .10/.30 viável (n=3, a replicar), cap 120 ✗ (ruído).
+
+**E13q (replicar o mundo recomendado, 5 sementes; números finais) — ANTES de rodar**
+34. Em 1000+: gordura (recomendado − sem gordura) ≥ +0.5 e mortos −3 pp com
+    ≥ 3/5 sementes; peso (sem peso − recomendado) ≥ +1.5 com 5/5 e fervura
+    +1.0. Em 2000+, recomendado 5 sementes ≈ 4.7 ± 1; média honesta de 6
+    cidades ≈ 6.5 ± 1, mortos ≈ 0.27. Se gordura < +0.3: a gordura contínua
+    não paga nem no corpo (e a lei do E12 explica: a noite gasta antes).

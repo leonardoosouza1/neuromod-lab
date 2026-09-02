@@ -148,5 +148,6 @@ greve). Mortalidade é bimodal (quem pane cedo morre) e a variância entre
 sementes é ±8 pp: qualquer efeito < 10 pp precisa de 5 sementes ou mais.
 Fitness também: ±1.5 entre sementes em todo mundo-corpo.
 
-**O que sobrou (e vai ser replicado com n=5, E13p):** cap da gordura 120 e
-reboque só no corpo — as duas decisões recomendadas ao Leonardo.
+**Replicado com n=5 (E13p):** reboque só no corpo SOBREVIVE (+1.3, −11 pp,
+5/5 sementes); cap 120 CAI (+0.4, 2/5, +1 pp — a noite gasta a gordura antes
+de o cap importar). Das cinco afirmações de n=3 do dia, uma sobreviveu.

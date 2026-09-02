@@ -209,8 +209,8 @@ metade das panes, oficina 0 → 7.5), a morte seleciona (86% → 52% → 39% →
 → 17% conforme o treino vê a morte, a gordura cabe e a multa some), "gordo
 esquenta" apareceu sozinho, e o ser vive no limite (repara o suficiente).
 
-**Três decisões de calibração pro Leonardo (a física está certa, os números
-não):**
+**Três decisões de calibração pro Leonardo — REVISADAS com 5 sementes
+(E13p, §6.10): a 2ª sobrevive, a 3ª cai.**
 1. **Peso .10/.30 é viável — desde que a multa em dinheiro suma** (§4.6):
    com reboque 20 custava −3.9 e +12 pp de mortos; com reboque 0 custa −1.4
    e 0 pp. Manter os números do Leonardo; o peso é sentido (fervura +20%).
@@ -218,7 +218,9 @@ não):**
    mesma moeda que compra o conserto (posto, oficina), então a 1ª pane vira
    espiral. Eco da lei da moeda cruzada (doc EXP10): o corpo já paga a pane
    (−6 vida); a carteira não devia pagar de novo. Reboque 0 = −45% de mortes.
-3. **Cap da gordura ≥ buraco da noite** (120, não 60): +2.4 e −8 pp.
+3. ~~Cap da gordura ≥ buraco da noite (120, não 60): +2.4 e −8 pp.~~ **Caiu
+   com 5 sementes**: +0.4 (2/5) e mortos +1 pp. A gordura acumula mais (51
+   vs 27) e não muda panes nem mortes. Cap é indiferente.
 
 **Regra 11 (00-NEGATIVOS):** morte só seleciona se cabe no treino — o
 rápido (2.5 dias) viu 0 mortes e "evoluiu" 52% de mortalidade; o longo (5
@@ -429,3 +431,16 @@ mortos 0.29; com bloco 17.68 / 0.31 — 1/5 sementes com menos mortos. O
 e 10 dias). O piso de mortalidade não cedeu a nenhuma das cinco alavancas
 testadas (treino longo, hora, rota, sono em bloco, cérebro por tálamo): é o
 teto da política reativa de 1 salto neste mundo.
+
+### 6.10 E13p — as duas decisões recomendadas, com 5 sementes
+
+| decisão | n=3 | n=5 | veredito |
+|---|---|---|---|
+| cap 120 vs 60 (res-posto, sem peso, reboque 20) | +2.37 (3/3), −8 pp | **+0.40 (2/5), +1 pp** | ruído — cai |
+| reboque 0 vs 20 (res-posto, sem peso, cap 120) | +1.10, −14 pp | **+1.32 (4/5), −11 pp (5/5)** | **replica** |
+
+Mortos por semente, reboque 20 → 0: 0.38→0.26, 0.31→0.23, 0.42→0.21,
+0.27→0.23, 0.33→0.23. A armadilha de pobreza (§4.5) é o achado mais robusto
+do E13: multa em dinheiro na moeda que compra o conserto mata por espiral.
+O cap era o que parecia mais óbvio pela lei do E12 e era ruído: a noite
+gasta a gordura antes de o cap importar (§6.7).
