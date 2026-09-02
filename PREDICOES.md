@@ -989,3 +989,11 @@ a gosto.
 **E14j (média honesta da melhor config: Noite24 sem pena R=16 em 2000+) — ANTES de rodar**
 47. Cidades 2000+: mortos ≤ 0.26, fit ≥ 5.3; média 6 cidades ≈ 7.1 / 0.20
     (contra padrão 7.08 / 0.24): mesmo fitness, −4 pp de mortos, sem pena.
+
+**E14j rodou (Noite24 sem pena, R=16, cidades 2000+):** fit 5.12, mortos
+**0.30** [.34 .34 .35 .28 .20] = padrão (0.30). 47 ✗ (≤ 0.26). Sem pena, nas
+cidades difíceis a alavanca não rende nada; com pena rendia 0.25. **Média
+honesta 6 cidades, Noite24 sem pena: 7.04 / 0.22** (padrão 7.08 / 0.24; com
+pena 6.94 / 0.185). Leitura final: R=16 + produto bastam onde o posto é perto;
+onde é longe a pena por morte ainda compra 5 pp. Fim das baterias do dia
+(predições 1–47).

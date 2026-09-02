@@ -653,10 +653,10 @@ Noite24 faz 20.4 / 0.21 contra 18.7 / 0.29 do padrão. Cidades 1000+ são
 1. **Avaliação.** R=16 vidas por genoma como padrão em qualquer mundo com
    morte (regra 14). É o essencial: sem isso a seleção está cega e nenhuma
    alavanca aparece. Custa 4× por geração.
-2. **Objetivo.** A pena por morrer é opcional: com R=16 a evolução já acha
-   sobrevivência porque pane custa avaria e tempo (E14i: 0.14 sem pena vs
-   0.12 com, por −0.4 de fitness). Se quiser "vida vale pontos" por
-   princípio, a pena fixa é a menor mudança; a arena é a mais humana.
+2. **Objetivo.** A pena por morrer é opcional nas cidades fáceis (E14i:
+   0.14 sem vs 0.12 com) e necessária nas difíceis (E14j: 0.30 sem vs 0.25
+   com). Média de 6 cidades: sem pena 7.04 / 0.22, com pena 6.94 / 0.185.
+   Recomendo a pena: −3.5 pontos de mortos por −0.1 de fitness.
 2b. **Genoma.** Dar ao cérebro produtos de sinais. O que faltava contra a
    noite era UM produto (tanque baixo × distância ao posto): mortos 0.18 →
    0.12–0.14, panes −1/3, genes iguais em 5/5 sementes, ablação causal.
@@ -749,7 +749,13 @@ zerada → 0.25; só o posto → 0.19.
 Sem pena por morrer, a evolução ainda acha o produto "tanque baixo ×
 distância ao posto" — porque pane custa avaria e tempo, e isso o fitness já
 via. O que a impedia era o ruído de 16 vidas por genoma. **R=16 é o
-essencial; a pena é ajuste fino** (−2 pontos de mortos por −0.4 de
-fitness). Isto simplifica a decisão do Leonardo: não precisa mudar o
-objetivo; precisa avaliar cada cérebro em mais vidas e dar ao genoma um
-produto.
+essencial; a pena é ajuste fino** nas cidades fáceis (−2 pontos de mortos
+por −0.4 de fitness).
+
+**Mas nas cidades difíceis (2000+, E14j) a pena faz falta:** sem pena o
+Noite24 fica em 0.30 (= padrão); com pena, 0.25. Média honesta de 6
+cidades: sem pena 7.04 / 0.22; com pena 6.94 / 0.185; padrão 7.08 / 0.24.
+Leitura: onde o posto é perto, enxergar (R=16) + poder expressar (produto)
+bastam; onde é longe, a morte precisa valer pontos pra seleção insistir.
+Decisão do Leonardo continua simples: R=16 sempre; pena quando o mundo é
+duro.
