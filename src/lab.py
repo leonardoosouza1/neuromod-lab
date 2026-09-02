@@ -129,6 +129,12 @@ class Cfg:
         # E14b: a VIDA no fitness — pena por morrer (0 = identidade). Sem isto a morte nao custa
         #       fitness (quem morre no dia 4 entrega quase o mesmo) e nao e selecionada.
         s.pena_morte=0.
+        # [E15 economia] flags/constantes — SO o agente E15 edita este bloco
+        # [E15 fim]
+        # [E16 glandulas] flags/constantes — SO o agente E16 edita este bloco
+        # [E16 fim]
+        # [E17 produtos] flags/constantes — SO o agente E17 edita este bloco
+        # [E17 fim]
         s.RES_MAX=60.; s.NIVEL=50.; s.PERDA_ARMAZ=.10; s.MOB=25.; s.TPAR_MOB=3.
         s.WF=.10; s.WR=.30; s.KAPPA_F=.05
 
@@ -234,6 +240,10 @@ class Lote:
         s.t_vida = torch.zeros(B, device=DEV); s.n_oficina = torch.zeros(B, device=DEV)
         s.sono_soma = torch.zeros(B, device=DEV); s.dano_soma = torch.zeros(B, device=DEV)
         s.n_bloco = torch.zeros(B, device=DEV)   # E13l: noites dormidas em bloco
+        # [E15 economia] estado (distrito por no, precos, divida, censo) — SO E15
+        # [E15 fim]
+        # [E16 glandulas] estado (h, genes copiados no reset, censo) — SO E16
+        # [E16 fim]
         if cfg.perda_var:
             s.perda = .15 + .30*torch.rand(B, generator=g, device=DEV)   # 15..45%
         else:
@@ -355,14 +365,19 @@ class Lote:
                            s.temp/120, s.oleo/100, (s.dinh/120).clamp(max=1.),
                            (s.pd_>=0).float(),
                            s.res/s.cfg.RES_MAX, hsin, hcos,
-                           1. - s.vida/100.], -1)   # E12: reserva + hora; E13: dano (0 sem corpo)
+                           1. - s.vida/100.,
+                           # [E15 features] 2 slots reservados (zero ate o E15 preencher)
+                           torch.zeros_like(s.fuel), torch.zeros_like(s.fuel),
+                           # [E16 features] 2 slots reservados (zero ate o E16 preencher)
+                           torch.zeros_like(s.fuel), torch.zeros_like(s.fuel)], -1)   # E12: reserva+hora; E13: dano
         F = torch.cat([(-dal/6.)[...,None], (-cus/4.)[...,None], (-cong/2.)[...,None],
                        vd[...,None], (-ds.permute(0,2,1)/6.),
                        est[:,None,:].expand(-1,G,-1),
                        s.UNS], -1)
         return F, val
 
-NF = 1+1+1+1+5+12+1  # 22 features por candidato (ver NOMES_F em rodar.py)
+NF = 1+1+1+1+5+16+1  # 26 features por candidato (ver NOMES_F em rodar.py)
+                     # 4 slots reservados (E15 economia x2, E16 glandulas x2): zero ate serem usados
                      # E13 (2026-09-02): +e_dano (1-vida/100) — zero sem corpo
                      # E12 (2026-09-01): +reserva, +sin(hora), +cos(hora) — zero
                      # nos mundos sem relogio/reserva (contribuicao exata nula)
@@ -416,6 +431,8 @@ def passo(m, esc):
         h22 = ((h >= 22.) & (h < 22. + 24./c.dia)).float()   # 1 passo por dia
         m.fuel_22 += m.fuel*h22; m.n_22 += h22
     # entrega
+    # [E16 glandulas: atualizar h e calcular multiplicadores (metab, sono, vel) — SO E16]
+    # [E16 fim]
     ch = (m.pd_>=0) & (m.no==m.pd_) & (m.rest<=0)
     if viva is not None: ch = ch & viva
     d = m.DIa[m.cidx, m.po_.clamp(min=0), m.pd_.clamp(min=0)]
@@ -438,6 +455,8 @@ def passo(m, esc):
     if viva is not None: pode = pode & viva
     sv = m.serv_ab(noite)
     # servicos (sem closures: compile-friendly)
+    # [E15 economia: preco por distrito, imposto ao gastar, aluguel/agua a meia-noite, juros — SO E15]
+    # [E15 fim]
     o1 = pode & (esc==GMAX+0) & (sv[:,0]>0) & (m.dinh>=2.)
     m.n_posto += o1.float(); m.t_pobre += (m.dinh < 2.).float()
     m.dinh = m.dinh - 2.*o1.float()
@@ -552,6 +571,8 @@ def passo(m, esc):
     else:
         m.fuel = torch.where(sf, torch.full_like(m.fuel, pf), m.fuel)
     m.dinh = (m.dinh-c.pane_dinh*sf.float()).clamp(min=0)
+    # [E15 economia: reboque cobra CALORIAS (gordura -> tanque) proporcional a d_posto — SO E15]
+    # [E15 fim]
     rd = torch.rand(B, generator=m.gsim, device=DEV)
     val = val & (~mob)                  # mobilizando = parado este passo
     fu = val & (~sf) & (rd < ((1-m.pneu/100)-.45).clamp(min=0)*c.risco*m.txp())
@@ -572,6 +593,8 @@ def passo(m, esc):
     m.indo = torch.where(an, dst, m.indo)
     m.rest = torch.where(an, (cu*m.vel()*peso*saude).round().clamp(min=1), m.rest)  # pesado/ferido = lento
     m.fuel = m.fuel - cuf*c.fuel*an.float()
+    # [E16 glandulas: custo calorico dos hormonios; sono limpa h — SO E16]
+    # [E16 fim]
     m.fad  = (m.fad  + cu*c.fadiga*peso*an.float()).clamp(max=100)
     if noite is not None:
         m.par_noite += (noite & ~an & (m.rest<=0)).float()   # parado a noite
