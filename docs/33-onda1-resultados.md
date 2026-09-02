@@ -46,10 +46,11 @@ tanto no descanso, mas continua orbitando. Veredito da onda 1 pro cérebro:
 **produtos sim, mas um de cada vez e com limiar** (só ligam quando a
 necessidade passa de um ponto). Predição 17.3 ✗ nos dois controles.
 
-## E15 — economia real (pena 5, R=16) — parcial, falta a âncora "sem economia"
+## E15 — economia real (pena 5, R=16) — parcial (faltam tanque / só gordura)
 
 | mundo | fit | mortos | panes | renda bruta | imposto (receber+gastar) | aluguel+água | dívida máx | leitura |
 |---|---|---|---|---|---|---|---|---|
+| **âncora: corpo sem economia** | 8.54 | 0.19 | 7.9 | 239 | 0 | 0 | 0 | referência (bit-igual ao Reativo do E17: mesmo protocolo) |
 | economia, reboque sem custo calórico (só −3 de vida) | 6.89 | **0.09** | 9.2 | 220 | 44 + 25 | 39 | 2.5 | menos mortos de toda a linha; mas pane volta a ser "posto grátis" (9.2/vida) |
 | economia, reboque cobra 3 de gordura e o resto da VIDA | 6.11 | **0.28** | 5.7 | 179 | 36 + 22 | 36 | 1.5 | menos panes, muito mais mortos: cobrar da vida mata |
 
@@ -60,3 +61,10 @@ tanque (3 de gordura, resto do tanque) e só da gordura — que está na fila
 (onda 1c), e a âncora sem economia. A carga tributária ficou em 49–53 % da
 renda bruta e a dívida quase não aparece (máx 2.5 de 60): com aluguel 6+2 o
 táxi não quebra, só fica magro de dinheiro (pobre 0.08).
+
+**Com a âncora:** a economia (aluguel 6+2, imposto ~20 % ao receber e ao
+gastar, preços por distrito) custa **1.7 a 2.4 de entregas** por vida — é a
+saída fixa que o Leonardo pediu, e ela pesa: carga de ~50 % da renda bruta.
+Sobre a morte, a economia em si não mata: o que decide é **como o reboque
+cobra** — nada (0.09) < âncora (0.19) < da vida (0.28). O braço do tanque e
+o só-gordura fecham a escada (onda 1c).
