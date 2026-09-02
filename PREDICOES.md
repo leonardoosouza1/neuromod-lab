@@ -923,3 +923,27 @@ Referências (mesmo protocolo): Reativo 8.17 / 0.17; ReativoNoite 9.11 / 0.11.
     a ablação zerou os genes DEPOIS de evoluir; durante a evolução a
     alavanca "tanque baixo → posto" (a qualquer hora) pode ter guiado a
     população e depois virado redundante com os pesos de serviço.
+
+**E14g ReativoNoite24 rodou (2 genes sem hora, pena 5, R=16, 5 sementes):** fit
+8.58, **mortos 0.12** [.07 .10 .16 .12 .14], panes 5.2 (Reativo mesmo protocolo:
+0.17, panes 7.7). Genes posto (3.60, 3.76, 3.75, 3.75, 2.82) e rota (0.47,
+0.13, 0.19, 0.49, 0.31) — **convergência 5/5** (ao contrário do ReativoNoite,
+cujos genes ficaram ~0). 44 cláusula (i) ✓. A alavanca que faltava não é a
+hora: é **tanque baixo × distância ao posto no MOVIMENTO** — um termo
+bilinear (fuel × d_posto) que a política linear não expressa (as features
+entram somando). "Vai pro posto quando o tanque está baixo, de onde estiver"
+= roteamento condicional, a memória-de-rota mínima que N2/N10 pediam.
+
+**Ablação do campeão Noite24:** genes zerados → mortos **0.351**, fit 4.90,
+panes 12.2; só posto = 0 → 0.194; só rota = 0 → 0.253. Causal e co-adaptado
+(a política evoluída DEPENDE da alavanca; ressalva da co-adaptação: ablação =
+contribuição + desarranjo). O gene de MOVIMENTO (rota, fuel × d_posto) é o
+que mais pesa. Três evidências: evoluções independentes (0.12 vs 0.17),
+convergência 5/5 dos genes, ablação. É o mecanismo mais limpo do dia.
+
+**E14h (números finais do Noite24 com a avaliação certa) — ANTES de rodar**
+45. ReativoNoite24, pena 5, R=16, 5 sementes: cidades 2000+ → mortos ≤ 0.22
+    (Reativo 0.27, Noite 0.24), fit ≥ 5.5; média 6 cidades ≤ 0.17. Vida de
+    10 dias (G=100) → mortos ≤ 0.22 (Noite 0.24, padrão 0.29), fit ≥ 19. Se
+    2000+ ficar ≥ 0.26: a alavanca só funciona onde o posto é perto (cidades
+    fáceis) — e a média honesta decide.

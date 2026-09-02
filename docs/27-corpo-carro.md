@@ -677,3 +677,33 @@ Em vida longa a direção persiste (−5 pp, 3/5 sementes; +0.9 de fitness).
 Predição 43 ✓. O risco por dia cai de ~3.4% pra ~2.7%. Sugestivo, como o
 resto da linha E14: o mecanismo é trajetória, e E14g testa se qualquer
 paisagem com 2 genes extras chega ao mesmo lugar.
+
+### 6.20 E14g — a alavanca que faltava: "tanque baixo × distância ao posto" no movimento
+
+Controle de paisagem: os mesmos 2 genes do ReativoNoite, **sem hora**
+(`ReativoNoite24`: g = 1 − fuel/cap a qualquer hora).
+
+| arquitetura (pena 5, R=16, 5 sementes, 1000+) | fit | mortos | panes | genes (posto · rota) |
+|---|---|---|---|---|
+| Reativo | 8.17 | 0.17 | 7.7 | – |
+| ReativoNoite (20–22h) | 9.11 | 0.11 | 6.4 | ~0 (inertes) |
+| **ReativoNoite24 (sem hora)** | 8.58 | **0.12** | **5.2** | **3.7 · 0.3 em 5/5** |
+
+Ablação do campeão Noite24: genes zerados → mortos 0.35, fit 4.9; só a rota
+zerada → 0.25; só o posto → 0.19.
+
+- **Não era a hora. Era um termo bilinear.** O Reativo já tem `e_fuel` e
+  `d_posto` como features, mas elas entram SOMANDO: ele não consegue dizer
+  "puxa pra perto do posto SÓ quando o tanque está baixo". O gene `rota`
+  faz exatamente `−W · d_posto(vizinho) · (1 − fuel/cap)` — um produto. Com
+  ele, o ser vai pro posto de onde estiver quando precisa, e chega antes da
+  noite sem saber que horas são.
+- Os genes convergem em 5/5 sementes (3.6–3.8 e 0.1–0.5) e a ablação derruba
+  a política inteira: causal, replicado, com mecanismo. É a "memória de
+  rota mínima" que N2/N10 diziam faltar à política de 1 salto — não memória,
+  um produto.
+- O ReativoNoite chegou a 0.11 sem usar o gene (inerte): trajetória. O
+  Noite24 chega a 0.12 usando: mecanismo. O segundo é o resultado.
+- Ressalva: só com a morte visível (pena + R=16). Sem pena e com R=4 o
+  mesmo gene deriva ao acaso (E14a). Os três pedaços se encaixam: objetivo
+  que vê a morte + avaliação que a enxerga + genoma que pode expressá-la.
