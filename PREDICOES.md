@@ -970,3 +970,9 @@ com pena 8.58 / 0.12.
     mortos ≤ 0.14 e fit ≥ 9.0 (melhor dos dois mundos). Se mortos ~0.18 e
     genes dispersos: a alavanca só é selecionada quando a MORTE conta —
     então pena + R=16 são ambos necessários (regra 14 completa).
+
+**E14h Noite24 em 10 dias rodou (pena 5, R=16, G=100, 1786 s):** fit **20.43**
+[18.2 19.8 24.7 18.9 20.6] = 2.04/dia (melhor de 10 dias; padrão 18.70, Noite
+19.64), **mortos 0.21** [.33 .28 .09 .19 .16] (padrão 0.29, Noite 0.24) — 45
+✓ nesta cláusula (≤ 0.22, fit ≥ 19). Dispersão grande entre sementes
+(0.09–0.33): a alavanca ajuda muito ou pouco conforme a cidade/sorte.

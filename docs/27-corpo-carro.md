@@ -708,3 +708,25 @@ zerada → 0.25; só o posto → 0.19.
 - Ressalva: só com a morte visível (pena + R=16). Sem pena e com R=4 o
   mesmo gene deriva ao acaso (E14a). Os três pedaços se encaixam: objetivo
   que vê a morte + avaliação que a enxerga + genoma que pode expressá-la.
+
+### 6.21 E14h — números finais da alavanca bilinear (ReativoNoite24, pena 5, R=16)
+
+| avaliação | Reativo (pena, R=16) | ReativoNoite (hora) | **ReativoNoite24 (sem hora)** | padrão (R=4, sem pena) |
+|---|---|---|---|---|
+| 5 dias, cidades 1000+ | 8.17 / 0.17 | 9.11 / 0.11 | 8.58 / **0.12** | 8.76 / 0.18 |
+| 5 dias, cidades 2000+ | 5.29 / 0.27 | 5.77 / 0.24 | 5.30 / 0.25 | 5.39 / 0.30 |
+| **média 6 cidades** | 6.73 / 0.22 | 7.44 / 0.175 | 6.94 / **0.185** | 7.08 / 0.24 |
+| 10 dias, cidades 1000+ | – | 19.64 / 0.24 | **20.43 / 0.21** | 18.70 / 0.29 |
+
+- A alavanca "tanque baixo × distância ao posto" vale muito onde o posto é
+  perto (mortos 0.17 → 0.12, panes −1/3) e pouco onde é longe (0.27 → 0.25):
+  puxar pro posto de longe com o tanque baixo atravessa a cidade e às vezes
+  não chega. Média honesta: −5.5 pontos de mortos sobre o padrão, fitness
+  igual.
+- Em vida de 10 dias é a melhor configuração do dia: 20.4 (2.04 por dia) e
+  0.21 de mortos, contra 18.7 / 0.29 do padrão. Predição 45 ✓ em 10 dias,
+  ✗ no limiar de 2000+.
+- O ReativoNoite (com hora) tem números parecidos ou melhores — mas seus
+  genes são inertes (§6.20): é trajetória. O Noite24 tem mecanismo. Pra
+  desenho do mundo, o que importa é o mecanismo: um produto de dois sinais
+  que a política linear não tinha.
