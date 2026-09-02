@@ -76,3 +76,15 @@ Yerkes-Dodson: imposto intermediário produz MAIS que zero.
   séria precisa do controle `pena_morte=0` e do limiar `relu(nec−θ)` proposto
   no doc 31. Alavanca à mão (regra 15) é viva (mortos 0.25 → 0.02 ou 0.81),
   mas enxertada num genoma não co-adaptado custa fitness em 13/13.
+- **E15 economia** → `712075b`: 5 blocos em `lab.py` (inserção pura), `NOMES_F`
+  (`e_divida`, `e_preco_local`), `e15_economia.py`, `testes_e15` (5/5: economia
+  neutra == desligada bit a bit em 8 tensores; imposto pela origem 8/8), doc 29.
+  Achado do agente (1 semente, G=10): **cobrar o reboque em calorias do TANQUE
+  recria a espiral** (panes 5.9 → 18.2; tirar o dinheiro não conserta, tirar a
+  caloria conserta) — a ração do guincho é exata, cobrar dela vira pane de
+  novo: regra 12 na moeda calórica (3ª aparição). Conserto: `KCAL_VIDA`
+  (cobrar da vida) volta ao patamar. Default segue o pedido (tanque), a
+  bateria honesta (R=16 + pena) decide. Abertos: crédito no vermelho (o
+  comércio fecha em 0, não em −60 — exige `serv_need`, fora do bloco);
+  aluguel 6+2 pesa 42% da renda; features E15 são por ser, não por vizinho
+  (roteamento por preço/imposto é o E17).
