@@ -88,3 +88,22 @@ Yerkes-Dodson: imposto intermediário produz MAIS que zero.
   comércio fecha em 0, não em −60 — exige `serv_need`, fora do bloco);
   aluguel 6+2 pesa 42% da renda; features E15 são por ser, não por vizinho
   (roteamento por preço/imposto é o E17).
+- **E16 glândulas** → `b40bb59` (conflitos em `obs()`/`NOMES_F` resolvidos
+  combinando E15+E16: features `e_divida, e_preco_local, h_gl0, h_gl1`).
+  `glandulas.py` (SerGlandular, genes copiados pro Lote no reset — o hormônio
+  é do corpo), `e16_glandulas.py`, `analise_glandulas.py`, `testes_e16` (6/6:
+  genes zerados == Reativo bit a bit com glândulas LIGADAS), doc 30.
+  Validação curta (n=1, G=10) NEGATIVA com mecanismo: a glândula custa 70 de
+  fuel/vida (κ·Σh) e come a gordura (res 38 → 15); com K=1 a seleção
+  DESLIGOU o hormônio (empate) — "não quero", não "atrapalha". Causa
+  estrutural: só 2.5 de 5 canais moduláveis couberam no bloco; 3 linhas fora
+  do bloco (sono 557, metabolismo pleno 635, velocidade 677) precisam do dono
+  do `lab.py` — o agente recusou rebindar `peso`/`saude` porque daria almoço
+  grátis no calor (N13). Emergência (n=1): estresse-like EMERGIU (sobe com
+  fome, reduz metabolismo) e o reverso também (sobe ao abastecer, aumenta
+  manutenção) — nunca os dois no mesmo indivíduo; modo não desenhado: peso
+  negativo num déficit vira detector de "está tudo bem". Dois erros do agente
+  pegos por ele mesmo (regime dentro do `if`; análise que fabricava
+  confirmação). N19 candidato no doc 30 §5.2. Decisão pendente (minha):
+  liberar as 3 linhas com multiplicadores default 1.0 (identidade) e rodar a
+  bateria honesta com os 5 canais.
