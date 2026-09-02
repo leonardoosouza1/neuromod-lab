@@ -953,3 +953,11 @@ convergência 5/5 dos genes, ablação. É o mecanismo mais limpo do dia.
 é a ALAVANCA "tanque baixo × distância ao posto" (Noite24 0.12), não hora
 (Noite: genes inertes), não diversidade (Ruído 0.19).** Aposta registrada
 antes ("(i) chega, (ii) não") ✓.
+
+**E14h Noite24 em 2000+ rodou (pena 5, R=16, 5 sementes):** fit 5.30, mortos
+**0.25** [.16 .15 .31 .34 .29] — 45 ✗ (≤ 0.22; fit ≥ 5.5). Panes 7.3 (Reativo
+2000+: 9.6, −24%) mas mortos só −2 pp vs Reativo (0.27), bimodal por semente.
+**Média honesta 6 cidades: Noite24 6.94 / 0.185** (padrão 7.08 / 0.24; Noite
+7.44 / 0.175; Reativo pena+R16 6.73 / 0.22). Onde o posto é longe a alavanca
+"puxa pro posto" leva o ser a atravessar a cidade com o tanque baixo — ajuda
+menos. Cláusula prevista: "só funciona onde o posto é perto" — meio ✓.
