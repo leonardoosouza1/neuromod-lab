@@ -885,3 +885,7 @@ timing".
 completo: (R4,p0) 0.18 · (R4,p5) 0.22 · (R16,p0) 0.18 · (R16,p5) 0.17 — no
 Reativo nada move a morte mais que 1 pp. O 0.11 é do ReativoNoite com pena e
 R=16 (trajetória; 4/5 sementes). E14e testa em 2000+.
+
+**E14e Reativo rodou (pena 5, R=16, cidades 2000+):** fit 5.29, mortos 0.27
+[.25 .20 .29 .32 .27] vs 0.30 (R=4, sem pena) — −3 pp, ruído; 42 ✗ pro
+Reativo (≤ 0.24). Consistente com o 2×2: no Reativo a morte não cede.
