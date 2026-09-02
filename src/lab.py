@@ -130,6 +130,25 @@ class Cfg:
         #       fitness (quem morre no dia 4 entrega quase o mesmo) e nao e selecionada.
         s.pena_morte=0.
         # [E15 economia] flags/constantes — SO o agente E15 edita este bloco
+        # doc 29. economia=False => IDENTIDADE BIT-EXATA (nada aloca, nada sorteia,
+        # nenhum draw dos geradores do mundo se desloca).
+        #   economia   dinheiro compra TUDO: aluguel+agua por dia, imposto ao RECEBER
+        #              (pela aliquota do distrito de ORIGEM da corrida) e ao GASTAR
+        #              (preco base x multiplicador do distrito ATUAL x (1+aliquota)),
+        #              divida com juros em vez de morte por dinheiro, reboque em CALORIAS.
+        s.economia=False
+        s.D_DIST=3                        # distritos por cidade (particao espacial k-means)
+        s.ALIQ=(.10,.20,.30)              # aliquota por distrito (receber E gastar)
+        s.PMUL=(0.8,1.0,1.3)              # multiplicador de preco dos servicos por distrito
+        s.dist_sorteia=True               # QUAL distrito e caro: sorteado POR MUNDO (lei oculta,
+                                          # como npc_base/perda) — geografia nao se decora
+        s.ALUGUEL=6.; s.AGUA=2.           # cobranca diaria a meia-noite, em dinheiro
+        s.LIMITE_DIVIDA=60.               # piso do saldo: dinh nunca abaixo de -LIMITE
+        s.JUROS=.05                       # juros diarios sobre o saldo NEGATIVO
+        s.KCAL_REBOQUE=1.0                # calorias por unidade de distancia ate o posto (gordura -> tanque)
+        # ATENCAO (N16 / regra 12): com economia o reboque cobra CALORIAS, entao
+        # `pane_dinh` TEM que ser 0 (o Lote levanta erro se nao for) e o runner
+        # baixa D_PANE de 6 para 3 — senao a pane pune tres vezes (vida+caloria+dinheiro).
         # [E15 fim]
         # [E16 glandulas] flags/constantes — SO o agente E16 edita este bloco
         # [E16 fim]
@@ -241,6 +260,51 @@ class Lote:
         s.sono_soma = torch.zeros(B, device=DEV); s.dano_soma = torch.zeros(B, device=DEV)
         s.n_bloco = torch.zeros(B, device=DEV)   # E13l: noites dormidas em bloco
         # [E15 economia] estado (distrito por no, precos, divida, censo) — SO E15
+        if cfg.economia:
+            if cfg.pane_dinh:
+                raise ValueError('E15: com economia=True o reboque cobra CALORIAS — '
+                                 'ponha cfg.pane_dinh=0 (N16 / regra 12: multa na moeda '
+                                 'que compra a recuperacao = espiral de pobreza).')
+            D = cfg.D_DIST
+            # DISTRITOS por particao espacial (k-means determinista: sementes por
+            # ponto-mais-distante + 8 iteracoes de Lloyd). Roda 1x por Lote, no host.
+            # A geografia e a MESMA em todos os mundos da cidade; o que muda por
+            # mundo e QUAL distrito e caro (permutacao oculta abaixo).
+            dl = []
+            for cd in cidades:
+                p = cd['pos']; C = None
+                ce = [int(np.argmax(((p - p.mean(0))**2).sum(1)))]
+                for _ in range(D-1):
+                    dd = np.min(np.stack([((p - p[k])**2).sum(1) for k in ce]), 0)
+                    ce.append(int(np.argmax(dd)))
+                C = p[ce].copy()
+                for _ in range(8):
+                    lb = np.argmin(((p[:,None,:] - C[None,:,:])**2).sum(2), 1)
+                    for k in range(D):
+                        mk = lb == k
+                        if mk.any(): C[k] = p[mk].mean(0)
+                lb = np.argmin(((p[:,None,:] - C[None,:,:])**2).sum(2), 1)
+                dl.append(lb)
+            s.e15_dist = torch.tensor(np.stack(dl), device=DEV, dtype=torch.long)   # (NC,n)
+            # gerador PROPRIO: nao desloca nenhum draw de `g` — com economia=False a
+            # identidade e bit-exata, e com economia=True o mundo (npc, perda, spawn)
+            # e o MESMO do braco sem economia. So a economia muda.
+            ge = torch.Generator(device=DEV); ge.manual_seed(seed + 777771)
+            AL = torch.tensor(cfg.ALIQ, device=DEV, dtype=torch.float32)
+            PM = torch.tensor(cfg.PMUL, device=DEV, dtype=torch.float32)
+            pr = (torch.rand(B, D, generator=ge, device=DEV).argsort(1) if cfg.dist_sorteia
+                  else torch.arange(D, device=DEV)[None,:].expand(B, D))
+            s.e15_aliq = AL[pr]; s.e15_pmul = PM[pr]      # (B,D)
+            s.e15_fat  = s.e15_pmul*(1.+s.e15_aliq)       # fator de preco local (gastar)
+            fa = PM*(1.+AL); fmin = float(fa.min()); fmax = float(fa.max())
+            s.e15_fatn = (s.e15_fat - fmin)/max(fmax-fmin, 1e-6)   # feature e15_b em 0..1
+            s.ARD = torch.arange(D, device=DEV)
+            s.e15_dorig = torch.zeros(B, dtype=torch.long, device=DEV)  # distrito de ORIGEM da corrida
+            s.e15_d0 = torch.zeros(B, device=DEV)        # saldo antes das compras (ver passo)
+            z = lambda: torch.zeros(B, device=DEV)
+            s.imp_orig=z(); s.imp_gastar=z(); s.aluguel_pago=z(); s.juros_pago=z()
+            s.div_max=z(); s.t_divida=z(); s.kcal_reb=z()
+            s.ent_dist=torch.zeros(B,D,device=DEV); s.t_dist=torch.zeros(B,D,device=DEV)
         # [E15 fim]
         # [E16 glandulas] estado (h, genes copiados no reset, censo) — SO E16
         # [E16 fim]
@@ -366,8 +430,12 @@ class Lote:
                            (s.pd_>=0).float(),
                            s.res/s.cfg.RES_MAX, hsin, hcos,
                            1. - s.vida/100.,
-                           # [E15 features] 2 slots reservados (zero ate o E15 preencher)
-                           torch.zeros_like(s.fuel), torch.zeros_like(s.fuel),
+                           # [E15 features] e15_a = divida relativa, e15_b = preco local
+                           # (fator do distrito ATUAL normalizado 0..1). Zero sem economia.
+                           ((-s.dinh/s.cfg.LIMITE_DIVIDA).clamp(0., 1.) if s.cfg.economia
+                            else torch.zeros_like(s.fuel)),
+                           (s.e15_fatn.gather(1, s.e15_dist[s.cidx, s.no][:,None]).squeeze(1)
+                            if s.cfg.economia else torch.zeros_like(s.fuel)),
                            # [E16 features] 2 slots reservados (zero ate o E16 preencher)
                            torch.zeros_like(s.fuel), torch.zeros_like(s.fuel)], -1)   # E12: reserva+hora; E13: dano
         F = torch.cat([(-dal/6.)[...,None], (-cus/4.)[...,None], (-cong/2.)[...,None],
@@ -456,6 +524,28 @@ def passo(m, esc):
     sv = m.serv_ab(noite)
     # servicos (sem closures: compile-friendly)
     # [E15 economia: preco por distrito, imposto ao gastar, aluguel/agua a meia-noite, juros — SO E15]
+    if c.economia:
+        # (1) IMPOSTO AO RECEBER, PELA ORIGEM. A entrega acima ja debitou `c.imposto`
+        # fixo (linha fora deste bloco); aqui corrige para a aliquota do distrito onde
+        # o passageiro EMBARCOU (m.e15_dorig, gravado no embarque, no 2o bloco).
+        # im_novo = br*aliq_origem = im_velho - corr  =>  dinh += corr, imp -= corr.
+        alq_o = m.e15_aliq.gather(1, m.e15_dorig[:,None]).squeeze(1)
+        corr = br*(c.imposto - alq_o)*ch.float()
+        m.dinh = m.dinh + corr; m.imp = m.imp - corr
+        m.imp_orig = m.imp_orig + br*alq_o*ch.float()
+        m.ent_dist = m.ent_dist + (m.e15_dorig[:,None] == m.ARD[None,:]).float()*ch.float()[:,None]
+        # (2) ALUGUEL + AGUA + JUROS a meia-noite. Mascara `meia` recalculada aqui:
+        # nao depende do bloco da reserva (E12), que so existe com cfg.reserva.
+        pos_prev = (m.t - 1 + m.fase_dia.long()) % c.dia
+        meia = (((m.t + m.fase_dia.long()) % c.dia) < pos_prev).float()
+        if viva is not None: meia = meia*viva.float()    # morto nao paga aluguel
+        jur = m.dinh.clamp(max=0.)*c.JUROS*meia          # juros sobre o saldo NEGATIVO
+        m.dinh = m.dinh + jur - (c.ALUGUEL + c.AGUA)*meia
+        m.juros_pago = m.juros_pago - jur
+        m.aluguel_pago = m.aluguel_pago + (c.ALUGUEL + c.AGUA)*meia
+        # saldo ANTES das compras: o 2o bloco reconstroi a partir daqui porque a linha
+        # da multa da pane termina em .clamp(min=0) e apagaria a divida todo passo.
+        m.e15_d0 = m.dinh
     # [E15 fim]
     o1 = pode & (esc==GMAX+0) & (sv[:,0]>0) & (m.dinh>=2.)
     m.n_posto += o1.float(); m.t_pobre += (m.dinh < 2.).float()
@@ -572,6 +662,31 @@ def passo(m, esc):
         m.fuel = torch.where(sf, torch.full_like(m.fuel, pf), m.fuel)
     m.dinh = (m.dinh-c.pane_dinh*sf.float()).clamp(min=0)
     # [E15 economia: reboque cobra CALORIAS (gordura -> tanque) proporcional a d_posto — SO E15]
+    if c.economia:
+        # (3) IMPOSTO AO GASTAR: preco base x multiplicador do distrito ATUAL x (1+aliquota).
+        # As linhas de compra (fora deste bloco) ja debitaram o preco BASE; aqui cobra-se
+        # o fator inteiro reconstruindo o saldo a partir de m.e15_d0 — o que tambem desfaz
+        # o .clamp(min=0) da multa da pane e deixa a DIVIDA existir.
+        dn = m.e15_dist[m.cidx, m.no]                    # distrito do no atual
+        fat = m.e15_fat.gather(1, dn[:,None]).squeeze(1)
+        oo = torch.stack([o1,o2,o3,o4,o5], 1).float()
+        gasto = (oo*m.CUSTO[None,:]).sum(1)              # descanso custa 0: nao paga imposto
+        m.imp_gastar = m.imp_gastar + gasto*(fat-1.)
+        # divida: piso em -LIMITE (nunca morre por dinheiro; o comercio e que nao fia —
+        # os portoes `dinh>=preco` e `paga` do serv_need ja bloqueiam a compra no vermelho)
+        m.dinh = (m.e15_d0 - gasto*fat - c.pane_dinh*sf.float()).clamp(min=-c.LIMITE_DIVIDA)
+        vv = viva.float() if viva is not None else torch.ones_like(m.dinh)
+        m.div_max = torch.maximum(m.div_max, (-m.dinh).clamp(min=0)*vv)
+        m.t_divida = m.t_divida + (m.dinh < 0).float()*vv     # so conta enquanto vivo
+        m.t_dist = m.t_dist + (dn[:,None] == m.ARD[None,:]).float()*vv[:,None]
+        # (4) REBOQUE EM CALORIAS (N16): a pane cobra KCAL_REBOQUE x d_posto — gordura
+        # primeiro (com a perda de mobilizacao), tanque depois. Nada em dinheiro.
+        q = c.KCAL_REBOQUE*m.dposto[m.cidx, m.no]*sf.float()
+        qr = torch.minimum(m.res, q/(1-m.perda)); m.res = m.res - qr
+        qf = torch.minimum(m.fuel, q - qr*(1-m.perda)); m.fuel = m.fuel - qf
+        m.kcal_reb = m.kcal_reb + qr*(1-m.perda) + qf
+        # (5) EMBARQUE: grava o distrito de ORIGEM da corrida que comeca agora
+        m.e15_dorig = torch.where(pega, dn, m.e15_dorig)
     # [E15 fim]
     rd = torch.rand(B, generator=m.gsim, device=DEV)
     val = val & (~mob)                  # mobilizando = parado este passo
