@@ -522,3 +522,27 @@ sementes (mesma cidade, mesma semente) e medir o teto.
   fervura no vai-e-vem. Timing certo > cautela constante.
 - Teste de evolvabilidade em E14a: 2 genes de timing nos pesos mortos do
   Reativo (predição 38) — a evolução acha 2 números onde não achou 12?
+
+### 6.15 E14a — dois genes de timing, e o mecanismo do piso
+
+`ReativoNoite`: os 12 pesos mortos do Reativo viram 2 — um empurra o serviço
+posto e outro puxa a rota pro posto, ambos só entre 20h e 22h e proporcional
+ao tanque vazio. A regra à mão com esses dois números tirou 5 pp de mortos.
+
+| | fit | mortos | genes (posto, rota) por semente |
+|---|---|---|---|
+| Reativo | 8.76 | 0.18 | – |
+| ReativoNoite | 7.25 | 0.23 | (0.96, .40) (−1.96, .43) (−1.20, −.24) (0.96, .32) (−1.81, .65) |
+
+A evolução achou o gene — com o **sinal errado** em 3 de 5 sementes. Não
+é evolvabilidade. Olhe o teto (§6.14): a regra tirou 5 pp de mortos e o
+fitness ficou **idêntico** (8.75 = 8.75). Quem morre no dia 4 já entregou
+quase tudo que entregaria no dia 5. **A morte não custa fitness — logo não
+é selecionada.** É o mecanismo por trás das seis alavancas nulas: nenhuma
+podia ser achada porque o objetivo não contém a vida. Os genes derivaram ao
+acaso e 3/5 caíram do lado que atrapalha.
+
+Conserto proposto e testado em E14b: pena por morrer no fitness da evolução
+(`pena_morte`, 0 = identidade). Se a evolução achar os dois genes com a
+pena, o piso era do objetivo — e "seres que tentam deixar o carro vivo"
+exige que viver valha pontos, não só entregar.
