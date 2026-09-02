@@ -976,3 +976,16 @@ com pena 8.58 / 0.12.
 19.64), **mortos 0.21** [.33 .28 .09 .19 .16] (padrão 0.29, Noite 0.24) — 45
 ✓ nesta cláusula (≤ 0.22, fit ≥ 19). Dispersão grande entre sementes
 (0.09–0.33): a alavanca ajuda muito ou pouco conforme a cidade/sorte.
+
+**E14i rodou (Noite24 SEM pena, R=16, 5 sementes):** fit **8.95** [8.6 8.0 9.7
+8.3 10.1], **mortos 0.14** [.19 .18 .16 .11 .07]; genes posto (1.48, 2.42,
+4.74, −0.56, 2.50) → 4/5 positivos, rota 5/5 positivos. 46 ✓ (≤ 0.14; genes
+≥ 4/5; fit 8.95 vs ≥ 9.0 por 0.05). **A alavanca não precisa da pena — precisa
+das 64 vidas por genoma.** Panes custam avarias e tempo, que o fitness já vê;
+o que faltava era enxergar (R). Pena acrescenta −2 pp (0.14 → 0.12) e custa
+−0.4 de fitness: opcional. Recomendação 2 revisada: R=16 obrigatório, pena
+a gosto.
+
+**E14j (média honesta da melhor config: Noite24 sem pena R=16 em 2000+) — ANTES de rodar**
+47. Cidades 2000+: mortos ≤ 0.26, fit ≥ 5.3; média 6 cidades ≈ 7.1 / 0.20
+    (contra padrão 7.08 / 0.24): mesmo fitness, −4 pp de mortos, sem pena.

@@ -644,24 +644,31 @@ como ganho, gene de timing como alavanca (inerte por escala). Todos eram
 n=3.
 
 **Números finais (6 cidades × 5 sementes):** mundo recomendado 7.08 /
-mortos 0.24; com a morte visível à seleção (pena 5 + R=16, ReativoNoite)
-**7.44 / 0.175**. Cidades 1000+ são ~30% otimistas — sempre reportar a
-média de 6.
+mortos 0.24; com a morte visível à seleção (pena 5 + R=16): ReativoNoite
+7.44 / 0.175, **ReativoNoite24 (mecanismo) 6.94 / 0.185**; em 10 dias o
+Noite24 faz 20.4 / 0.21 contra 18.7 / 0.29 do padrão. Cidades 1000+ são
+~30% otimistas — sempre reportar a média de 6.
 
-**Decisões tuas:**
-1. **Objetivo.** Entregas − avarias não vê a morte. Escolher: pena fixa por
-   morrer (testado, funciona com R ≥ 16), entregas por dia vivido, ou vida
-   como moeda do torneio (arena). Recomendo a pena por ser a menor mudança;
-   a arena é a mais "humana".
-2. **Avaliação.** R=16 vidas por genoma como padrão em qualquer mundo com
-   morte (regra 14). Custa 4× por geração; sem isso a seleção está cega.
+**Decisões tuas (revisadas após E14g–i):**
+1. **Avaliação.** R=16 vidas por genoma como padrão em qualquer mundo com
+   morte (regra 14). É o essencial: sem isso a seleção está cega e nenhuma
+   alavanca aparece. Custa 4× por geração.
+2. **Objetivo.** A pena por morrer é opcional: com R=16 a evolução já acha
+   sobrevivência porque pane custa avaria e tempo (E14i: 0.14 sem pena vs
+   0.12 com, por −0.4 de fitness). Se quiser "vida vale pontos" por
+   princípio, a pena fixa é a menor mudança; a arena é a mais humana.
+2b. **Genoma.** Dar ao cérebro produtos de sinais. O que faltava contra a
+   noite era UM produto (tanque baixo × distância ao posto): mortos 0.18 →
+   0.12–0.14, panes −1/3, genes iguais em 5/5 sementes, ablação causal.
 3. **Mundo-corpo padrão:** massa como cálculo base (teus números), gordura
    contínua a 2%, reboque só no corpo, cap indiferente, sono sem custo de
    caloria (ou custo baixo), sem sono em bloco.
-4. **Próxima linha honesta:** o 0.175 é trajetória (genes inertes). Testar
-   se paisagens "neutras" chegam lá (Reativo com 2 pesos mortos religados a
-   ruído, R=16 + pena). Se sim, é diversidade de busca; se não, o
-   ReativoNoite abriu um caminho que vale entender.
+4. **Próxima linha (proposta do Leonardo, 16:40):** economia real —
+   reboque cobrando CALORIAS (gordura, depois tanque, proporcional à
+   distância ao posto) em vez de dinheiro; dinheiro usado pra tudo (aluguel,
+   água, imposto ao receber e ao gastar); distritos com preços e imposto
+   pela origem da corrida. Regra de desenho: o ser sempre pode trabalhar
+   pra sair do buraco (dívida com juros, não morte instantânea).
 
 Predições registradas antes de rodar: 1–43 (E12 1–13, E13 14–38, E14
 39–43). Placar: ~45% ✓ — e cada ✗ apontou o mecanismo seguinte.
@@ -730,3 +737,19 @@ zerada → 0.25; só o posto → 0.19.
   genes são inertes (§6.20): é trajetória. O Noite24 tem mecanismo. Pra
   desenho do mundo, o que importa é o mecanismo: um produto de dois sinais
   que a política linear não tinha.
+
+### 6.22 E14i — a alavanca precisa da pena? Não. Precisa de enxergar.
+
+| ReativoNoite24, R=16, 1000+ | fit | mortos | genes posto |
+|---|---|---|---|
+| com pena 5 | 8.58 | 0.12 | 5/5 positivos (3.7) |
+| **sem pena** | **8.95** | **0.14** | 4/5 positivos (1.5–4.7) |
+| Reativo sem pena, R=16 | 9.12 | 0.18 | – |
+
+Sem pena por morrer, a evolução ainda acha o produto "tanque baixo ×
+distância ao posto" — porque pane custa avaria e tempo, e isso o fitness já
+via. O que a impedia era o ruído de 16 vidas por genoma. **R=16 é o
+essencial; a pena é ajuste fino** (−2 pontos de mortos por −0.4 de
+fitness). Isto simplifica a decisão do Leonardo: não precisa mudar o
+objetivo; precisa avaliar cada cérebro em mais vidas e dar ao genoma um
+produto.
