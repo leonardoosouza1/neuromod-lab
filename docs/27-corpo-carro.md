@@ -374,3 +374,22 @@ oficina de 0 pra 7), e a morte cobra o que o cuidado rende. Predição 26 ✗.
   consome a poupança antes de o dia de greve chegar. Duas escassezes
   competem pelo mesmo estoque e a mais frequente ganha (lei do E12 §7: o
   estoque na greve é I/f_noite, não I/f_greve).
+
+### 6.8 E13l — sono em bloco à noite (longo)
+
+Mecanismo: à noite, escolher `descanso` vira dormir até as 6h (fadiga zera,
+não roda de madrugada). Decisão do ser; nenhum roteiro.
+
+| arquitetura | fit | mortos | bloco (noites de 5) | par_noite | panes |
+|---|---|---|---|---|---|
+| Reativo, sem bloco | 8.16 | 0.21 | – | – | 7.3 |
+| Reativo + bloco | 8.30 | **0.18** | 1.1 | 0.69 | 7.5 |
+| ReativoHora + bloco | 8.17 | 0.19 | 1.2 | 0.70 | 7.2 |
+
+O bloco existe e quase ninguém entra: uma noite por vida, nas duas
+arquiteturas. −3 pp de mortos (n=3, replicação em E13n), fitness igual. A
+hora como feature não faz o ser ir dormir — terceira vez que o ReativoHora
+não usa a hora (E12b, E13e, E13l): 12 pesos a mais que a evolução de G=60
+não aprende a apontar. Predição 29 ✗. O piso de ~18% de mortes é da família
+reativa de 1 salto; a próxima alavanca teria de ser um órgão com sinal de
+noite no portão (tálamo), não a física do sono.

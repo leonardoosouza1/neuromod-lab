@@ -625,3 +625,13 @@ descanso à hora — entra no bloco uma vez por vida. Falta o ReativoHora.
     campeão de 5 dias em 10 dias) — a seleção vê as mortes tardias e baixa o
     risco; fit/dia ≥ 1.47. Se mortos ~0.39: o risco de 4%/dia é o piso do
     mundo pra política de 1 salto, não falta de treino.
+
+**E13lh rodou (ReativoHora + sono em bloco):** 8.17, mortos 0.19, bloco 1.2 de
+5 noites, par_noite 0.70 — igual ao Reativo (✗ ≤ 0.12). A alavanca de hora não
+condiciona o descanso à noite (3ª vez que o ReativoHora não usa a hora: E12b,
+E13e, E13l). Sono em bloco = −3 pp com n=3; replicar com 5 sementes.
+
+**E13n (replicação do sono em bloco, 5 sementes) — ANTES de rodar**
+31. recomendado vs sono-bloco em 5 sementes: mortos −3 pp ± 2 (≥ 4/5
+    sementes com menos mortos), fit +0.1 ± 0.5, bloco ~1.1/vida. Se mortos
+    ≈ 0: o −3 pp de n=3 era ruído e o bloco é inerte pro Reativo.
