@@ -872,3 +872,9 @@ trajetória evolutiva, não alavanca de hora. Veredito honesto: R=16 + pena
 torna a morte VISÍVEL à seleção (Reativo 0.22 → 0.17; Noite 0.16 → 0.11), e
 o ponto de chegada depende da paisagem. Não vender 0.11 como "achou o
 timing".
+
+**E14e (números com a avaliação certa: R=16 + pena em cidades 2000+) — ANTES de rodar**
+42. Reativo e ReativoNoite, pena 5, R=16, 5 sementes, cidades 2000+: mortos
+    ≤ 0.24 (vs 0.30 com R=4 sem pena) em ambos; ReativoNoite ≤ Reativo em
+    ≥ 3/5 (se a trajetória repetir); fit sem pena ≥ 5.0. Média honesta (6
+    cidades) do Reativo pena+R16: mortos ≈ 0.20; do ReativoNoite ≈ 0.17.

@@ -151,3 +151,26 @@ Fitness também: ±1.5 entre sementes em todo mundo-corpo.
 **Replicado com n=5 (E13p):** reboque só no corpo SOBREVIVE (+1.3, −11 pp,
 5/5 sementes); cap 120 CAI (+0.4, 2/5, +1 pp — a noite gasta a gordura antes
 de o cap importar). Das cinco afirmações de n=3 do dia, uma sobreviveu.
+
+## N18 — A morte era invisível à seleção: objetivo sem vida + 16 vidas por genoma (E13t/E14, 2026-09-02)
+
+**Afirmação:** seis alavancas (treino de 10 dias, hora, rota, sono em bloco,
+tálamo, tálamo-noite) não moveram o piso de mortalidade (~0.18) porque (1) a
+morte não custava fitness — regra à mão tira 5 pp de mortos com fitness
+IDÊNTICO (quem morre no dia 4 entregou quase tudo) — e (2) cada genoma era
+avaliado em 16 vidas, onde 18% ± 10 pp afoga qualquer sinal de 5 pp. Prova:
+pena por morte sozinha não ajuda (0.18 → 0.22); pena + 64 vidas por genoma
+dá 0.17 (Reativo) e 0.11 (ReativoNoite, por trajetória — os genes de timing
+são inertes na ablação).
+
+**Regra 14:** antes de selecionar por evento raro (morte, pane, greve),
+calcular se o evento é visível no fitness de UM genoma: vidas por genoma
+≳ 1/p² (p = 0.18 → ~30+; usamos 16). Se não é visível, nem pena nem
+alavanca nem gerações ajudam — a seleção está cega, não fraca. É a regra 13
+(n ≥ 5 sementes) aplicada à própria evolução: o ruído da morte engana o
+experimentador e o seletor pelo mesmo motivo.
+
+**Regra 15:** um gene novo precisa ter ESCALA comparável aos pesos que
+compete (o gene de timing O(1) contra serviços O(20) era inerte por
+construção — ReativoHora ×3 e ReativoNoite). Testar a alavanca à mão com
+ganho grande (k=8, +50) ANTES de pedir à evolução que a ache.
