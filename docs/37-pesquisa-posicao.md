@@ -769,3 +769,11 @@ e mortos ≤ 0.26 (vs 0.31) na triagem; nas cidades 2000+ o ganho é maior
 (mapas com posto mais longe). Se β → 0: a evolução prefere aceitar panes
 a gastar entregas com desvios longos — e o preço da pane (6 de vida) é
 que está barato demais (lei da moeda cruzada: E33 = D_PANE maior).
+
+**E33 (na fila atrás do E32; triagem): a pane fica cara** — D_PANE 6 → 12 e
+20, com o reflexo (E29b). Testa a lei da moeda cruzada no preço da pane.
+**Predição 38 (antes de rodar):** com pane a 12, o portão evoluído cai
+(≤ 0.85 em ≥ 2/3 sementes, vs 0.87–0.93) e as panes caem ≤ 4.0 (vs 5.8):
+o comportamento se adapta ao preço. Mortos: se ≤ 0.31, a adaptação paga o
+preço; se ≥ 0.40, a pane cara só mata mais rápido do que o reflexo consegue
+evitar — e o gargalo é geometria (E32), não preço.

@@ -14,5 +14,6 @@ for path in sys.argv[1:]:
         for sd, W in r['W'].items():
             tau = [1. + 200.*sig(g - 4.) for g in W[o:o+2]]; w = W[o+2:o+4]; v = W[o+4:o+6]; th = sig(W[o+6])
             raz = max(tau)/min(tau); n_w_neg += (w[0] < 0); n_div += (raz >= 3.)
-            print(f"  s{sd}: tau sede {tau[0]:6.1f} fome {tau[1]:6.1f} (razao {raz:4.1f})  w sede {w[0]:+.2f} fome {w[1]:+.2f}  v {v[0]:+.2f} {v[1]:+.2f}  portao {th:.2f}")
+            beta = f"  beta {math.log1p(math.exp(W[o+7])):.2f}" if len(W) > o+7 else ''
+            print(f"  s{sd}: tau sede {tau[0]:6.1f} fome {tau[1]:6.1f} (razao {raz:4.1f})  w sede {w[0]:+.2f} fome {w[1]:+.2f}  v {v[0]:+.2f} {v[1]:+.2f}  portao {th:.2f}{beta}")
         n = len(r['W']); print(f"  pred 29 (w_sede<0): {n_w_neg}/{n}   pred 30 (tau razao>=3): {n_div}/{n}")
