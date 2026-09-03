@@ -91,3 +91,37 @@ pane ainda custa, e dá trabalho à poupança — exatamente o que o Leonardo
 pediu ("cobrar calorias"). Falta o braço padrão do agente (gordura, resto
 no tanque, 1×) pra saber se a paralisia é do 3× ou de qualquer cobrança no
 tanque — está na fila.
+
+## E16 — glândulas (sem pena, R=16, 5 sementes; regime = preço do combustível oscilando por dia)
+
+| braço | fit | mortos | fervura | hormônio (h médio) | custo em fuel/vida | ganhos evoluídos (nec · expl · metab · sono · vel) |
+|---|---|---|---|---|---|---|
+| Reativo | 9.62 | 0.18 | 3.7 | – | – | – |
+| glândula K=2 (κ=0.25) | 9.40 | 0.17 | 3.8 | 0.06 / 0.03 | 25 | ≈ 1 (quase desligada) |
+| glândula K=1 (κ=0.25) | 8.69 | 0.18 | 3.6 | 0.0004 | 13 | 1 (desligada) |
+| Reativo, regime | 9.05 | 0.13 | 4.3 | – | – | – |
+| glândula K=2, regime (κ=0.25) | 9.49 | 0.20 | 2.4 | 0 / 0.10 | 55 | – |
+| **glândula K=2, regime, κ=0.05** | **12.30** | 0.14 | **2.2** | 0.02 / **0.98** | 70 | **2.05 · 0.54 · 0.73 · 1.58 · –** |
+
+**O que aconteceu:** com o hormônio ao preço padrão (κ=0.25) a evolução
+quase o desliga — empate. Com o hormônio barato (κ=0.05) e o preço do
+combustível oscilando, a glândula **liga e fica ligada** (h ≈ 0.98, quase
+constante) e o fitness sobe **+3.25 (5 de 5 sementes)**, a fervura cai pela
+metade. O padrão que emergiu é coerente: dobra o peso das necessidades,
+corta a exploração pela metade, reduz o metabolismo 27 %, melhora o sono
+58 %. Um "modo economia".
+
+**Por que não comemorar ainda:** o canal de metabolismo em 0.73 significa
+**27 % menos combustível por passo**, pago com 0.05 de caloria por passo —
+o táxi gasta ~1 a 2 de combustível por passo andando, então o hormônio
+está **comprando eficiência abaixo do custo**: almoço grátis, não
+inteligência (foi exatamente o alerta do agente ao recusar mexer no
+`peso`). O h saturado confirma: virou um multiplicador fixo, não um
+hormônio que sobe e desce. Teste decisivo (onda 1f, predição antes): o
+mesmo braço com o metabolismo **proibido de ficar abaixo de 1** (eficiência
+não se compra). Predição: se o ganho cair de +3.25 para ≤ +1.0, o grosso
+era almoço grátis e o que sobra (necessidade ×2, exploração ×0.5, sono
+×1.6) é o hormônio de verdade — ainda assim um resultado; se ficar ≥ +2.0
+com 4/5 sementes, o modo economia paga por conta própria e é o maior
+mecanismo do projeto. Controle extra: κ=0.05 sem regime (a glândula precisa
+de um mundo que muda?).

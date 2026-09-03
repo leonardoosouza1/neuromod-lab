@@ -27,7 +27,7 @@ _R = dict(reserva=True, RES_MAX=120., pane_dinh=0., massa=True, peso=True)
 
 
 def cfg_gl(glandulas=False, K=2, regime=0., regime_dias=2., kappa=None, H_MAX=None,
-           escala_b=None, censo=True, continua=.02, pena_morte=0., sono_come=0., **kw):
+           escala_b=None, censo=True, continua=.02, pena_morte=0., sono_come=0., gl_lim=None, **kw):
     """Mundo-corpo recomendado (E13f) + as flags do E16."""
     c = Cfg(1.0, mundo='base')
     c.massa = True; c.reserva_continua = continua
@@ -41,6 +41,7 @@ def cfg_gl(glandulas=False, K=2, regime=0., regime_dias=2., kappa=None, H_MAX=No
     if kappa is not None: c.KAPPA_H = kappa
     if H_MAX is not None: c.H_MAX = H_MAX
     if escala_b is not None: c.GL_ESCALA_B = escala_b
+    if gl_lim is not None: c.GL_LIM = gl_lim   # fase d: clamp por canal (ex.: metabolismo >= 1 = eficiencia nao se compra)
     for k, v in kw.items(): setattr(c, k, v)
     return c
 
@@ -126,6 +127,13 @@ BRACOS = [
     ('glandula K=2 kappa.05', A_K2, dict(glandulas=True, K=2, regime=.35, kappa=.05)),
 ]
 # fase b: U invertido na escala dos ganhos (predicao 3)
+# fase d (onda 1f): o ganho do kappa.05 e hormonio ou almoco gratis? (metabolismo 0.73 por 0.05 cal/passo)
+_LIM_META1 = ((.25,2.5),(0.,3.),(1.0,1.30),(.50,2.),(.70,1.30))   # = default, so o canal 2 (metabolismo) nao pode ir abaixo de 1
+BRACOS_D = [
+    ('glandula K=2 kappa.05 meta>=1', A_K2, dict(glandulas=True, K=2, regime=.35, kappa=.05, gl_lim=_LIM_META1)),
+    ('glandula K=2 kappa.05 sem regime', A_K2, dict(glandulas=True, K=2, kappa=.05)),
+    ('glandula K=2 kappa.25 meta>=1', A_K2, dict(glandulas=True, K=2, regime=.35, gl_lim=_LIM_META1)),
+]
 BRACOS_B = [
     ('glandula b=0.10', A_K2, dict(glandulas=True, K=2, regime=.35, escala_b=.10)),
     ('glandula b=0.25', A_K2, dict(glandulas=True, K=2, regime=.35, escala_b=.25)),
@@ -137,7 +145,7 @@ BRACOS_C = [
     ('reativo sono5',      A_REF, dict(sono_come=5.)),
     ('glandula K=2 sono5', A_K2,  dict(glandulas=True, K=2, sono_come=5.)),
 ]
-FASES = dict(a=BRACOS, b=BRACOS_B, c=BRACOS_C)
+FASES = dict(a=BRACOS, b=BRACOS_B, c=BRACOS_C, d=BRACOS_D)
 
 
 def main(out, fase='a', so=None, P=None, G=None, T_evo=None, T_aval=None, R=None,
