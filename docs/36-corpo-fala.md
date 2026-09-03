@@ -184,3 +184,19 @@ interoceptiva vs direto (6.90 / 0.35): mortos ≤ 0.28 com ≥ 4/5 sementes
 abaixo, fit ≥ 6.4, fome no fim ≤ 65. Se mortos ficarem ≥ 0.33: a triagem
 era ruído e a atenção só reorganiza sem salvar — a próxima é persistência
 (a necessidade eleita segue mandando N passos).
+
+### E21 honesto (R=16, 5 sementes)
+
+| braço | fit | mortos | por semente (mortos) | fome no fim |
+|---|---|---|---|---|
+| direto | 6.90 | 0.35 | .30 .38 .38 .39 .32 | 69 |
+| atenção interoceptiva | 6.55 | 0.36 | .57 .34 .33 .30 .25 | 66 |
+
+Predição 12 ✗: o −11 pp da triagem era ruído (sexta vez que n=3 engana;
+regra 13 vale também pra triagem). Mecanismo do empate: no táxi as
+necessidades raramente competem no mesmo instante — o Reativo com pesos
+evoluídos já age como "uma de cada vez"; o achado de 2026 (AffectWorld)
+supõe várias necessidades simultâneas disputando um orçamento de precisão,
+que aqui não existe. A morte por fome não é competição entre necessidades:
+é estar no nó certo com dinheiro e escolher comer. Atenção interoceptiva
+encerrada como neutra.
