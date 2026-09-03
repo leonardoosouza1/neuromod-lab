@@ -821,3 +821,17 @@ cidade, reações ≤ 0.22 de mortos (vs 0.31) e panes ≤ 4.0; direto ≤ 0.50
 (vs 0.60). Se as reações NÃO melhorarem: o orçamento de pane é
 comportamental (E33), não geométrico, e a autópsia por cidade era
 correlação com outra coisa (tamanho das viagens, por exemplo).
+
+**E32b resultado (β nasce desligado; triagem n=3): 5.51 / 0.61 [.38 .63
+.82], panes 6.3.** Genes: β 0.52 / 0.74 / 0.31 (a evolução LIGOU o portão
+por distância em 3/3 — predição 37, cláusula do β, ✓) mas w da sede caiu
+pra 0.89 / −0.07 / 1.74 (vs 2.6–4.3 no reações) e o resultado é pior que
+o reflexo fixo em fit, mortos e panes (predição 37 ✗). Mecanismo, agora
+de desenho e não de parametrização: **o portão depende da distância que a
+própria ação reduz.** Longe do posto o portão abre (θ − β·d), o táxi vai
+ao posto, chega perto, o portão fecha, ele volta à entrega, se afasta, o
+portão abre de novo — oscilação na fronteira, sem histerese. O reflexo
+fixo não tem isso: o tanque só desce até abastecer. Linha encerrada; se
+voltar, volta com HISTERESE (portão que, uma vez aberto, só fecha ao
+abastecer) — e isso é exatamente uma espécie lenta com τ, que o E29d
+disse que não paga. A geometria fica com o E34 (mundo).
