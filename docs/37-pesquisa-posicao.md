@@ -354,3 +354,26 @@ então o fator médio é 2·(1−0.7) ≈ 0.6 — a pena proporcional só ENCOLH
 pena em ~40 % pra quase todo mundo; não abriu gradiente novo entre "morreu
 cedo" e "morreu tarde" porque quase ninguém morre cedo. Predição 20 não
 confirmada. Não sobe pro honesto; a avaliação fica com pena fixa 5.
+
+### 9.1 O que a literatura já sabe de "reação química como computação" (lido 2026-09-03)
+**Neural CRNs** (Nandi, Ellis et al., arXiv 2409.00034 / ACS Synth Bio 2025):
+neurônio = concentração que EVOLUI no tempo (não camada estática); a
+multiplicação é reação catalítica `P + Z → Z + P + Z` (dz/dt = θ·z, ação das
+massas — exatamente o "×" da lei que o Leonardo apontou); não-linearidade
+= amortecimento quadrático `θx − αz²`, nunca trimolecular (lifting implícito
+no lugar); sinal negativo exige dual-rail (X⁺, X⁻) e isso EXPLODE o
+circuito; aprendizado = espécies adjuntas (erro) + espécies-gradiente
+`dg/dt = a·z` + realimentação negativa nos parâmetros; relógio de 2 fases
+separa "computar" de "aprender"; regressor linear em 15 espécies / 13
+reações (mais compacto que emular camadas). Limite deles: relógio
+oscilatório amplifica ruído.
+
+**Tradução pro E29b:** (a) nossas espécies `c_k` com τ próprio são
+exatamente concentrações que evoluem; (b) a reação `c_k · d_p` é a
+catalítica deles — sem dual-rail porque distância e necessidade são
+positivas por construção (o sinal fica no gene `w`); (c) o portão `relu(c −
+θ)` é a "classificação por limiar φ" deles; (d) o que ELES não têm e nós
+temos: seleção por sobrevivência no lugar do adjunto — o gradiente vem da
+morte, não da espécie A±. Predição extra 29: se a reação paga, `w` evoluído
+tem sinal NEGATIVO em ≥ 4/5 sementes (sede empurra PRA o posto — reduzir
+distância), não positivo.
