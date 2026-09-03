@@ -45,7 +45,10 @@ def fabrica(K=2, redundante=False, nome=None, prior_corpo=False, prior_cerebro=F
             s.b1 = W[:, o:o+NH]; o += NH
             s.W2 = W[:, o:o+NH*K].reshape(B, NH, K); o += NH*K
             s.b2 = W[:, o:o+K]; o += K
-            s.tau = 1. + 200.*torch.sigmoid(W[:, o:o+K]); o += K       # 1..201 passos
+            # tau: gene 0 -> ~4.6 passos (RAPIDO por padrao; a evolucao alonga se quiser). Triagem 2:
+            # com gene 0 -> ~101 passos a "sede" ficava alta 100 passos depois de abastecer e o posto
+            # (que vende comida) ganhava da comida no mesmo no -> loop de abastecer, 90-98 % de fome.
+            s.tau = 1. + 200.*torch.sigmoid(W[:, o:o+K] - 4.); o += K   # 1..201 passos
             s.Gserv = W[:, o:o+K*5].reshape(B, K, 5); o += K*5
             s.Gmov = W[:, o:o+K]; o += K
             s.h = torch.zeros(B, K, device=DEV)

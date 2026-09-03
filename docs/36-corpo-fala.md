@@ -69,3 +69,25 @@ forçado (fadiga 95) ou sem 3 dinheiros. A decisão é argmax puro, sem ruído.
    só refina.
 8. `só cérebro ouve` (o corpo tem de aprender a falar): pior que 6 — falar é
    mais difícil que ouvir (a rede do corpo tem 68 genes, o ouvido tem 10).
+
+## Triagem 2 (código herdado) — R=8, G=40, 3 sementes
+
+| braço | fit | entregas | mortos | fome no fim | posto/vida |
+|---|---|---|---|---|---|
+| K=2 corpo nasce falando | 2.00 | 5.7 | 0.96 | 100 | 12.8 |
+| K=2 corpo fala + cérebro ouve | 1.73 | 6.3 | 0.90 | 97 | 9.0 |
+| K=2 só cérebro ouve | 1.64 | 5.1 | 0.98 | 100 | 14.6 |
+
+Predições 6–8 ✗ — e o culpado é meu desenho, não a evolução: os hormônios
+nasciam com τ ≈ 100 passos (gene 0 → sigmoide 0.5 → 101). A "sede de
+gasolina" continua alta 100 passos depois de abastecer; como o posto agora
+vende comida, no mesmo nó o serviço posto (h1·10) ganha da comida (h0·10) e
+o táxi fica abastecendo em loop (9–15 visitas ao posto por vida, dinheiro
+indo embora) sem comer. No cérebro direto a necessidade zera na hora do
+abastecimento. Conserto: τ nasce rápido (gene 0 → ~5 passos) e a evolução
+alonga se valer.
+
+**Predição 9 (antes de rodar):** com τ rápido, `corpo fala + cérebro ouve`
+≈ direto (fit ≥ 3.9, mortos ≤ 0.70, fome no fim < 90); `corpo nasce
+falando` mortos ≤ 0.85. Se continuar ≥ 0.9: o problema é o empate posto ×
+comida no mesmo nó (precisa de um "combo": abastecer também sacia).
