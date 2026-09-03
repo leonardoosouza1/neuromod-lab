@@ -377,3 +377,22 @@ temos: seleção por sobrevivência no lugar do adjunto — o gradiente vem da
 morte, não da espécie A±. Predição extra 29: se a reação paga, `w` evoluído
 tem sinal NEGATIVO em ≥ 4/5 sementes (sede empurra PRA o posto — reduzir
 distância), não positivo.
+
+**Multi-timescale RL no cérebro** (Masset, Tano, Kim, Malik, Pouget, Uchida —
+bioRxiv 2023, Nature 642:682, jun 2025): cada neurônio de dopamina tem SEU
+fator de desconto (propriedade da célula, correlacionada entre tarefas;
+população 0.56 ± 0.21 s⁻¹); cada um sozinho é exponencial, o desconto
+hiperbólico do animal EMERGE da diversidade da população; a população de τ
+é uma transformada de Laplace invertível → dá pra decodificar QUANDO a
+recompensa vem e QUANTO vale, separados (um τ só confunde os dois);
+agentes multi-τ acertam 94 % vs 83 % em tarefas ramificadas por pesar
+curto/longo conforme o contexto.
+
+**O que isso muda pra nós:** confirma pelo lado biológico o `Banco de τ`
+(ter escalas variadas foi selecionado 40× vs 5.3× — doc 31) e dá o MOTIVO:
+não é memória, é decodificação de tempo-até-o-evento. Predição 30 (E29b):
+se a reação paga, os τ evoluídos das 2 espécies DIVERGEM (razão ≥ 3× em ≥
+3/5 sementes) — sede e fome vivem em escalas diferentes (tanque cai em ~200
+passos, fome em ~600), e a população precisa de um τ por escala pra
+"decodificar" cada urgência. Se convergirem pro mesmo τ, a persistência é
+genérica e um só integrador bastava.
