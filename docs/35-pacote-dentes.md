@@ -117,3 +117,11 @@ produto fome × distância com limiar alto.
 > `systemd --user`, sobrevive ao reinício da sessão). Relançados juntos como
 > e19e (4 braços, ~50 min). Lição: ao acordar, conferir `last -x` antes de
 > culpar a fila; filas não sobrevivem a desligamento — retomar por `.done`.
+
+> Verificação de custo (2026-09-03 08:50, pedido do Leonardo): `set_sync_debug_mode("error")`
+> no laço quente — **zero sincronização CPU↔GPU** nos mundos recomendado e
+> pacote (economia + dentes + limiar). Custo por passo: 20.4 ms (recomendado)
+> → 24.5 ms (pacote, Reativo) → 25.6 ms (pacote, ProdutoLimiar): +20–25 % de
+> cômputo real (gathers da economia), sem espera. Braços honestos passaram de
+> ~540 s para 625–730 s por isso. Preset `triagem` (R=8, G=40, 3 sementes,
+> ~2.5 min/braço) criado para validar direção; honesto só confirma.

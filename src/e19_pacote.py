@@ -17,6 +17,9 @@ from e15_economia import cfg_e15
 
 OUT = '/media/llm-data/universe-runs/neuromod-lab-taxi/e19'
 PRESET = dict(P=1024, G=60, T_evo=1200, T_aval=1200, R=16, seeds=(0,1,2,3,4))
+# triagem (Leonardo 2026-09-03: "40 min e muito"): R=8, G=40, 3 sementes ~ 2.5 min/braco.
+# Serve pra ver se a feature FUNCIONA e a direcao; mortalidade (sigma ~7 pp) so decide no honesto.
+PRESET_TRIAGEM = dict(P=1024, G=40, T_evo=1200, T_aval=1200, R=8, seeds=(0,1,2))
 
 def cfg_pacote(economia=True, fome=.5, divida=True, refeicao=45., comida_no_posto=False, **kw):
     c = cfg_e15(economia=economia, **kw)      # reboque gordura->vida e o default novo
@@ -52,7 +55,7 @@ def telemetria(m, T):
 
 def main(a):
     E15.PENA = a.pena
-    p = dict(PRESET); 
+    p = dict(PRESET_TRIAGEM if a.preset == 'triagem' else PRESET); 
     if a.seeds: p['seeds'] = tuple(a.seeds)
     if a.R: p['R'] = a.R
     treino = [gerar_cidade(s) for s in range(4)]
@@ -86,4 +89,5 @@ if __name__ == '__main__':
     ap.add_argument('--seeds', type=int, nargs='*', default=None); ap.add_argument('--R', type=int, default=None)
     ap.add_argument('--teste-seed', type=int, default=1000); ap.add_argument('--pena', type=float, default=5.)
     ap.add_argument('--tag', default='')
+    ap.add_argument('--preset', default='honesto', choices=('honesto','triagem'))
     main(ap.parse_args())
