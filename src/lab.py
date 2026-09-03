@@ -134,6 +134,7 @@ class Cfg:
         #   fome_mata   dano de vida por passo quando fome >= FOME_CRIT, escalado ate fome=100
         #   divida_mata dinh <= -LIMITE_DIVIDA (economia) = perde o carro = vida 0
         s.fome_mata=0.; s.FOME_CRIT=90.; s.divida_mata=False
+        s.REFEICAO=45.         # quanto uma refeicao tira de fome (45 = identidade; fome sobe ~77/dia)
         # [E15 economia] flags/constantes — SO o agente E15 edita este bloco
         # doc 29. economia=False => IDENTIDADE BIT-EXATA (nada aloca, nada sorteia,
         # nenhum draw dos geradores do mundo se desloca).
@@ -660,7 +661,7 @@ def passo(m, esc):
                                               torch.full_like(m.res, c.RES_MAX)), m.res)
     o2 = pode & (esc==GMAX+1) & (sv[:,1]>0) & (m.dinh>=3.)
     m.dinh = m.dinh - 3.*o2.float()
-    m.fome = torch.where(o2, (m.fome-45).clamp(min=0), m.fome)
+    m.fome = torch.where(o2, (m.fome-c.REFEICAO).clamp(min=0), m.fome)
     o3 = pode & (esc==GMAX+2) & (sv[:,2]>0)
     fsono = m.mult[:,3] if c.glandulas else 1.   # E16: canal 3 (sono) liberado; 1.0 sem glandulas
     m.fad = torch.where(o3, (m.fad-30.*fsono/peso).clamp(min=0), m.fad)   # pesado dorme pior

@@ -63,3 +63,25 @@ Braços restantes com fome 0.5: `− produto` (Reativo) 4.97 / mortos 0.87;
 Reativo morre um pouco menos que o cérebro com produtos (0.87 vs 0.96): o
 produto de comida com limiar 0.5 não faz o ser comer mais cedo. Nada do
 pacote é legível com esta fome; e19b decide a calibração.
+
+## e19b — calibração da fome (R=16, 5 sementes)
+
+| braço | fit | entregas | mortos | fome no fim | leitura |
+|---|---|---|---|---|---|
+| pacote, fome .15 | 4.79 | 8.9 | 0.66 | 96 | ainda morre de fome |
+| pacote, fome .10 | 1.85 | 3.8 | 0.31 | 99 | dente fraco: 3 de 5 sementes voltam a PARAR |
+| Reativo, fome .15 | 6.16 | 10.5 | 0.52 | 88 | idem, um pouco melhor |
+
+Predição 7 ✗: a força do dente não resolve sozinha. O ser **não consegue
+comer o bastante**: fome sobe 0.32/passo (77/dia), refeição tira 45 → 1.7
+refeições/dia só pra empatar, cada uma com desvio e 3 dinheiros. Antes dos
+dentes a fome em 100 era grátis, então a evolução nunca precisou comer.
+Conserto do lado da COMIDA: `REFEICAO` vira parâmetro (45 = identidade) e o
+pacote usa 90 (uma refeição por dia basta), com fome .15.
+
+**Predição 8 (antes de rodar, e19c):** com refeição 90 + fome .15: mortos
+≤ 0.35, entregas ≥ 9 em 5/5 sementes (ninguém para), fome no fim ≤ 70;
+`− economia` ≥ pacote + 1.5 de fitness; cérebro com produtos ≤ Reativo em
+mortos (o produto de comida com limiar agora tem trabalho). Se mortos
+ficarem ≥ 0.5: o gargalo é a DISTÂNCIA até a comida (poucos nós têm) e o
+conserto é densidade de serviço, não corpo.
