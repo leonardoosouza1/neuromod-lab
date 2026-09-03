@@ -899,3 +899,14 @@ Estado da arte do programa (cidades 1000+, honesto): **8.49 de fit, 18
 mortos por 100, 3.9 panes** — metade da mortalidade do pacote de dentes
 original (0.35) com 7 genes de corpo e 2 postos a mais na cidade. Panes
 3.9 vs 8.1 = −52 %.
+
+### Regra 18 — o que a triagem PODE dizer (balanço de 2026-09-03)
+Hoje a triagem (P=1024, G=40, R=8, 3 sementes) inverteu ou inflou o sinal
+em: E19/E20 (pacote), E21 (atenção), E23 (mínimo 5), E27 (pena), E29b
+(−29 pp virou −8), E34 (reações "não muda" virou −10 pp) — e acertou só
+os desastres (log 0.81, sem portão 0.71, deserto 0.93, E30, E32). Regra:
+**triagem serve pra DESCARTAR (deserto, órbita, colapso — efeito ≥ 20 pp
+e 3/3 sementes no mesmo sentido); nunca pra afirmar direção fina.** Tudo
+que passar da triagem vai pro honesto ANTES de virar frase no doc, e a
+frase da triagem é escrita já como "provisório". Custo: 11 min por braço
+— mais barato que 8 correções por dia.
