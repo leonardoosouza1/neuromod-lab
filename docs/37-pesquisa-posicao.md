@@ -149,3 +149,13 @@ produz ("prefiro o vizinho com +2.1·distância ao destino +1.2·hora +3.0·tanq
 −4.9·dinheiro −3.4·temperatura") é uma DESCRIÇÃO, não uma equação
 verificada — e a diferença entre as duas é exatamente a diferença entre
 falar sobre matemática e falar matemática.
+
+## 5. E23 — a equação mínima que sobrevive (predição antes de rodar)
+Em vez de podar o campeão, EVOLUIR a política com só k termos permitidos
+(`src/minimo.py`: os outros são cancelados; com todos permitidos é bit-igual
+ao Reativo). A equação de k termos que sair é verificada por construção —
+o fitness dela é o fitness.
+16. Triagem (pena 5): `mínimo 10` ≥ 85 % do direto; `mínimo 5` (destino,
+    posto, comida, tanque, fome) ≥ 70 %; `mínimo 3` < 60 %. Se o mínimo-5
+    ficar ≥ 85 %: o táxi "fala" em 5 termos e o resto da política é ruído
+    co-adaptado. Mortalidade: mínimo-5 ≤ direto + 0.10.
