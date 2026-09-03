@@ -443,3 +443,10 @@ sinal é absorvida pelo gene `w` (regra 15), Weber–Fechner não acrescenta
 informação que o gene linear não alcance. Se ficar MELHOR (mortos ≤ 0.52):
 o tanque-quase-vazio "gritar" 20× mais alto compra reabastecer a tempo, e
 o portão do Noite24 era um substituto disso.
+
+Cidades 2000+ (mesma triagem): direto 2.66 / 0.66 · noite24 2.50 / 0.64 ·
+**log 0.72 / 0.86**. A segunda metade da predição 26 ("razões adimensionais
+perdem menos ao trocar de cidade: ≤ 30 % vs 45 %") também cai: o log perde
+73 % de fit (2.19 → 0.72) contra 45 % do linear (4.85 → 2.66). Faz sentido
+pelo mesmo mecanismo: em cidades maiores o "longe" é mais longe, e o
+achatamento piora. E29a encerrado: log/lei de potência não entra no lab.
