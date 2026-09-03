@@ -879,3 +879,23 @@ dinheiro por parada? tempo?) do que a pane — e o orçamento de pane do E33
 régua (8.5 pp / 0.65). Dois postos a mais são, pro cérebro linear, o maior
 efeito do pacote inteiro — maior que o reflexo (−8 pp). Braço das reações
 rodando; a comparação decide se "reflexo ≡ 2 postos" ou se os dois somam.
+
+### E34 HONESTO completo (5 sementes, cidades 1000+): postos e reflexo SOMAM
+
+| | 3 postos | 5 postos (+2) |
+|---|---|---|
+| direto | 6.63 / 0.36 / panes 8.1 (15 sem.) | **7.86 / 0.23 / 5.5** |
+| reações (reflexo) | 7.05 / 0.28 / 5.2–6.3 (10 sem.) | **8.49 / 0.18 / 3.9** [.21 .20 .18 .17 .15] |
+
+A triagem (n=3) dizia "mais posto não muda nada no cérebro com reflexo"
+(0.31 → 0.30). O honesto diz o contrário: 0.28 → 0.18 (−10 pp, acima da
+régua). E o reflexo em cima dos postos: 0.23 → 0.18 (−5 pp, 4/5 sementes,
+fit +0.63 — na régua, tendência). Predição 39 no honesto: ✓ nos dois braços.
+Correção da conclusão da triagem: **não é "reflexo ≡ 2 postos"; é "postos
+e reflexo somam"** — a triagem inverteu o sinal pela 8.ª vez hoje (regra
+13 vale pra tudo, não só pra mortalidade pequena).
+
+Estado da arte do programa (cidades 1000+, honesto): **8.49 de fit, 18
+mortos por 100, 3.9 panes** — metade da mortalidade do pacote de dentes
+original (0.35) com 7 genes de corpo e 2 postos a mais na cidade. Panes
+3.9 vs 8.1 = −52 %.
