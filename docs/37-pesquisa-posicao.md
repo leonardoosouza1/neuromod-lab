@@ -812,3 +812,12 @@ Portões evoluídos: custo 6 → 0.87–0.93; custo 12 → 0.50 / 0.84 / 0.86;
 custo 20 → 0.63 / 0.79 / 0.76 (cláusula 1 da predição 38 ✓: o joelho desce
 quando a pane encarece — o reflexo dispara com 20–40 % de tanque em vez de
 10 %). O preço muda ONDE o reflexo dispara; não muda quanta vida sobra.
+
+**E34 (na fila atrás do E32b; triagem): geometria direta — +2 postos.** As
+cidades têm 26 nós e 3 postos; acrescento 2 postos nos nós mais longe (em
+saltos) dos existentes (wrapper no gerador; lab.py intocado; comida segue
+o posto). **Predição 39 (antes de rodar):** com d_posto máx ≤ 4 em toda
+cidade, reações ≤ 0.22 de mortos (vs 0.31) e panes ≤ 4.0; direto ≤ 0.50
+(vs 0.60). Se as reações NÃO melhorarem: o orçamento de pane é
+comportamental (E33), não geométrico, e a autópsia por cidade era
+correlação com outra coisa (tamanho das viagens, por exemplo).
