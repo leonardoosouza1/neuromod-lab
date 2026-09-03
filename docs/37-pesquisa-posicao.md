@@ -939,3 +939,31 @@ portão único é mesmo o ótimo e encher cedo custa entregas.
 reações com 3 postos. Metade dos mortos do baseline de 6 cidades. Panes
 3.6–3.9 nos dois conjuntos (era 8): o reflexo + 2 postos corta a pane
 pela metade em qualquer mapa.
+
+### E36 resultado (triagem, semeado do campeão honesto): os "desastres" eram montagem
+
+| braço (semeado) | fit | mortos | panes | fome fim |
+|---|---|---|---|---|
+| controle (reações semeadas de si) | 7.80 | 0.15 | 4.3 | 57 |
+| + portão de abastecer (E35) | **8.20** | 0.16 | **3.3** | 53 |
+| + 2 portões (E29e) | 8.13 | 0.15 | 3.8 | 54 |
+| + viés por serviço (E30) | 8.05 | 0.20 | 3.8 | 59 |
+
+Predição 41: controle ✓ (7.80 / 0.15); E35 semeado panes ≤ 4.5 ✓ (3.3,
+−23 % vs controle); E30 ≈ controle ✓; E29e: o portão da fome DESCEU (0.43 /
+0.81 / 0.49) mas w da fome ficou ≈ 0 (−0.52 / −0.05 / −0.06) — abre o
+portão e não usa; "fome não é reflexo" fica. Do zero em 40 gerações, os
+mesmos três desenhos davam 0.53–0.64 de mortos: **era falha de montagem do
+reflexo com NP maior, não refutação dos mecanismos** (E30, E32b e E35
+ficam reclassificados como "protocolo").
+
+Achado colateral e grande: **o controle semeado (60 + 40 gerações) faz
+0.15 de mortos, contra 0.28 do campeão de que nasceu** (avaliação triagem
+R=8 vs honesto R=16, então não é comparação exata, mas 13 pp não é R).
+O campeão do honesto não está convergido em 60 gerações. Isso muda o
+protocolo: **evolução CUMULATIVA** — cada experimento novo nasce do
+melhor anterior (como na vida), e compara com o controle semeado do mesmo
+pai. Honesto semeado (controle vs abastecer, 5 sementes) na fila.
+Correção de fila: os 4 braços gravaram no mesmo JSON (tag igual) — os
+genes do controle/abastecer/viés se perderam (números estão nos logs);
+honesto relançado com tags distintas.
