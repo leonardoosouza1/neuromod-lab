@@ -57,3 +57,9 @@ em ~4 dias com fome no máximo; quem come uma vez por dia não sofre) a
 população sobrevive (mortos ≤ 0.35, entregas ≥ 8) e os dentes ainda pegam o
 parado (morre em ~5 dias). Com 0.10, mortos ≤ 0.30 mas o parado só morre
 depois de 7 dias — dente fraco demais para vidas de 5 dias. Aposta: 0.15.
+
+Braços restantes com fome 0.5: `− produto` (Reativo) 4.97 / mortos 0.87;
+`− economia` 4.91 / 0.85 — todos no deserto da fome (fome no fim 94–96). O
+Reativo morre um pouco menos que o cérebro com produtos (0.87 vs 0.96): o
+produto de comida com limiar 0.5 não faz o ser comer mais cedo. Nada do
+pacote é legível com esta fome; e19b decide a calibração.
