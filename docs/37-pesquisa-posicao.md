@@ -992,3 +992,11 @@ como o que são.
 Fontes: https://academic.oup.com/evolut/article-abstract/54/1/13/6758049 ·
 https://academic.oup.com/evolut/article/57/8/1723/6755709 ·
 https://dx.doi.org/10.1162/artl_e_00445
+
+**E37 (na fila atrás do E36h; honesto, cumulativo): melhor mundo (+2
+postos) × melhor pai (campeão do E34, 8.49 / 0.18) × portão de abastecer,
+com controle semeado do mesmo pai.** **Predição 42 (antes de rodar):**
+controle semeado ≤ 0.15 de mortos (continua melhorando sobre o pai, como
+no E36); abastecer semeado: panes ≤ 3.0 (vs ~3.9) e mortos ≤ controle −
+0.02; se mortos ≥ controle + 0.03: encher cedo custa entregas/dinheiro e o
+portão único do reflexo é o ótimo também no mundo denso.
