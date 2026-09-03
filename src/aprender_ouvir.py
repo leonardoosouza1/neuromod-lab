@@ -9,7 +9,7 @@ import torch
 from lab import Reativo, NF, DEV, GMAX
 from corpo_fala import fabrica as fabrica_corpo, _sinais, _feat_corpo, IDX_CORPO, NX, NH
 
-def fabrica(K=2, eta_max=.2, hebb_puro=False, eta_fixa=None, nome=None, explora=3.):
+def fabrica(K=2, eta_max=.2, hebb_puro=False, eta_fixa=None, nome=None, explora=3., eps_infancia=0.):
     """explora: desvio da inicializacao ALEATORIA (por vida, nao herdada) de Gserv — sem ela o servico
     nunca e escolhido pela primeira vez e a regra nunca dispara (perito eta=.1: 0 refeicoes, 100 % de fome)."""
     Base = fabrica_corpo(K, prior_corpo=True)          # corpo nasce falando; Gserv do genoma sera IGNORADO
@@ -28,6 +28,18 @@ def fabrica(K=2, eta_max=.2, hebb_puro=False, eta_fixa=None, nome=None, explora=
             s.ent_prev = m.ent.clone(); s.fome_prev = m.fome.clone(); s.fuel_prev = m.fuel.clone()
             s.pane_prev = m.av_fuel.clone(); s.vida_prev = m.vida.clone(); s.no_prev = m.no.clone()
             s.r_soma = torch.zeros(B, device=DEV); s.dG_soma = torch.zeros(B, device=DEV)
+        def decidir(s, tudo, m):
+            """E25b: curiosidade de verdade — na infancia (t < fome_gracia), com prob. eps escolhe um servico
+            DISPONIVEL ao acaso (tenta comer/abastecer/descansar sem saber por que). Fora da infancia: argmax."""
+            esc = tudo.argmax(1)
+            if eps_infancia <= 0.: return esc
+            _, svpaga = m.serv_need()                                  # (B,5) disponivel e pagavel
+            u = torch.rand(m.B, 5, generator=m.gsim, device=DEV)
+            alea = GMAX + torch.where(svpaga > 0, u, torch.full_like(u, -1.)).argmax(1)
+            tem = (svpaga > 0).any(1)
+            sorteio = torch.rand(m.B, generator=m.gsim, device=DEV) < eps_infancia
+            inf = (m.t < m.cfg.fome_gracia) if m.cfg.fome_gracia else torch.zeros_like(tem)
+            return torch.where(sorteio & tem & inf, alea, esc)
         def atualizar(s, m):
             # 1) recompensa do passo que acabou de acontecer
             if hebb_puro:
@@ -48,6 +60,6 @@ def fabrica(K=2, eta_max=.2, hebb_puro=False, eta_fixa=None, nome=None, explora=
             s.pane_prev = m.av_fuel.clone(); s.vida_prev = m.vida.clone()
             s.h_prev = s.h.clone()
             Base.atualizar(s, m)                        # atualiza h (rede do corpo)
-    SerAprendeOuvir.nome = nome or ('aprende-ouvir' + ('-hebb' if hebb_puro else '') + (f'-eta{eta_fixa}' if eta_fixa is not None else ''))
+    SerAprendeOuvir.nome = nome or ('aprende-ouvir' + ('-hebb' if hebb_puro else '') + (f'-eta{eta_fixa}' if eta_fixa is not None else '') + (f'-eps{eps_infancia}' if eps_infancia else ''))
     SerAprendeOuvir.K = K
     return SerAprendeOuvir

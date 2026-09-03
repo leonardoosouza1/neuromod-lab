@@ -58,3 +58,22 @@ Gserv[fome→comida] > 0 no fim da vida; `direto` melhora (mortos ≤ 0.50);
 teto ≈ direto. Se `aprende` continuar = surdo mesmo com 2 dias de graça: a
 primeira refeição não acontece por acaso nem sem pressão — o gargalo é o
 número de nós com comida (6 de 26), não o tempo.
+
+## E25 (infância individual, triagem) — parcial
+
+| braço | fit | mortos | fome no fim |
+|---|---|---|---|
+| direto (Reativo), com 2 dias de graça | 5.27 | 0.47 | 79 |
+| surdo (η=0) | 1.27 | 0.89 | 97 |
+| aprende a ouvir η=.1 | 0.45 | 0.93 | 98 |
+
+A graça ajuda o cérebro direto (0.60 → 0.47) e não ajuda o aprendiz
+(predição 18 ✗): a curiosidade nos PESOS (Gserv aleatório) não faz a
+primeira refeição acontecer — o viés de serviço evoluído esconde qualquer
+serviço. Curiosidade de verdade é tentar serviços: **E25b, ε-exploração na
+infância** — com probabilidade ε o táxi usa um serviço disponível ao acaso
+(só enquanto a fome não fere). Predição 25: com ε=.2, o surdo curioso come
+≥ 2 vezes na infância e o aprendiz η=.1 sai do deserto (mortos ≤ 0.75,
+Gserv[fome→comida] > 0 em ≥ 2/3 sementes); η=.3 + ε=.4 melhor ainda. Se o
+aprendiz continuar = surdo curioso: a regra de recompensa está errada (não
+é falta de tentativa).
