@@ -1039,3 +1039,10 @@ panes 2.8, fome fim 50, entregas 13.3.** Contra o pai (E34, 8.49 / 0.18 /
 3.9): +0.9 de fit, −4 pp, −28 % de panes — o mesmo salto do E36 (continuar
 evoluindo paga). Predição 42, cláusula do controle (≤ 0.15): ✓. Estado da
 arte: **9.40 / 0.14 / 2.8 panes** (cidades 1000+, 120 gerações, 5 postos).
+
+**E37b (na fila; honesto): terceira rodada cumulativa — campeão do E37
+(120 ger.) + 60 = 180 gerações, mundo de 5 postos.** Mede a curva de
+convergência. **Predição 43 (antes de rodar):** ganho decrescente — fit
++0.2 a +0.4 (9.40 → ≤ 9.8) e mortos −1 a −3 pp (0.14 → ≥ 0.11); se
+mortos ≤ 0.10 o processo ainda está longe do platô e o protocolo honesto
+passa a 180 gerações; se ≈ igual (±0.02), 120 é o número.
