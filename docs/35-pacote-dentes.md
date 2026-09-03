@@ -33,3 +33,27 @@ no objetivo, uma população que espirala nas primeiras gerações cai em
 6. `− economia`: fit ≥ pacote + 1.5 (sem aluguel/imposto), mortos ≈.
 Critério do pacote: se 1 vale e cada remoção piora ou empata, o pacote
 fica inteiro; peça cuja remoção MELHORA sai.
+
+## Resultado parcial (4 de 6 braços) — a fome a 0.5/passo é um deserto
+
+| braço | fit | entregas | mortos | vida no fim | fome no fim |
+|---|---|---|---|---|---|
+| pacote | 3.42 | 6.1 | **0.96** | 2.5 | 99 |
+| − fome | 1.79 | 4.1 | 0.14 | 70 | 98 (2 de 5 sementes desabaram: −0.1, 0.5, 0.5) |
+| − dívida | 3.42 | 6.1 | 0.96 | 2.5 | 99 (idêntico ao pacote: a dívida nunca chega ao limite) |
+| − limiar | 3.26 | 5.8 | 0.95 | 2.5 | 98 |
+
+Leitura honesta: **96 % morrem de fome** mesmo trabalhando. Fome sobe 0.32
+por passo (77 por dia) e a refeição tira 45: são 1.7 refeições por dia só pra
+ficar no lugar. Com dano de 0.5 por passo a partir de 90, uma população
+inicial aleatória morre inteira antes de a seleção conseguir subir o peso
+da comida — deserto evolutivo (não há gradiente quando todo mundo morre).
+Predição 2 ✓ (sem a fome, parar volta: 2 sementes desabam); predição 3 ✓
+(dívida inerte em 5 dias); predições 1, 4, 5 não avaliáveis com todo mundo
+morto de fome.
+
+**Predição 7 (antes de rodar, e19b):** com `fome_mata` em 0.15 (100 de vida
+em ~4 dias com fome no máximo; quem come uma vez por dia não sofre) a
+população sobrevive (mortos ≤ 0.35, entregas ≥ 8) e os dentes ainda pegam o
+parado (morre em ~5 dias). Com 0.10, mortos ≤ 0.30 mas o parado só morre
+depois de 7 dias — dente fraco demais para vidas de 5 dias. Aposta: 0.15.

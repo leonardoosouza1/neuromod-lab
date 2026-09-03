@@ -28,7 +28,12 @@ BRACOS = [('pacote',            ReativoProdutoLimiar, dict()),
           ('pacote - divida',   ReativoProdutoLimiar, dict(divida=False)),
           ('pacote - limiar',   ReativoProduto,       dict()),
           ('pacote - produto',  Reativo,              dict()),
-          ('pacote - economia', ReativoProdutoLimiar, dict(economia=False))]
+          ('pacote - economia', ReativoProdutoLimiar, dict(economia=False)),
+          # e19b: a fome a 0.5/passo matou 96 % (deserto evolutivo: todo mundo morre antes de
+          # aprender a comer; fome sobe 0.32/passo, refeicao -45). Dentes mais suaves:
+          ('pacote fome .15',   ReativoProdutoLimiar, dict(fome=.15)),
+          ('pacote fome .10',   ReativoProdutoLimiar, dict(fome=.10)),
+          ('pacote fome .15 reativo', Reativo,        dict(fome=.15))]
 
 def telemetria(m, T):
     f = lambda x: round(float(x.mean()), 3)
