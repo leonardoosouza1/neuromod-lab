@@ -611,3 +611,12 @@ poderia acrescentar é na morte. Reflexo puro no honesto na fila.
 de mortos (= reações): persistência não conta, o E29b é um reflexo de
 limiar e ponto. Se ≥ 0.36: a espécie lenta compra alguma coisa (o que,
 exatamente, o E29e com dois portões vai dizer).
+
+**E29b honesto, cidades 2000+ (5 sementes): 4.34 / 0.42 [.37 .41 .35 .59
+.39], panes 7.7** vs baseline pacote direto 3.77 / 0.47. Seis cidades:
+**reações 5.66 / 0.36 vs pacote 5.34 / 0.41.** Direção igual nos dois
+conjuntos (+0.34 e +0.57 de fit; −6.6 e −5 pp de mortos); cada um sozinho
+fica abaixo da régua (0.65 / 8.5 pp). A semente 3 — a que não montou o
+reflexo da sede — é a pior nos dois conjuntos (0.43 e 0.59): a estrutura
+prevê a morte dentro do experimento. Decisão fica com as sementes 5–9
+(10 sementes em 1000+, régua ~6 pp).
