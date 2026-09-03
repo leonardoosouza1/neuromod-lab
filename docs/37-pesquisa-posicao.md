@@ -585,3 +585,29 @@ bit a bit; sem sync. **Predição 34:** portão da fome evoluído ≤ 0.7 em
 resolvida por reflexo de distância porque a comida é rara (6 nós) e o
 táxi precisa PLANEJAR o desvio, não reagir — e o próximo passo é comida
 como parada no caminho (rota), não como reflexo.
+
+### E29d resultado (triagem n=3, 1000+) — ablação: o portão é o mecanismo
+
+| braço | fit | mortos | panes | fome fim |
+|---|---|---|---|---|
+| direto (referência) | 4.85 | 0.60 | 8.4 | 85 |
+| reações completo | 7.08 | 0.31 | 5.8 | 70 |
+| reflexo puro (τ=1, portão livre) | 5.53 | 0.40 [.58 .21 .41] | 6.0 | 73 |
+| **reações sem portão (θ=0)** | **3.46** | **0.71** | 7.5 | 89 |
+
+**Predição 33 confirmada com folga:** sem o joelho, a reação sempre ligada
+fica PIOR que não ter reação (0.71 vs 0.60): o termo `−w·c·d_posto`
+proporcional puxa o táxi pro posto o tempo inteiro, ele orbita o posto,
+entrega menos (8.0 vs 9.4), fica sem dinheiro e morre de fome (89). É a
+mesma doença dos 5 produtos do E17 — multiplicação sem portão é órbita.
+O que salva não é multiplicar, é multiplicar SÓ quando o tanque cai
+abaixo de ~10 %.
+
+**Predição 32 (reflexo puro ≈ reações) não decidida:** 0.40 vs 0.31, mas as
+sementes do reflexo espalham .21–.58 (n=3, regra 13). Panes iguais (6.0 vs
+5.8) — o reflexo instantâneo já corta as panes; o que a persistência
+poderia acrescentar é na morte. Reflexo puro no honesto na fila.
+**Predição 35 (antes de rodar):** reflexo puro honesto fica em 0.30 ± 0.06
+de mortos (= reações): persistência não conta, o E29b é um reflexo de
+limiar e ponto. Se ≥ 0.36: a espécie lenta compra alguma coisa (o que,
+exatamente, o E29e com dois portões vai dizer).
