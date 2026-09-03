@@ -1026,6 +1026,7 @@ Régua do dia (E28b, 15 sementes da mesma função): honesto n=5 só detecta ≥
 | 40 | E35 portão de abastecer: panes ≤ 3.5, mortos ≤ 0.24 | ✗ (do zero: montagem; semeado: neutro E36, pior E37) |
 | 41 | E36 semeado: controle ≥ 6.8/≤ 0.33; E35 panes ≤ 4.5; E30 ≈; E29e portão fome ≥ 0.85 | controle ✓; E35 triagem ✓ / honesto ✗; E30 ✓; E29e portão desceu mas w≈0 |
 | 42 | E37: controle ≤ 0.15; abastecer panes ≤ 3.0 e mortos ≤ controle − 0.02 | controle ✓ (0.14); abastecer ✗ (0.19) → cláusula "portão único é o ótimo" ✓ |
-| 43 | E37b 180 ger.: fit +0.2..0.4, mortos −1..3 pp | (rodando) |
+| 43 | E37b 180 ger.: fit +0.2..0.4, mortos −1..3 pp | ✗ ganho; ✓ cláusula 'platô → 120 é o número' (9.20/0.15 vs 9.40/0.14) |
+| 44 | E38 recusa por fome: θ_p ≤ 0.8 em 3/5, mortos ≤ 0.12 | ✗ (θ_p 92–99 %, = controle) → cláusula 'fome é preço aceito' ✓ |
 
 Regras novas: 17 (gene novo nasce desligado), 18 (triagem só descarta), 19 (variante só semeada do melhor pai + controle semeado). Estado da arte: 9.40 / 0.14 / 2.8 panes (1000+, 5 postos, 120 ger.).

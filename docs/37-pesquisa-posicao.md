@@ -1103,3 +1103,25 @@ fome-no-fim ≤ 45 (vs 50); mortos ≤ 0.12 (vs 0.15) e fit ≥ 9.0 (recusar
 custa poucas entregas porque passageiro reaparece). Se θ_p ficar ≥ 0.95:
 recusar custa mais entregas do que a fome custa em vida — e a fome com
 passageiro é preço aceito, como a pane (E33: orçamento constante).
+
+### E38 resultado (honesto semeado, 5 postos): recusar passageiro NÃO é usado — a fome é orçamento
+
+| | fit | mortos | panes | fome fim |
+|---|---|---|---|---|
+| controle (E37b, mesmo pai + 60 ger.) | 9.20 | 0.15 | 3.7 | 50 |
+| + recusa por fome | 9.17 | 0.15 [.19 .19 .15 .11 .12] | 4.0 | 50 |
+
+Genes: θ_p = 92 / 98 / 99 / 99 / 99 % — em 5/5 a evolução deixa o direito
+de recusar praticamente desligado. Predição 44 ✗; cláusula pré-registrada
+✓: **recusar custa mais entregas do que a fome custa em vida.** Com isso a
+fome fecha o ciclo de quatro mecanismos nulos — reflexo de distância
+(E29e), viés de serviço (E30), comer forçado (autópsia), recusa (E38) —
+e a leitura passa a ser a mesma da pane no E33: **a morte por fome com
+passageiro a bordo é um preço que o ser escolhe pagar**, porque a entrega
+paga mais (em fitness) do que a vida perdida custa. Não é falha de
+percepção nem de decisão; é a função de fitness dizendo que 5 dias de
+entregas valem mais que a 5.ª manhã. Se o Leonardo quiser menos mortes
+por fome, a alavanca é o PREÇO (pena de morte maior, ou vida ganha por
+metro como no Universe — doc "vida ganha e velocidade"), não o cérebro.
+Linha da fome encerrada por hoje. Anedota: s0 perdeu o reflexo (w 0.02)
+nesta rodada mesmo nascendo com ele — linhagens perdem degraus também.
