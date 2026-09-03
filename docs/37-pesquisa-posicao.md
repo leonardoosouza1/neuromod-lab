@@ -412,3 +412,24 @@ Reavaliando com a régua: E23 (3 termos = direto) é EMPATE dentro do ruído
 fala −1.1 = 2× ruído, real; E24 Noite24 panes −49 % é outra métrica, fica.
 Predição 21 (enxuto ≥ direto) não confirmada; tirar os 12 genes mortos não
 muda nada, como era de esperar de genes que não entram na conta.
+
+### E29a resultado (2026-09-03, triagem n=3, cidades 1000+): log é MUITO pior
+
+| política | fit | mortos | entregas |
+|---|---|---|---|
+| direto (linear) | 4.85 | 0.60 | 9.4 |
+| noite24 (1 produto) | 5.36 | 0.51 | 10.0 |
+| **log (lei de potência)** | **2.19** | **0.81** | 6.7 |
+
+Predição 26 refutada com folga (não é ruído: 3/3 sementes, −2.7 fit). O
+mecanismo é geométrico, não químico: `log(x+ε)−log ε` com ε=0.05 tem
+inclinação 20 perto de zero e ~1 perto de 1. Pra SENTIR magnitude (Weber–
+Fechner) isso é ótimo; pra NAVEGAR é péssimo — a escolha do vizinho compara
+`d_alvo` de nós adjacentes, que diferem por um passo em dezenas; no log, ao
+longe, todos os vizinhos parecem iguais ("achata o longe") e o argmax vira
+ruído das outras features. Resultado: entregas 9.4 → 6.7, e sem entregar não
+há dinheiro nem comida (mortos 0.81). A lei da mistura tem multiplicação e
+divisão, sim — mas a razão útil no táxi é entre NECESSIDADE e DISTÂNCIA
+(Noite24: tanque × d_posto), não o log de cada sinal sozinho. Isso fecha
+a pergunta "lei de potência ajuda?": não. A não-linearidade que paga é o
+produto com portão → E29b (reações), já na fila.
