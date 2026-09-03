@@ -322,3 +322,21 @@ completo: *"vou na direção do destino; vou na direção do posto; quanto
 menos tanque, mais forte; uso o serviço cuja necessidade × peso vencer o
 movimento."* Verificada por construção — é a primeira frase do lab que é
 matemática de verdade, não descrição.
+
+## 9. E29b — reações (desenho, roda se o E29a não bastar)
+A imagem do Leonardo ("líquidos com intensidade molecular; misturados viram
+outra coisa") em mecanismo: **lei de ação das massas**. K espécies lentas
+`c_k` (τ próprio, alimentadas pelos sinais do corpo, como as glândulas do
+E16/E20) e termos de reação `c_k · x_j` só nos pares que a física sugere —
+necessidade × distância ao serviço — com **portão** (o produto só liga acima
+de um limiar, o que o E17/E23 mostraram que evita a órbita). Genes: τ_k,
+entradas de cada espécie, e um peso por par (≤ 10). Nada de canal que mexa
+em preço de física (regra 16).
+
+**Predições (antes de rodar):** 27. com 2 espécies (sede = 1−tanque lenta,
+fome lenta) e portão em 0.5, mortos ≤ Noite24 (0.32) com fit ≥ 6.6 — a
+espécie lenta dá PERSISTÊNCIA à urgência (a fome continua "mandando" por τ
+passos depois do pico, que é o que o Leonardo apontou: "só pensa em comer
+quando está com fome"); 28. τ evoluído das espécies > 20 passos em ≥ 3/5
+sementes (persistência é usada); se τ → 1: a persistência não paga e o
+produto instantâneo (Noite24) já é o teto.
