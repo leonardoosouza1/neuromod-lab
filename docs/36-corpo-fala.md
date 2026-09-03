@@ -38,3 +38,34 @@ Referência da triagem: `direto` mede a si mesmo na mesma rodada.
    fome soar mais alto e por mais tempo (τ evoluído > 20 passos).
 Se `K=2` ficar < 60 % do direto: 82 genes em G=40 não convergem (busca), e
 a próxima é co-evolução em duas populações ou τ fixo.
+
+## Triagem 1 (sem código herdado) — R=8, G=40, 3 sementes
+
+| braço | genes | fit | entregas | mortos | fome no fim |
+|---|---|---|---|---|---|
+| direto (Reativo) | 44 | 4.85 | 9.4 | 0.60 | 85 |
+| corpo fala K=2 | 126 | 1.64 | 5.3 | **0.97** | 100 |
+| corpo fala K=1 | 112 | 2.03 | 5.5 | 0.96 | 100 |
+| corpo fala K=4 | 154 | 2.23 | 5.9 | 0.97 | 100 |
+| redundante K=2 | 126 | 4.98 | 9.3 | 0.66 | 90 |
+
+Predição 4 ✓ (redundante = direto, hormônios inertes). Predições 1, 2, 3, 5
+✗: com o gargalo **97 % morrem de fome** — corpo e cérebro não acham o
+código "fome → comida" em 40 gerações com 82–110 genes, e como todo mundo
+morre não há gradiente (deserto, o mesmo do E19). Mecanismo, não ruído:
+fome em 100 nas 9 sementes.
+
+Diagnóstico com o perito (não serve de teste — ele se exaure e quebra:
+dinheiro −2, 1.2 refeições/vida): quando está num nó com comida, a comida
+GANHA do movimento (4.5–5.9 vs < 0); ele não come porque está em descanso
+forçado (fadiga 95) ou sem 3 dinheiros. A decisão é argmax puro, sem ruído.
+
+**Triagem 2 — código herdado (predições 6–8, antes de rodar):**
+6. `corpo nasce falando` (h0 = fome, h1 = sede de gasolina, fixos; o cérebro
+   tem de aprender a ouvir): mortos ≤ 0.70 e fome no fim < 100 em ≥ 2/3 —
+   metade do código pronto basta pra sair do deserto.
+7. `corpo fala + cérebro ouve` (os dois priors): ≈ direto (fit ≥ 80 %,
+   mortos ≤ direto + 0.1) — o canal funciona de ponta a ponta; a evolução
+   só refina.
+8. `só cérebro ouve` (o corpo tem de aprender a falar): pior que 6 — falar é
+   mais difícil que ouvir (a rede do corpo tem 68 genes, o ouvido tem 10).

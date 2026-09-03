@@ -15,7 +15,11 @@ BRACOS = [('direto (Reativo)',   Reativo),
           ('corpo fala K=2',     fabrica(2)),
           ('corpo fala K=1',     fabrica(1)),
           ('corpo fala K=4',     fabrica(4)),
-          ('redundante K=2',     fabrica(2, redundante=True))]
+          ('redundante K=2',     fabrica(2, redundante=True)),
+          # triagem 2: codigo herdado
+          ('K=2 corpo nasce falando',        fabrica(2, prior_corpo=True)),
+          ('K=2 corpo fala + cerebro ouve',  fabrica(2, prior_corpo=True, prior_cerebro=True)),
+          ('K=2 so cerebro ouve',            fabrica(2, prior_cerebro=True))]
 
 def main(a):
     E15.PENA = a.pena
