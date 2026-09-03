@@ -164,3 +164,15 @@ de decisão sozinhos (necessidade, exploração, sono) a evolução não achou
 uso em G=60/R=16 — as glândulas ficaram inertes; (3) o que EMERGIU segue
 válido como forma (uma glândula sobe com fome e freia; outra sobe com
 abastecer e mantém), mas não paga neste mundo. Encerrado como N19.
+
+### Economia em cidades difíceis (2000+) e a média honesta
+
+| mundo | 1000+ | 2000+ | **média 6 cidades** |
+|---|---|---|---|
+| âncora: corpo sem economia | 8.54 / 0.19 | 5.12 / 0.33 | **6.83 / 0.26** |
+| economia (reboque gordura→vida) | 6.36 / 0.17 | 3.68 / 0.31 | **5.02 / 0.24** |
+
+Economia custa **1.8 de entregas** por vida na média honesta e não muda a
+mortalidade (−2 pontos). Medido ANTES dos dentes (doc 35): ambos os mundos
+ainda tinham "parar de graça", mas as populações trabalhavam (entregas
+9–10). Refazer as duas linhas com o pacote se ele ficar de pé.
