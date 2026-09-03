@@ -1046,3 +1046,12 @@ convergência. **Predição 43 (antes de rodar):** ganho decrescente — fit
 +0.2 a +0.4 (9.40 → ≤ 9.8) e mortos −1 a −3 pp (0.14 → ≥ 0.11); se
 mortos ≤ 0.10 o processo ainda está longe do platô e o protocolo honesto
 passa a 180 gerações; se ≈ igual (±0.02), 120 é o número.
+
+**E37 honesto, braço 2 (reações + portão de abastecer, semeado do mesmo
+pai, +2 postos): 8.96 / 0.19 [.25 .16 .16 .15 .25], panes 3.3** — contra o
+controle 9.40 / 0.14 / 2.8. Pior nos três eixos (+5 pp, −0.44, +0.5
+panes). Predição 42, cláusula final ✓: **encher cedo custa entregas (12.9
+vs 13.3) e dinheiro; o portão único do reflexo é o ótimo.** Com o E36
+(neutro) e o E37 (negativo), a linha "portão de abastecer" encerra. O
+reflexo de emergência fica como está: 7 genes, um joelho, e é ele quem
+decide também quando encher.
