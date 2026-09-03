@@ -1542,7 +1542,7 @@ def evoluir(Arq, cidades, cfg, P=512, ger=25, T=1500, seed=0, elite=.15,
 
 
 def evoluir_sementes(Arq, cidades, cfg, P=512, ger=25, T=1500, seeds=(0,1,2),
-                     elite=.15, verbose=True, R=1, cfg_gen=None):
+                     elite=.15, verbose=True, R=1, cfg_gen=None, W0=None, sigma0=.2):
     """MEGA-LOTE de sementes: as S populacoes (uma por semente de evolucao)
     empilhadas num Lote so — B cresce S vezes e sai da regiao limitada por
     LANCAMENTO de kernel (VRAM vazia + GPU 'ocupada' = kernels pequenos).
@@ -1555,7 +1555,14 @@ def evoluir_sementes(Arq, cidades, cfg, P=512, ger=25, T=1500, seeds=(0,1,2),
     Ws = []
     for sd in seeds:
         g = torch.Generator(device=DEV); g.manual_seed(sd)
-        gs.append(g); Ws.append(torch.randn(P, NPQ, generator=g, device=DEV)*.8)
+        gs.append(g)
+        if W0 is None:
+            Ws.append(torch.randn(P, NPQ, generator=g, device=DEV)*.8)
+        else:   # [E36] populacao nasce do campeao (genes novos = 0, desligados) + ruido sigma0: testa o INCREMENTO, nao a montagem
+            base = W0[sd] if isinstance(W0, dict) else W0
+            base = torch.as_tensor(base, dtype=torch.float32, device=DEV).flatten()
+            w = torch.zeros(P, NPQ, device=DEV); w[:, :base.numel()] = base[None, :]
+            Ws.append(w + torch.randn(P, NPQ, generator=g, device=DEV)*sigma0)
     W = torch.cat(Ws)                                  # (S*P, NP)
     hist = {sd: [] for sd in seeds}; snaps = {sd: [] for sd in seeds}
     ne = max(2, int(P*elite))

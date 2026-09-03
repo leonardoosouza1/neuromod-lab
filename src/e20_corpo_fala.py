@@ -48,7 +48,11 @@ def main(a):
         if a.so and nome not in a.so: continue
         t1 = time.time(); cfg = cfg_pacote(**MUNDO)
         cg = curriculo_fome(cfg, MUNDO['fome']) if a.curriculo else None
-        champs = evoluir_sementes(A, treino, cfg, P=p['P'], ger=p['G'], T=p['T_evo'], seeds=p['seeds'], R=p['R'], verbose=False, cfg_gen=cg)
+        W0 = None
+        if getattr(a, 'init_from', None):   # [E36] --init-from JSON "braco": nasce do campeao daquele braco, semente a semente
+            _J = json.load(open(a.init_from[0]))['bracos'][a.init_from[1]]['W']
+            W0 = {sd: _J[str(sd)] for sd in p['seeds']}
+        champs = evoluir_sementes(A, treino, cfg, P=p['P'], ger=p['G'], T=p['T_evo'], seeds=p['seeds'], R=p['R'], verbose=False, cfg_gen=cg, W0=W0)
         por = []; hm = []
         for sd in p['seeds']:
             m = rodar(A, champs[sd][0][None, :].repeat(128, 1), teste, cfg, T=p['T_aval'], seed=7777)

@@ -11,7 +11,7 @@ if __name__ == '__main__':
     ap.add_argument('--out', default='/media/llm-data/universe-runs/neuromod-lab-taxi/e33'); ap.add_argument('--so', nargs='*', default=None)
     ap.add_argument('--seeds', type=int, nargs='*', default=None); ap.add_argument('--R', type=int, default=None)
     ap.add_argument('--teste-seed', type=int, default=1000); ap.add_argument('--pena', type=float, default=5.)
-    ap.add_argument('--tag', default=''); ap.add_argument('--curriculo', action='store_true')
+    ap.add_argument('--tag', default=''); ap.add_argument('--curriculo', action='store_true'); ap.add_argument('--init-from', nargs=2, default=None, metavar=('JSON', 'BRACO'))
     ap.add_argument('--dpane', type=float, default=12.)
     a = ap.parse_args()
     _orig = E20.cfg_pacote
