@@ -499,3 +499,27 @@ conta. **Predição 33:** sem portão cai pro nível do Noite24 ou abaixo
 (mortos ≥ 0.45): o que paga é o JOELHO em ~10 % de tanque, não a
 multiplicação em si. Se (b) ficar igual ao completo: o portão era
 decoração e a evolução só usou o ganho 5×.
+
+### E28b — a régua do honesto, com 15 sementes da mesma função
+
+Três medidas do MESMO cérebro (direto 44 genes, sementes 0–4; enxuto 32
+genes, sementes 0–4; direto sementes 5–9): 6.90/0.35 · 6.43/0.34 · 6.55/0.40.
+
+| | média (15 sementes) | desvio por semente | erro-padrão (n=5) | diferença mínima detectável (2·EP·√2) |
+|---|---|---|---|---|
+| fit | **6.63** | 0.52 | 0.23 | **0.65** |
+| mortos | **0.36** | 0.067 | 0.030 | **0.085** |
+
+**Régua (vale daqui em diante):** no honesto com 5 sementes, só conta
+diferença ≥ 0.65 de fit ou ≥ 0.085 de mortos (≈ 8.5 pp). E o baseline
+direto passa a ser citado como **6.63 / 0.36**, não 6.90 / 0.35.
+
+Reavaliando o que já foi dito com a régua:
+- E23 mínimo 3 termos (6.91/0.34): empate — "bastam", não "melhor". ✓ como estava.
+- E20 corpo-fala (5.83/0.36): −0.8 de fit vs 6.63 → real por pouco; mortalidade igual.
+- **E24 Noite24 honesto (6.66/0.32): fit e mortos DENTRO do ruído** — o
+  "mortos −3 pp" que registrei era ruído; o que sobra do E24 é panes −49 %
+  (8.1 → 4.0), outra métrica, provavelmente real (efeito 2×) mas sem régua
+  própria ainda.
+- E29b (triagem 0.31 vs 0.60): 29 pp, 3× a régua — se o honesto repetir
+  metade disso, é o maior efeito do pacote.
