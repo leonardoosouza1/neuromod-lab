@@ -165,3 +165,22 @@ mantém 30 % das outras.
     `suave .3` entre os dois. Se mortos não caírem: a fome raramente é a
     MAIOR necessidade no momento em que há comida — e o conserto é a
     persistência (uma vez eleita, a necessidade segue mandando por N passos).
+
+### E21 triagem (R=8, G=40, 3 sementes)
+
+| braço | fit | entregas | mortos | fome no fim |
+|---|---|---|---|---|
+| direto (Reativo) | 4.85 | 9.4 | 0.60 | 85 |
+| **atenção interoceptiva** (só a maior necessidade decide) | **5.00** | 10.0 | **0.49** | 77 |
+| atenção suave .3 | 4.82 | 9.5 | 0.56 | 80 |
+
+Predição 11: mortos −11 pp ✓ (2/3 sementes abaixo), fit ≥ direto ✓, fome no
+fim ≤ 60 ✗ (77). Primeira alavanca de DECISÃO que reduz a morte por fome sem
+custar entregas — e é o achado de 2026 (AffectWorld) reproduzido no táxi.
+Ruído da triagem ±8 pp: decide no honesto.
+
+**Predição 12 (antes de rodar, honesto R=16, 5 sementes):** atenção
+interoceptiva vs direto (6.90 / 0.35): mortos ≤ 0.28 com ≥ 4/5 sementes
+abaixo, fit ≥ 6.4, fome no fim ≤ 65. Se mortos ficarem ≥ 0.33: a triagem
+era ruído e a atenção só reorganiza sem salvar — a próxima é persistência
+(a necessidade eleita segue mandando N passos).
