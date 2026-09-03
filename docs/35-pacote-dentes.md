@@ -192,3 +192,5 @@ sementes abaixo de 0.30, uma em 0.58). Cláusula prevista: as panes caem e os
 mortos quase não — **a fome é a segunda assassina** (fome no fim sobe 69 →
 76: o táxi que não pane tanto morre de fome). O próximo alvo é comer, e o
 E25 (infância individual) está na fila exatamente pra isso.
+
+> **Releitura com a régua do E28b (2026-09-03):** com 15 sementes da mesma função, o honesto n=5 só detecta ≥ 0.65 fit / ≥ 0.085 mortos, e o baseline direto é 6.63 / 0.36. Logo o "mortos −3 pp" do Noite24 é RUÍDO; o que fica do E24 é **panes −49 %** (8.1 → 4.0), efeito de outra métrica e de tamanho 2×.
