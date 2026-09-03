@@ -1055,3 +1055,12 @@ vs 13.3) e dinheiro; o portão único do reflexo é o ótimo.** Com o E36
 (neutro) e o E37 (negativo), a linha "portão de abastecer" encerra. O
 reflexo de emergência fica como está: 7 genes, um joelho, e é ele quem
 decide também quando encher.
+
+**Campeão cumulativo em cidades 2000+ (mundo de 3 postos; semeado do
+campeão de 120 ger. + 60 = 180 ger.; 5 sementes): 5.42 / 0.31 [.22 .29 .31
+.45 .31], panes 6.8** — contra 4.34 / 0.42 / 7.7 do campeão de 60 gerações
+no mesmo conjunto. −11 pp e +1.1 de fit em cidades que nenhum dos dois viu
+no treino (treino é sempre cidades 0–3): o ganho de continuar evoluindo é
+generalização, não ajuste ao teste. Seis cidades, mundo original,
+cumulativo: **6.75 / 0.245** (era 5.66 / 0.36 com 60 ger., 5.34 / 0.41 no
+pacote direto). A linhagem s3 segue a pior (0.45) em qualquer conjunto.
