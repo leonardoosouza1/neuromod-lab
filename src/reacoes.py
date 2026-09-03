@@ -76,7 +76,7 @@ class ReativoReacoesDist(ReativoReacoes):
     nome = 'reativo-reacoes-dist'; NP = ReativoReacoes.NP + 1
     def reset(s, m, W):
         super().reset(m, W); o = ReativoReacoes.NP
-        s.beta = torch.nn.functional.softplus(W[:, o:o+1])            # (B,1)
+        s.beta = torch.nn.functional.softplus(W[:, o:o+1] - 4.)       # (B,1); gene 0 -> 0.018 (nasce como reacoes; E32 v1 nascia em 0.69 e matou o reflexo)
     def _ativ(s):
         return (s.c - s.th_ef).clamp(min=0.)
     def extra(s, m, W, viz):

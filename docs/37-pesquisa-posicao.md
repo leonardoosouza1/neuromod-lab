@@ -777,3 +777,14 @@ que está barato demais (lei da moeda cruzada: E33 = D_PANE maior).
 o comportamento se adapta ao preço. Mortos: se ≤ 0.31, a adaptação paga o
 preço; se ≥ 0.40, a pane cara só mata mais rápido do que o reflexo consegue
 evitar — e o gargalo é geometria (E32), não preço.
+
+**E32 v1 resultado (triagem): 4.26 / 0.64 — e a culpa é minha.** Genes: w da
+sede −0.08 / −0.05 / −0.29 (3/3): a evolução DESLIGOU o reflexo. Mecanismo:
+β = softplus(gene) nasce em 0.69 com gene 0 → o portão abre pra toda a
+população desde a geração 0 → quem tem |w| grande orbita e morre primeiro
+→ w vai a zero antes de β conseguir encolher → sem reflexo, volta ao nível
+do direto (0.60). Erro de parametrização (regra 15, escala do gene, agora
+na direção do "nascimento"): **todo gene novo tem de nascer DESLIGADO
+(igual ao pai) — a evolução liga se pagar.** Corrigido: β = softplus(gene
+− 4) (gene 0 → 0.018), verificado quase idêntico ao reações no perito.
+E32b refeito na fila. A predição 37 vale pro E32b.
