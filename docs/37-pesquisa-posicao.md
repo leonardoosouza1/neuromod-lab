@@ -1032,3 +1032,10 @@ usado às vezes, sem ganho medível. Anedota de 1 semente: a linhagem s3
 MONTOU o reflexo no braço com o gene extra (w +2.33, portão 0.73, mortos
 0.35 → 0.17) — um gene neutro a mais mudou a trajetória da mutação o
 bastante pra achar o degrau. Vale registrar, não vale afirmar.
+
+**E37 honesto, braço 1 (controle cumulativo: campeão do E34 + 60 gerações,
+mundo com +2 postos; 5 sementes): 9.40 / 0.14 [.19 .14 .12 .10 .13],
+panes 2.8, fome fim 50, entregas 13.3.** Contra o pai (E34, 8.49 / 0.18 /
+3.9): +0.9 de fit, −4 pp, −28 % de panes — o mesmo salto do E36 (continuar
+evoluindo paga). Predição 42, cláusula do controle (≤ 0.15): ✓. Estado da
+arte: **9.40 / 0.14 / 2.8 panes** (cidades 1000+, 120 gerações, 5 postos).
