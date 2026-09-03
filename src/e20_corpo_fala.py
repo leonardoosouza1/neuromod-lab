@@ -21,6 +21,15 @@ BRACOS = [('direto (Reativo)',   Reativo),
           ('K=2 corpo fala + cerebro ouve',  fabrica(2, prior_corpo=True, prior_cerebro=True)),
           ('K=2 so cerebro ouve',            fabrica(2, prior_cerebro=True))]
 
+import copy
+def curriculo_fome(cfg, alvo, frac=.6, inicio=.03):
+    """infancia protegida: fome fere `inicio` na geracao 0 e sobe linearmente ate `alvo` em frac*ger."""
+    def cfg_gen(it, ger):
+        c = copy.copy(cfg); t = min(1., it/max(1., frac*ger))
+        c.fome_mata = inicio + (alvo - inicio)*t
+        return c
+    return cfg_gen
+
 def main(a):
     E15.PENA = a.pena
     p = dict(PRESET_TRIAGEM if a.preset == 'triagem' else PRESET)
@@ -33,7 +42,8 @@ def main(a):
     for nome, A in BRACOS:
         if a.so and nome not in a.so: continue
         t1 = time.time(); cfg = cfg_pacote(**MUNDO)
-        champs = evoluir_sementes(A, treino, cfg, P=p['P'], ger=p['G'], T=p['T_evo'], seeds=p['seeds'], R=p['R'], verbose=False)
+        cg = curriculo_fome(cfg, MUNDO['fome']) if a.curriculo else None
+        champs = evoluir_sementes(A, treino, cfg, P=p['P'], ger=p['G'], T=p['T_evo'], seeds=p['seeds'], R=p['R'], verbose=False, cfg_gen=cg)
         por = []; hm = []
         for sd in p['seeds']:
             m = rodar(A, champs[sd][0][None, :].repeat(128, 1), teste, cfg, T=p['T_aval'], seed=7777)
@@ -56,4 +66,5 @@ if __name__ == '__main__':
     ap.add_argument('--seeds', type=int, nargs='*', default=None); ap.add_argument('--R', type=int, default=None)
     ap.add_argument('--teste-seed', type=int, default=1000); ap.add_argument('--pena', type=float, default=5.)
     ap.add_argument('--tag', default='')
+    ap.add_argument('--curriculo', action='store_true', help='infancia protegida: fome_mata sobe de .03 ate o alvo em 60%% das geracoes')
     main(ap.parse_args())

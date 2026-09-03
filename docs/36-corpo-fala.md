@@ -116,3 +116,11 @@ fração da população, como no E-currículo do Universe) — e medir se o cér
 surdo aprende a ouvir. Alternativa: aceitar o código herdado como ponto de
 partida e evoluir só o refinamento, que é o que a triagem 3 já mostra que
 funciona.
+
+**Predição 10 (antes de rodar — infância protegida, triagem):** com a fome
+ferindo 0.03 na geração 0 e subindo até 0.15 em 60 % das gerações
+(`--curriculo`), o cérebro surdo aprende a ouvir (`corpo nasce falando`:
+mortos ≤ 0.70 na avaliação final com fome 0.15, fome no fim < 90) e o par
+sem código nenhum (`corpo fala K=2`) sai do deserto (mortos ≤ 0.85). Se
+nenhum sair: 40 gerações não bastam pra uma palavra — testar G=100 no
+honesto antes de mudar o desenho.

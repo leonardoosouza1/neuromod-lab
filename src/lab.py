@@ -1535,7 +1535,7 @@ def evoluir(Arq, cidades, cfg, P=512, ger=25, T=1500, seed=0, elite=.15,
 
 
 def evoluir_sementes(Arq, cidades, cfg, P=512, ger=25, T=1500, seeds=(0,1,2),
-                     elite=.15, verbose=True, R=1):
+                     elite=.15, verbose=True, R=1, cfg_gen=None):
     """MEGA-LOTE de sementes: as S populacoes (uma por semente de evolucao)
     empilhadas num Lote so — B cresce S vezes e sai da regiao limitada por
     LANCAMENTO de kernel (VRAM vazia + GPU 'ocupada' = kernels pequenos).
@@ -1553,7 +1553,9 @@ def evoluir_sementes(Arq, cidades, cfg, P=512, ger=25, T=1500, seeds=(0,1,2),
     hist = {sd: [] for sd in seeds}; snaps = {sd: [] for sd in seeds}
     ne = max(2, int(P*elite))
     for it in range(ger):
-        f = avaliar(Arq, W, cidades, cfg, T, seed=777000+it*13, R=R).view(S, P)
+        # E20 curriculo (infancia protegida): cfg_gen(it, ger) -> cfg desta geracao (None = identidade)
+        cfg_it = cfg_gen(it, ger) if cfg_gen is not None else cfg
+        f = avaliar(Arq, W, cidades, cfg_it, T, seed=777000+it*13, R=R).view(S, P)
         Wv = W.view(S, P, NPQ)
         novos = []
         for si, sd in enumerate(seeds):
