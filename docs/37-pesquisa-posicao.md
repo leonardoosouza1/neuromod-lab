@@ -531,3 +531,36 @@ nada. A escala do sinal interno é absorvida pelo gene `w` (regra 15);
 "tanque quase vazio gritar 20× mais alto" não compra reabastecer a tempo —
 o que compra é o JOELHO (portão ~0.9 do E29b), que é outra coisa: não é
 mudar a escala do sinal, é mudar QUANDO ele entra na conta.
+
+### E29b HONESTO (R=16, 5 sementes, cidades 1000+) — o efeito encolhe 5×, a estrutura fica
+
+| | fit | mortos | panes | fome fim | idas ao posto |
+|---|---|---|---|---|---|
+| direto (15 sementes, régua) | 6.63 | 0.36 | ~8.1 | 73 | 3.9 |
+| **reações** | **6.97** | **0.30** [.29 .26 .30 .43 .21] | **5.2** | 65 | 5.0 |
+
+Contra a régua do E28b: mortos −6.6 pp (t = −1.6) e fit +0.34 (t = +1.3)
+— **abaixo do detectável** (8.5 pp / 0.65). O −29 pp da triagem virou
+−6.6 pp no honesto: replicação > σ, de novo. O que é claro: **panes −36 %**
+(8.1 → 5.2), mesmo efeito do Noite24 (−49 %), e come mais (fome fim 73 →
+65, posto 3.9 → 5.0). Predição 27 bate na letra (0.30 ≤ 0.32, 6.97 ≥ 6.6)
+mas a comparação com o baseline não passa da régua — fica como TENDÊNCIA.
+Mais 5 sementes (5–9) na fila: com 10, a régua cai pra ~6 pp e decide.
+
+**Genes no honesto (5 sementes):**
+
+| s | τ sede | τ fome | w sede | w fome | portão |
+|---|---|---|---|---|---|
+| 0 | 7.5 | 39.9 | +4.04 | −0.19 | 0.90 |
+| 1 | 1.0 | 11.7 | +4.30 | −0.79 | 0.87 |
+| 2 | 1.6 | 1.5 | +2.60 | −0.86 | 0.85 |
+| 3 | 134.0 | 2.3 | +0.10 | +1.76 | 0.98 |
+| 4 | 6.1 | 4.2 | +3.58 | −0.42 | 0.80 |
+
+A ESTRUTURA replica: portão 0.80–0.98 em 5/5, w sede +2.6..+4.3 em 4/5.
+A semente 3 é a exceção — não montou o reflexo da sede (w 0.10, τ 134,
+portão 0.98 = nunca liga) e é a que mais morre (0.43 vs 0.21–0.30 das
+outras). Correlação dentro do experimento, não prova; mas aponta o mesmo
+que o E29d vai testar por ablação. Predição 30 (τ divergem ≥ 3×): 3/5,
+e sem padrão de escala — τ da sede vai de 1 a 7.5 nas que usam o reflexo;
+a persistência é livre, o que é fixo é o JOELHO.
