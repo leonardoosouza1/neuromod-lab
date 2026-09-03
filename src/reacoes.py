@@ -28,3 +28,17 @@ class ReativoReacoes(Reativo):
     def atualizar(s, m):
         x = torch.stack([1. - m.fuel/m.capf(), m.fome/100.], 1)
         s.c = s.c + (x - s.c)/s.tau
+
+
+# E29d — ablacoes do mecanismo (intervir, nao medir):
+class ReativoReflexo(ReativoReacoes):
+    """tau fixo em 1 (sem especie lenta): so o reflexo instantaneo com portao. Se == reacoes, a persistencia nao conta."""
+    nome = 'reativo-reflexo'
+    def reset(s, m, W):
+        super().reset(m, W); s.tau = torch.ones_like(s.tau)
+
+class ReativoReacoesSemPortao(ReativoReacoes):
+    """portao fixo em 0 (reacao sempre ligada, proporcional): se cair pro nivel do noite24, o que paga e o JOELHO."""
+    nome = 'reativo-reacoes-sem-portao'
+    def reset(s, m, W):
+        super().reset(m, W); s.theta = torch.zeros_like(s.theta)

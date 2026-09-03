@@ -490,3 +490,12 @@ contra a convenção do código (o `−` já está no termo); o mecanismo previs
 redação, não como acerto. Predição 30 (τ divergem ≥ 3×): 2/3 na triagem,
 mas no sentido oposto ao imaginado — não é "um τ por escala de urgência",
 é "sede instantânea, fome com 3–5 passos de memória"; julgo no honesto.
+
+**E29d (ablações do mecanismo, na fila atrás do honesto; triagem):**
+(a) *reflexo puro* — τ cravado em 1, portão livre; (b) *reações sem portão*
+— θ cravado em 0, reação sempre ligada e proporcional. **Predição 32:**
+reflexo puro ≈ reações (fit ≥ 6.6, mortos ≤ 0.35): a persistência não
+conta. **Predição 33:** sem portão cai pro nível do Noite24 ou abaixo
+(mortos ≥ 0.45): o que paga é o JOELHO em ~10 % de tanque, não a
+multiplicação em si. Se (b) ficar igual ao completo: o portão era
+decoração e a evolução só usou o ganho 5×.
