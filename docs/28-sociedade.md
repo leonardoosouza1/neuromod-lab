@@ -136,3 +136,13 @@ Yerkes-Dodson: imposto intermediário produz MAIS que zero.
   (os mortos do pacote morrem de 12 panes).
 - Ferramentas: preset `triagem` (2.5 min/braço), `destilar.py` (poda não
   destila), regra: portão + sync-check + fumaça a cada mudança.
+
+## 7. Auditoria: o que está ruim e o que foi feito (2026-09-03)
+| item | problema | estado |
+|---|---|---|
+| fila não retoma após desligamento | e19c/e19d perdidos quando o PC desligou | `scripts/fila2.sh` pula etapas com `.done status=0` (testado) — usar nas próximas filas |
+| triagem engana em mortalidade | n=3, R=8: 6 inversões de sinal | triagem só pra direção/funcionamento; decisão só no honesto (regra 13 vale pra triagem) |
+| pena por morte é fixa | morrer no dia 1 custa o mesmo que no dia 4.9 | proposta: pena ∝ vida perdida (`(T − t_morte)/T`); testar contra a fixa (E27) |
+| genoma do Reativo tem 12 pesos mortos + 26 features | E23: 3 termos evoluem melhor que 44 genes em G=40 | proposta: `ReativoEnxuto` (só features úteis) como padrão de triagem; honesto decide |
+| hormônios tocavam preço de física | almoço grátis (N19) | regra 16; próximos hormônios só modulam aprendizado (Doya) |
+| perito como sonda de comida | exausto e quebrado, não come | não usar o perito pra testar decisão de comer |

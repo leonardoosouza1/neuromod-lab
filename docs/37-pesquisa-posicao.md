@@ -184,3 +184,74 @@ tenho; uso o serviço cuja necessidade × peso vencer."
 velocidade de busca (útil mesmo assim: triagem em 3 termos). Se os mínimos
 continuarem ≥ direto: os outros 23 termos são ruído co-adaptado e o táxi
 FALA em 3 termos.
+
+## 6. Fundamentos clássicos e o que dizem dos nossos desertos (2026-09-03, tarde)
+
+**Hinton & Nowlan 1987 — como o aprendizado guia a evolução (efeito Baldwin).**
+Numa paisagem "agulha no palheiro" (20 genes têm de acertar todos), a
+evolução pura não acha (fitness ≈ 1); com aprendizado em vida (genes "?" que
+o indivíduo ajusta tentando), a paisagem fica suave e a evolução acha
+(≈ 11.6 em 50 gerações). Condição: o aprendizado tem de conseguir CHEGAR à
+solução dentro da vida. **Nosso E22 falhou exatamente nessa condição**: a
+regra de plasticidade só dispara depois da primeira refeição, e a primeira
+refeição não acontece na vida — o "?" nunca vira "1". Baldwin exige que a
+exploração em vida seja barata: E25 (infância individual) é isso.
+
+**Zador 2019 — a crítica do aprendizado puro e o gargalo genômico.** Quase
+todo comportamento animal é INATO: o genoma é pequeno demais pra escrever o
+cérebro, então codifica regras de ligação que passam por um gargalo — e esse
+gargalo é um regularizador. Receptor e hormônio vêm juntos no genoma.
+**Nosso E20 encontrou isso na prática**: código herdado dos dois lados
+funciona; aprender o código do zero não. A leitura certa não é "falhou", é
+"a biologia também não faz assim". Desenho que decorre: herdar o
+dicionário mínimo (fome→comida, sede→posto) e deixar a evolução refinar —
+o que o E20 triagem 3 já mostrou que funciona.
+
+**Doya 2002 — neuromodulação como meta-aprendizado.** Dopamina = erro de
+predição de recompensa; serotonina = fator de desconto (horizonte);
+noradrenalina = temperatura (exploração); acetilcolina = taxa de
+aprendizado. Os hormônios modulam os PARÂMETROS DO APRENDIZADO, não a
+física. **É a regra 16 dita por outro caminho**: as nossas glândulas
+mexeram em consumo e velocidade (preço), e a seleção as usou como
+desconto. O lugar certo do hormônio é: quanto explorar, quão longe olhar,
+quão rápido aprender. Isso só faz sentido com aprendizado em vida (E22/E25)
+— sem ele, hormônio não tem o que modular.
+
+**Sterling 2012 — alostase: regulação preditiva.** O cérebro não corrige
+erros, ANTECIPA necessidades e prepara o corpo antes. Vantagens: erros
+menores, capacidades casadas, reservas menores, erros lembrados. **Nosso τ
+das glândulas era a metade disso** (memória, não antecipação). Antecipar
+exige um sinal do futuro — o relógio (noite chegando) é o candidato óbvio,
+e é onde a hora, que nunca convergiu como feature, pode entrar como
+ANTECIPAÇÃO no corpo (hormônio que sobe antes da noite) e não como sinal
+cru no cérebro.
+
+**Kirby / Ren et al. 2020 — aprendizado iterado.** Línguas ficam
+composicionais e aprendíveis quando passam por gerações de aprendizes que
+têm de reaprendê-las de pouco input (o gargalo de transmissão); resetar o
+receptor periodicamente cria a pressão por códigos aprendíveis. **Nossos
+hormônios nunca passaram por isso**: o cérebro de cada geração nasce com o
+gene, não aprende o código do pai. Desenho que decorre (E26, "transmissão
+cultural"): o filho nasce com o corpo do genoma mas o receptor (Gserv)
+aprende EM VIDA observando... não há pai no táxi. A versão honesta pro nosso
+mundo: o receptor é aprendido em vida (E22/E25) e só os aprendizes que
+aprenderam rápido se reproduzem — a pressão de aprendibilidade vem da
+morte, não de um professor. Se E25 mostrar que aprender em vida funciona
+com infância, a próxima é medir se o código que a evolução herda fica MAIS
+simples quando o receptor é aprendido (o efeito Kirby).
+
+**Síntese:** os quatro desertos que vimos (seleção, currículo, receptor,
+plasticidade) são o mesmo fenômeno com quatro caras — uma paisagem
+agulha-no-palheiro onde nem a evolução nem o aprendizado alcançam a agulha
+dentro do orçamento. Os clássicos dão três saídas, e as três já estão em
+teste ou desenhadas: aprendizado em vida barato (Baldwin → E25), código
+inato mínimo (Zador → E20 triagem 3), hormônio modulando aprendizado e não
+física (Doya → regra 16 + E22). A quarta (Kirby) é a que ainda não tem
+experimento.
+
+### Fontes desta seção
+- https://www.cs.toronto.edu/~hinton/absps/evolution.htm · https://arxiv.org/abs/2409.15609 · https://arxiv.org/abs/1702.08411
+- https://www.nature.com/articles/s41467-019-11786-6 · https://www.pnas.org/doi/10.1073/pnas.2409160121
+- https://pubmed.ncbi.nlm.nih.gov/12371507/ · https://arxiv.org/pdf/2111.00134
+- https://pubmed.ncbi.nlm.nih.gov/21684297/ · https://www.frontiersin.org/journals/robotics-and-ai/articles/10.3389/frobt.2022.1052998
+- https://arxiv.org/abs/2002.01365 · https://arxiv.org/pdf/2409.02645 · https://www.pnas.org/doi/abs/10.1073/pnas.2509739123
