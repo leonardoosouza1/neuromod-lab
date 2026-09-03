@@ -644,3 +644,23 @@ pacote de dentes que passa a régua honesta, e é o mais barato: sem
 espécie lenta, sem produto geral, sem log. A trajetória do dia:
 triagem −29 pp → 5 sementes −6.6 pp → 10 sementes −8.2 pp. O honesto
 com 5 tinha subestimado; a triagem tinha inflado 3×.
+
+### E29e resultado (triagem n=3): dois portões NÃO ajudam — a fome não é reflexo
+
+| | fit | mortos | fome fim | panes |
+|---|---|---|---|---|
+| reações, 1 portão | 7.08 | 0.31 | 70 | 5.8 |
+| reações, portão por espécie | 5.78 | 0.37 [.34 .28 .49] | 73 | 5.5 |
+
+Genes: portão da fome 0.60 / 0.93 / 0.97 (1/3 abriu cedo); w da fome
+−0.21 / −0.28 / +0.29 (≈ 0 ou com sinal que AFASTA da comida — a reação
+da fome fica desligada ou vira ruído). Predição 34 refutada; cláusula
+pré-registrada vale: **a fome não se resolve por reflexo de distância.**
+Mecanismo provável: comida em 6 nós de ~250 é rara demais pra "vai pra
+comida quando a fome sobe" — o reflexo tira o táxi da rota e ele perde
+entregas (fit 5.78 vs 7.08) sem chegar a comer mais (fome fim 73 vs 70).
+Tanque é reflexo porque posto é denso (8 nós) e pane é morte imediata;
+fome é ROTA — precisa de planejamento do desvio (parar pra comer no
+caminho da entrega), não de reação. Próximo passo: autópsia de quem
+morre de fome (onde está, quanto dinheiro tem, a que distância da comida
+morre, se está com passageiro) antes de desenhar qualquer mecanismo.
