@@ -298,6 +298,7 @@ class Lote:
         s.res = torch.zeros(B, device=DEV)                  # reserva (gordura)
         # E13: corpo — vida (HP) e censo
         s.vida = torch.full((B,), 100., device=DEV)
+        s.recusa = torch.zeros(B, dtype=torch.bool, device=DEV)   # [E38] recusa de passageiro (a arq escreve em atualizar)
         s.t_vida = torch.zeros(B, device=DEV); s.n_oficina = torch.zeros(B, device=DEV)
         s.sono_soma = torch.zeros(B, device=DEV); s.dano_soma = torch.zeros(B, device=DEV)
         s.n_bloco = torch.zeros(B, device=DEV)   # E13l: noites dormidas em bloco
@@ -701,7 +702,7 @@ def passo(m, esc):
     if noite is not None:
         hit = hit & ~(noite[:,None] & (m.ARNPX[None,:] > 0))   # dormindo: nao embarca
     tem = hit.any(1); ks = hit.float().argmax(1)
-    pega = pode & (~serv_ok) & (m.pd_<0) & tem
+    pega = pode & (~serv_ok) & (m.pd_<0) & tem & (~m.recusa)   # [E38] arq pode RECUSAR passageiro (default False = identico)
     m.po_ = torch.where(pega, m.no, m.po_)
     m.pd_ = torch.where(pega, m.pd.gather(1, ks[:,None]).squeeze(1), m.pd_)
     # respawn incondicional-mascarado (o sorteio roda p/ todos, so aplica onde pegou)

@@ -1082,3 +1082,24 @@ gerações** (um run de G=120, ou 60 semeado de 60), 5 sementes, R=16. Tudo
 que foi medido com 60 gerações hoje está ~4 pp acima do que a mesma
 arquitetura faz convergida — as COMPARAÇÕES entre braços ficam (mesmo
 protocolo dos dois lados), os números absolutos não.
+
+**E37c — campeão do melhor mundo em cidades 2000+ (semeado do 120 ger. +
+60; 5 sementes): 7.16 / 0.22 [.35 .20 .18 .14 .20], panes 3.5.** Seis
+cidades, mundo de 5 postos, cumulativo: **8.28 / 0.18** (1000+ com 120
+ger., 2000+ com 180 — a diferença de gerações está no platô). Pacote
+original: 5.34 / 0.41. Mortalidade dividida por 2.3 em um dia.
+
+### E38 — recusar passageiro quando faminto (mecânica nova do mundo)
+Autópsia: 76 % dos que morrem de fome estão COM passageiro, com dinheiro,
+a 3–4 nós da comida. Nenhum reflexo de comida funcionou (E29e, E30,
+forçar comer). Hipótese: falta ao táxi o direito de dizer NÃO — hoje o
+embarque é automático ao pisar num nó com passageiro. `m.recusa` entra no
+mundo (default False; perito bit a bit ✓; testes ✓) e a arquitetura
+escreve `recusa = fome/100 > θ_p`, θ_p = sigmoid(gene + 4) → nasce em 0.98
+(quase nunca recusa; regra 17). Semeado do campeão do E37 (5 postos, 120
+ger.), controle = E37b (mesmo pai + 60 ger.): 9.20 / 0.15 / 3.7 / fome 50.
+**Predição 44 (antes de rodar):** θ_p evoluído ≤ 0.8 em ≥ 3/5 sementes;
+fome-no-fim ≤ 45 (vs 50); mortos ≤ 0.12 (vs 0.15) e fit ≥ 9.0 (recusar
+custa poucas entregas porque passageiro reaparece). Se θ_p ficar ≥ 0.95:
+recusar custa mais entregas do que a fome custa em vida — e a fome com
+passageiro é preço aceito, como a pane (E33: orçamento constante).

@@ -99,3 +99,15 @@ class ReativoReacoesTopUp(ReativoReacoes):
         a = torch.cat([(s.c[:, 0:1] - s.theta_s).clamp(min=0.), (s.c[:, 1:2] - s.theta).clamp(min=0.)], 1)
         _, svpaga = m.serv_need(); z = torch.zeros_like(a[:, 0])
         return svpaga*torch.stack([s.v[:, 0]*a[:, 0], s.v[:, 1]*a[:, 1], z, z, z], 1)
+
+
+# E38 — RECUSA DE PASSAGEIRO POR FOME: nao embarca ninguem se fome/100 > theta_p. Gene extra nasce em +4 -> theta_p
+# = sigmoid(4) = 0.98 (quase nunca recusa; regra 17). A arq escreve m.recusa em atualizar (in-place permitido la).
+class ReativoReacoesRecusa(ReativoReacoes):
+    nome = 'reativo-reacoes-recusa'; NP = ReativoReacoes.NP + 1
+    def reset(s, m, W):
+        super().reset(m, W); o = ReativoReacoes.NP
+        s.theta_p = torch.sigmoid(W[:, o] + 4.)                      # (B,)
+    def atualizar(s, m):
+        super().atualizar(m)
+        m.recusa = (m.fome/100. > s.theta_p)
