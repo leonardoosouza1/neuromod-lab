@@ -997,3 +997,35 @@ honesta 6 cidades, Noite24 sem pena: 7.04 / 0.22** (padrão 7.08 / 0.24; com
 pena 6.94 / 0.185). Leitura final: R=16 + produto bastam onde o posto é perto;
 onde é longe a pena por morte ainda compra 5 pp. Fim das baterias do dia
 (predições 1–47).
+
+## 2026-09-03 — E23 a E37 (detalhe e mecanismos em docs/37 §5–§9, docs/38, docs/28 §7)
+
+Régua do dia (E28b, 15 sementes da mesma função): honesto n=5 só detecta ≥ 0.65 fit / ≥ 8.5 pp de mortos; panes ±0.4. Triagem (n=3) só descarta desastres (regra 18).
+
+| # | predição (resumo) | veredito |
+|---|---|---|
+| 19 | E23 mínimos ≥ direto no honesto | mínimo-3 ✓ (empate 6.91/0.34); mínimo-5 ✗ |
+| 20 | E27 pena proporcional muda dia da morte/entregas | ✗ nulo (quase ninguém morre cedo — cláusula própria) |
+| 21 | E28 enxuto ≥ direto | ✗ (6.43 vs 6.90 = piso de ruído; virou a régua) |
+| 22–24 | E26 transmissão | cancelado (linha aprendiz fechada) |
+| 25 | E25b curiosidade tira o aprendiz do deserto | ✗ deserto 0.93; regra de recompensa errada |
+| 26 | E29a log ≥ noite24; perde menos em 2000+ | ✗✗ (2.19/0.81; perde 73 % vs 45 %) |
+| 27 | E29b reações: mortos ≤ 0.32 fit ≥ 6.6 | ✓ mortos (10 sem. 0.28 vs 0.36, t=−2.4/−3.3); motivo errado (não é persistência) |
+| 28 | τ das espécies > 20 | ✗ (τ sede ≈ 1) |
+| 29 | w NEGATIVO em ≥ 4/5 | ✗ na letra (sinal contra a convenção do código); mecanismo "pro posto" ✓ 4/5 |
+| 30 | τ divergem ≥ 3× em ≥ 3/5 | 3/5, sem padrão de escala |
+| 31 | E29c log-corpo ≈ direto | ✓ (4.67/0.63 vs 4.85/0.60) |
+| 32 | E29d reflexo puro ≈ reações | ✓ no honesto (7.22/0.31) |
+| 33 | E29d sem portão ≥ 0.45 mortos | ✓✓ (0.71, pior que direto) |
+| 34 | E29e portão da fome ≤ 0.7 e mortos ≤ 0.28 | ✗ (fome não é reflexo) |
+| 35 | reflexo puro honesto 0.30 ± 0.06 | ✓ (0.31) |
+| 36 | E30 viés5 ≤ 0.26 | ✗ (0.53 do zero; ≈ controle semeado) |
+| 37 | E32 β > 0.3 e panes ≤ 4.5 | β ✓ / resto ✗ (oscila na fronteira) — v1 foi erro de parametrização (regra 17) |
+| 38 | E33 pane cara: portão desce, panes ≤ 4 / mortos | portão ✓, panes ✓, mortos ✗ (sobem; dano por pane constante ~35) |
+| 39 | E34 +2 postos: reações ≤ 0.22, direto ≤ 0.50 | honesto ✓✓ (0.18 / 0.23); triagem tinha invertido |
+| 40 | E35 portão de abastecer: panes ≤ 3.5, mortos ≤ 0.24 | ✗ (do zero: montagem; semeado: neutro E36, pior E37) |
+| 41 | E36 semeado: controle ≥ 6.8/≤ 0.33; E35 panes ≤ 4.5; E30 ≈; E29e portão fome ≥ 0.85 | controle ✓; E35 triagem ✓ / honesto ✗; E30 ✓; E29e portão desceu mas w≈0 |
+| 42 | E37: controle ≤ 0.15; abastecer panes ≤ 3.0 e mortos ≤ controle − 0.02 | controle ✓ (0.14); abastecer ✗ (0.19) → cláusula "portão único é o ótimo" ✓ |
+| 43 | E37b 180 ger.: fit +0.2..0.4, mortos −1..3 pp | (rodando) |
+
+Regras novas: 17 (gene novo nasce desligado), 18 (triagem só descarta), 19 (variante só semeada do melhor pai + controle semeado). Estado da arte: 9.40 / 0.14 / 2.8 panes (1000+, 5 postos, 120 ger.).
