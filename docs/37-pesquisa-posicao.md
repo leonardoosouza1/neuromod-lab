@@ -1000,3 +1000,26 @@ controle semeado ≤ 0.15 de mortos (continua melhorando sobre o pai, como
 no E36); abastecer semeado: panes ≤ 3.0 (vs ~3.9) e mortos ≤ controle −
 0.02; se mortos ≥ controle + 0.03: encher cedo custa entregas/dinheiro e o
 portão único do reflexo é o ótimo também no mundo denso.
+
+### E36 HONESTO semeado (5 sementes, 3 postos): abastecer não paga; continuar evoluindo paga
+
+| | fit | mortos | panes | fome fim |
+|---|---|---|---|---|
+| pai (E29b honesto, 60 ger.) | 6.97 | 0.30 [.29 .26 .30 .43 .21] | 5.2 | 65 |
+| **controle semeado (+60 ger.)** | **8.07** | **0.18** [.18 .09 .13 .35 .17] | 4.5 | 61 |
+| + portão de abastecer semeado | 8.09 | 0.16 [.13 .13 .21 .17 .15] | 4.8 | 53 |
+
+Portão de abastecer vs controle: −2 pp, +0.3 panes, fit igual → **neutro**
+(a triagem semeada dizia panes 3.3 vs 4.3; não replicou — regra 18 vale
+até pra triagem semeada). Predição 41, cláusula do E35: ✗.
+
+O que fica: **o pai + 60 gerações vai de 0.30 → 0.18 e 6.97 → 8.07** sem
+mudar nada de arquitetura ou mundo. Sessenta gerações não convergem; mais
+sessenta valem tanto quanto dois postos (E34: 0.28 → 0.18). A semente 3 —
+a linhagem que nunca montou o reflexo — continua a pior (0.43 → 0.35): a
+linhagem não descobre o reflexo nem com 60 gerações a mais em cima do
+próprio campeão. Montagem é evento raro; depois de montado, refina rápido.
+
+Estado da arte no mundo de 3 postos passa a **8.07 / 0.18** (cumulativo,
+120 gerações). Protocolo daqui em diante: evolução cumulativa + controle
+semeado; e "gerações" entram como variável declarada em toda comparação.
