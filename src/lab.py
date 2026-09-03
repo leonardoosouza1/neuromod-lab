@@ -129,6 +129,7 @@ class Cfg:
         # E14b: a VIDA no fitness — pena por morrer (0 = identidade). Sem isto a morte nao custa
         #       fitness (quem morre no dia 4 entrega quase o mesmo) e nao e selecionada.
         s.pena_morte=0.
+        s.pena_prop=False      # E27: pena proporcional a VIDA PERDIDA — morrer cedo custa 2x pena, no fim ~0 (False = fixa)
         # E19 DENTES (pacote): ficar parado NAO pode ser de graca (um ser que nao faz nada por
         #   5 dias terminava com vida 100, fome 100, fit 0 — o atrator "parar" dos colapsos)
         #   fome_mata   dano de vida por passo quando fome >= FOME_CRIT, escalado ate fome=100
@@ -1476,7 +1477,11 @@ def avaliar(Arq, W, cidades, cfg, T, seed=0, R=1):
     # custo_neural: arq que paga por orgao ativo (SerVital) deposita aqui; 0 p/ demais
     fit = m.ent - 0.3*m.avar - getattr(m, 'custo_neural', 0.)
     if cfg.pena_morte:
-        fit = fit - cfg.pena_morte*(m.vida <= 0).float()
+        morto = (m.vida <= 0).float()
+        if cfg.pena_prop:   # E27: quem morre no dia 1 perdeu quase a vida toda; no dia 4.9, quase nada
+            fit = fit - cfg.pena_morte*morto*2.*(1. - m.t_vida/float(T)).clamp(0., 1.)
+        else:
+            fit = fit - cfg.pena_morte*morto
     return fit.view(W.shape[0], m.NC*m.R).mean(1)
 
 def evoluir(Arq, cidades, cfg, P=512, ger=25, T=1500, seed=0, elite=.15,
