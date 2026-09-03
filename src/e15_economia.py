@@ -31,7 +31,7 @@ OUT = '/media/llm-data/universe-runs/neuromod-lab-taxi/e15'
 
 def cfg_e15(economia=True, aluguel=6., agua=2., juros=.05, kcal=1.0, limite=60.,
             aliq=None, pmul=None, sorteia=True, D=3, D_pane=3., imposto=None,
-            kcal_vida=0., **kw):
+            kcal_vida=1., **kw):   # onda 1 (R=16, 5 sementes): resto no TANQUE = paralisia (fit -0.49); resto na VIDA = 6.36/0.17
     """mundo recomendado do E13 + economia. pane_dinh ja e 0 em _R (N16)."""
     c = cfg_corpo(continua=.02, **{**_R, **kw})
     c.pena_morte = PENA   # --pena (0 = padrao)

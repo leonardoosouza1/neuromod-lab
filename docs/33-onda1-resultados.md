@@ -125,3 +125,17 @@ era almoço grátis e o que sobra (necessidade ×2, exploração ×0.5, sono
 com 4/5 sementes, o modo economia paga por conta própria e é o maior
 mecanismo do projeto. Controle extra: κ=0.05 sem regime (a glândula precisa
 de um mundo que muda?).
+
+**Braço padrão do agente (gordura primeiro, resto do tanque, 1×):** fit
+**−0.49**, entregas 0.6, renda 9.8 — paralisia igual à do 3×. Não era a
+escala: **qualquer cobrança no tanque** faz a população parar. O padrão do
+runner passou a ser "gordura primeiro, resto na vida" (6.36 / 0.17), o único
+dos cinco modos que mantém o mundo vivo E a pane custando. Escada final:
+
+| reboque cobra… | fit | mortos |
+|---|---|---|
+| nada | 6.89 | 0.09 |
+| **gordura → vida (padrão novo)** | **6.36** | **0.17** |
+| gordura → vida, 3× | 6.11 | 0.28 |
+| gordura → tanque (1× ou 3×) | −0.5 / −0.7 | paralisia |
+| âncora sem economia | 8.54 | 0.19 |
