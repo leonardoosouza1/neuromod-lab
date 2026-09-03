@@ -5,11 +5,11 @@ from lab import Reativo
 sig = lambda g: 1./(1. + math.exp(-g))
 for path in sys.argv[1:]:
     R = json.load(open(path))
-    B = R if isinstance(R, list) else R.get('bracos', [R])
-    B = list(B.values()) if isinstance(B, dict) else B
-    for r in B:
-        if 'reacoes' not in str(r.get('nome', '')): continue
-        print(f"== {r['nome']} fit {r['fit']} mortos {r['mortos']}")
+    B = R['bracos'] if isinstance(R, dict) and 'bracos' in R else R
+    itens = list(B.items()) if isinstance(B, dict) else [(r.get('nome', '?'), r) for r in B]
+    for nome, r in itens:
+        if 'reacoes' not in str(nome): continue
+        print(f"== {nome} fit {r.get('fit')} mortos {r.get('mortos')}")
         o = Reativo.NP; n_w_neg = 0; n_div = 0
         for sd, W in r['W'].items():
             tau = [1. + 200.*sig(g - 4.) for g in W[o:o+2]]; w = W[o+2:o+4]; v = W[o+4:o+6]; th = sig(W[o+6])
