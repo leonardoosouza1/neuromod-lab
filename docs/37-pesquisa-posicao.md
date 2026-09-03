@@ -1064,3 +1064,21 @@ no treino (treino é sempre cidades 0–3): o ganho de continuar evoluindo é
 generalização, não ajuste ao teste. Seis cidades, mundo original,
 cumulativo: **6.75 / 0.245** (era 5.66 / 0.36 com 60 ger., 5.34 / 0.41 no
 pacote direto). A linhagem s3 segue a pior (0.45) em qualquer conjunto.
+
+### E37b — curva de convergência: 120 gerações é o número
+
+| gerações (cumulativas, mundo de 5 postos) | fit | mortos | panes |
+|---|---|---|---|
+| 60 (E34) | 8.49 | 0.18 | 3.9 |
+| 120 (E37 controle) | **9.40** | **0.14** | **2.8** |
+| 180 (E37b) | 9.20 | 0.15 [.23 .19 .09 .12 .13] | 3.7 |
+
+Predição 43: ganho decrescente previsto (+0.2..0.4, −1..3 pp) não veio;
+veio a cláusula "≈ igual → 120 é o número" ✓. De 60 pra 120 o salto é
+grande (−4 pp, +0.9, −28 % panes); de 120 pra 180, nada (dentro da
+régua, sinal até levemente contra). No mundo de 3 postos a mesma curva:
+0.30 → 0.18 (60 → 120). **Protocolo honesto daqui em diante: 120
+gerações** (um run de G=120, ou 60 semeado de 60), 5 sementes, R=16. Tudo
+que foi medido com 60 gerações hoje está ~4 pp acima do que a mesma
+arquitetura faz convergida — as COMPARAÇÕES entre braços ficam (mesmo
+protocolo dos dois lados), os números absolutos não.
