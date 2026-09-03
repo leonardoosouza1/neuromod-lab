@@ -153,3 +153,8 @@ cedo (dia 1–2) mesmo aceitando morrer tarde: mortos totais ±0.05 (não muda
 muito) mas o dia médio da morte sobe ≥ +0.5 e as entregas sobem ≥ +0.3 (a
 pena fixa penalizava igual quem quase completou a vida). Se nada mudar: a
 pena fixa já bastava porque quase todas as mortes são no dia 3–4.
+
+**Predição 21 (E28, antes de rodar; honesto R=16, 5 sementes, 1000+):** enxuto
+(32 genes) ≥ direto (44) em fit (≥ 6.9) com mortos ≤ 0.35 — os pesos mortos
+só atrapalham a busca; mínimo-3 no honesto ≥ 6.7 / ≤ 0.35 (se ficar abaixo
+do direto em ≥ 0.8: a vantagem do E23 era só velocidade de busca).
