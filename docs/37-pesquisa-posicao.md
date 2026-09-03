@@ -523,3 +523,11 @@ Reavaliando o que já foi dito com a régua:
   própria ainda.
 - E29b (triagem 0.31 vs 0.60): 29 pp, 3× a régua — se o honesto repetir
   metade disso, é o maior efeito do pacote.
+
+**E29c resultado (triagem n=3): log-corpo 4.67 / 0.63 vs direto 4.85 /
+0.60 — igual.** Predição 31 confirmada. Fecha o mecanismo do E29a por
+dissociação: log nas distâncias mata (2.19/0.81), log no corpo não muda
+nada. A escala do sinal interno é absorvida pelo gene `w` (regra 15);
+"tanque quase vazio gritar 20× mais alto" não compra reabastecer a tempo —
+o que compra é o JOELHO (portão ~0.9 do E29b), que é outra coisa: não é
+mudar a escala do sinal, é mudar QUANDO ele entra na conta.
