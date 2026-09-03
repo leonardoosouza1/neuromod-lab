@@ -179,3 +179,16 @@ ao posto" (Noite24) cortou panes em um terço no mundo sem dentes (doc 27
 pacote vs Reativo (6.90 / 0.35 / panes 7.9): panes ≤ 5.5, mortos ≤ 0.28 com
 ≥ 4/5 sementes abaixo, fit ≥ 6.6. Se panes caírem e mortos não: a fome é a
 segunda assassina e o próximo alvo é comer (5 refeições dos vivos vs 2).
+
+### E24 — Noite24 (tanque × distância ao posto) no mundo com dentes (honesto, R=16, 5 sementes)
+
+| cérebro | fit | mortos | por semente | panes | fome no fim |
+|---|---|---|---|---|---|
+| Reativo | 6.90 | 0.35 | .30 .38 .38 .39 .32 | 7.9 | 69 |
+| **Noite24** | 6.66 | 0.32 | .31 .15 .27 .29 .58 | **4.0** | 76 |
+
+Predição 17: panes −49 % ✓ (7.9 → 4.0), fit ✓, mortos ≤ 0.28 ✗ (0.32; 3/5
+sementes abaixo de 0.30, uma em 0.58). Cláusula prevista: as panes caem e os
+mortos quase não — **a fome é a segunda assassina** (fome no fim sobe 69 →
+76: o táxi que não pane tanto morre de fome). O próximo alvo é comer, e o
+E25 (infância individual) está na fila exatamente pra isso.
