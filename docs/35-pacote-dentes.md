@@ -111,9 +111,9 @@ com comida no posto: o gargalo é a DECISÃO de comer (13 %), e o conserto é
 acoplar comer ao abastecer ("combo": abasteceu → comeu) ou dar ao cérebro o
 produto fome × distância com limiar alto.
 
-> Operacional (2026-09-03 08:36): o processo da fila e19c morreu com o
-> reinício da sessão (último registro 00:53; GPU parada até 08:35); o 3º
-> braço (ref90 − economia) e a fila e19d nunca rodaram. Relançados juntos
-> como e19e (4 braços, ~50 min). Lição: filas longas precisam sobreviver ao
-> harness — `setsid nohup` não bastou; verificar `systemd-run --user` ou
-> `tmux` para a próxima.
+> Operacional (2026-09-03 08:36): a máquina foi DESLIGADA às 00:57 e ligada
+> às 07:30 (`last -x`); o 3º braço da e19c (ref90 − economia) e a fila e19d
+> morreram com o desligamento — não foi o harness (a fila roda sob
+> `systemd --user`, sobrevive ao reinício da sessão). Relançados juntos como
+> e19e (4 braços, ~50 min). Lição: ao acordar, conferir `last -x` antes de
+> culpar a fila; filas não sobrevivem a desligamento — retomar por `.done`.
