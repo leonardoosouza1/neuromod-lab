@@ -302,3 +302,23 @@ cidades 2000+ perde MENOS que o linear (razões são adimensionais: queda
 ≤ 30 % vs 45 % do direto). Se `log` ≈ `direto`: a não-linearidade que vale
 é o PORTÃO (só quando o tanque baixa), não a multiplicação em geral — e o
 E29b (reações espécie × sinal com portão) é o próximo.
+
+### E23 honesto (R=16, 5 sementes) — a equação de 3 termos empata com o cérebro completo
+
+| política | termos | fit | mortos | por semente (mortos) |
+|---|---|---|---|---|
+| direto (Reativo, 44 genes) | 26 | 6.90 | 0.35 | .30 .38 .38 .39 .32 |
+| **mínimo 3 (destino, posto, tanque)** | 3 | **6.91** | **0.34** | .35 .30 .31 .39 .34 |
+| mínimo 5 (+ comida, fome) | 5 | 5.89 | 0.39 | .47 .43 .37 .30 .36 |
+
+Predição 19: mínimo 3 ✓ (≥ direto nos dois eixos); mínimo 5 ✗ (os termos
+de comida e fome no MOVIMENTO atrapalham — puxam o táxi pra órbita, o mesmo
+mecanismo dos 5 produtos do E17). A vantagem da triagem era velocidade de
+busca; no honesto o resultado é **empate com 3 termos**: os outros 23 são
+ruído co-adaptado que a evolução carrega sem usar.
+
+Em português, a política inteira que sobrevive tanto quanto o cérebro
+completo: *"vou na direção do destino; vou na direção do posto; quanto
+menos tanque, mais forte; uso o serviço cuja necessidade × peso vencer o
+movimento."* Verificada por construção — é a primeira frase do lab que é
+matemática de verdade, não descrição.
