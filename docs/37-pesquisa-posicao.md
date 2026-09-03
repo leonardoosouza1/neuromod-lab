@@ -1125,3 +1125,23 @@ por fome, a alavanca é o PREÇO (pena de morte maior, ou vida ganha por
 metro como no Universe — doc "vida ganha e velocidade"), não o cérebro.
 Linha da fome encerrada por hoje. Anedota: s0 perdeu o reflexo (w 0.02)
 nesta rodada mesmo nascendo com ele — linhagens perdem degraus também.
+
+### Autópsia do campeão atual (5 postos, 120 ger., s3) e o veto físico — pane é orçamento
+Mortos 0.19 (R=64): 82 % do dreno é avaria, 13.8 panes por vida; cidade
+1001 (ruas curtas) 0.05 / 1.8 panes, cidades 1000/1002 0.20–0.31 / 7
+panes, com a MESMA distância ao posto (1.5–2.0). A pane é checada na
+saída: `falta = tanque < custo_da_rua` (peso da rua + trânsito, × peso ×
+saúde). Intervenção "não entra na rua que não consegue terminar" (veto por
+peso × K): K=2 → 0.24, K=4 → 0.37, K=8 → 0.21 — pior em todo K, panes
+iguais. O veto por peso erra o custo real (trânsito) e bloqueia rota boa.
+Com E33 (preço) e E32 (portão por distância), são três alavancas de pane
+nulas em cima do reflexo. Leitura fechada: **pane e fome, depois do
+reflexo, são orçamento — o ser paga o que a fitness manda pagar.**
+
+**E39 (rodando; honesto semeado, 5 postos): o preço da morte.** Mesmo pai
+(E37 campeão) + 60 ger. com pena 15 em vez de 5; controle = E37b (pena 5):
+9.20 / 0.15 / entregas 13.2. **Predição 45 (antes de rodar):** mortos ≤
+0.10 e entregas ≤ 12.5 — a evolução compra vida com entregas quando a
+morte encarece (tese do orçamento). Se mortos ficarem 0.15 ± 0.03 com
+pena 15: os 15 % não são evitáveis por decisão — piso de geometria/azar
+— e o programa "menos mortes" encerra neste mundo.

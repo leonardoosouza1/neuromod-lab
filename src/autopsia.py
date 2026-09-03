@@ -1,13 +1,19 @@
 """Autopsia: roda um campeao (W do JSON do runner) nas cidades de teste e registra o ESTADO no instante da morte.
 Uso: NM_COMPILE=0 python src/autopsia.py <json> "<braco>" <seed_do_W> [Arq=Reativo|ReativoReacoes]"""
-import sys, json, torch
+import sys, os, json, torch
 from lab import Reativo, Lote, um_passo, gerar_cidade, DEV
 from e19_pacote import cfg_pacote
 from reacoes import ReativoReacoes
 from lab import GMAX
 FORCA = float(sys.argv[5]) if len(sys.argv) > 5 else 0.   # fome a partir da qual COMER e forcado (0 = desligado)
 FORCA_OF = float(sys.argv[8]) if len(sys.argv) > 8 else 0. # vida abaixo da qual OFICINA e forcada (0 = desligado)
+VETO_K = float(os.environ.get('VETO_K', '0'))               # veto: nao entra em rua com peso*K > tanque (0 = desligado)
 def _decidir(s, tudo, m):
+    if VETO_K:
+        Wr = m.W_(); G = Wr.shape[1]
+        ruim = (Wr*VETO_K > m.fuel[:, None]) & (tudo[:, :G] > -1e8)
+        tem_ok = ((~ruim) & (tudo[:, :G] > -1e8)).any(1, keepdim=True)
+        tudo = torch.cat([tudo[:, :G].masked_fill(ruim & tem_ok, -1e9), tudo[:, G:]], 1)
     esc = tudo.argmax(1)
     _, sv = m.serv_need()
     if FORCA:
