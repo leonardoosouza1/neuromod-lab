@@ -1023,3 +1023,12 @@ próprio campeão. Montagem é evento raro; depois de montado, refina rápido.
 Estado da arte no mundo de 3 postos passa a **8.07 / 0.18** (cumulativo,
 120 gerações). Protocolo daqui em diante: evolução cumulativa + controle
 semeado; e "gerações" entram como variável declarada em toda comparação.
+
+Genes do honesto semeado: controle mantém o reflexo (w 3.0–5.0, portão
+0.81–0.89) em 4/5, s3 segue sem (w −0.19, portão 0.99). No braço com
+portão de abastecer, o portão extra ficou ABAIXO do de desvio em 2/5 (0.51
+e 0.57; "enche com meio tanque se já está no posto") e igual nas outras —
+usado às vezes, sem ganho medível. Anedota de 1 semente: a linhagem s3
+MONTOU o reflexo no braço com o gene extra (w +2.33, portão 0.73, mortos
+0.35 → 0.17) — um gene neutro a mais mudou a trajetória da mutação o
+bastante pra achar o degrau. Vale registrar, não vale afirmar.
