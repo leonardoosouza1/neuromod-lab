@@ -91,3 +91,28 @@ alonga se valer.
 ≈ direto (fit ≥ 3.9, mortos ≤ 0.70, fome no fim < 90); `corpo nasce
 falando` mortos ≤ 0.85. Se continuar ≥ 0.9: o problema é o empate posto ×
 comida no mesmo nó (precisa de um "combo": abastecer também sacia).
+
+## Triagem 3 (τ rápido) — R=8, G=40, 3 sementes
+
+| braço | fit | entregas | mortos | fome no fim |
+|---|---|---|---|---|
+| direto (Reativo, triagem 1) | 4.85 | 9.4 | 0.60 | 85 |
+| **K=2 corpo fala + cérebro ouve** | **4.38** | 9.3 | **0.58** | **80** |
+| K=2 corpo nasce falando (cérebro tem de aprender a ouvir) | 2.16 | 6.5 | 0.89 | 97 |
+
+Predição 9 ✓ no canal completo: **o gargalo de 2 hormônios transmite o
+corpo sem perda** quando os dois lados nascem com o código (é o que a
+biologia faz: cortisol e o receptor de cortisol vêm juntos). A evolução
+com τ rápido não piorou nada e a fome terminou mais baixa que no direto.
+
+O que NÃO aconteceu: aprender o código do zero. Com o corpo falando e o
+cérebro surdo (um gene: comida ← h0), 89 % morrem de fome em 40 gerações —
+não há gradiente enquanto todo mundo morre (o deserto, 3ª vez). Comunicação
+não emerge num mundo que mata antes da primeira palavra.
+
+**Próximo passo honesto (a decidir):** proteger a infância da população —
+fome ferindo pouco nas primeiras gerações e subindo depois (currículo por
+fração da população, como no E-currículo do Universe) — e medir se o cérebro
+surdo aprende a ouvir. Alternativa: aceitar o código herdado como ponto de
+partida e evoluir só o refinamento, que é o que a triagem 3 já mostra que
+funciona.
