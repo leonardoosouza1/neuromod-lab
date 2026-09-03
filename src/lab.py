@@ -129,6 +129,11 @@ class Cfg:
         # E14b: a VIDA no fitness — pena por morrer (0 = identidade). Sem isto a morte nao custa
         #       fitness (quem morre no dia 4 entrega quase o mesmo) e nao e selecionada.
         s.pena_morte=0.
+        # E19 DENTES (pacote): ficar parado NAO pode ser de graca (um ser que nao faz nada por
+        #   5 dias terminava com vida 100, fome 100, fit 0 — o atrator "parar" dos colapsos)
+        #   fome_mata   dano de vida por passo quando fome >= FOME_CRIT, escalado ate fome=100
+        #   divida_mata dinh <= -LIMITE_DIVIDA (economia) = perde o carro = vida 0
+        s.fome_mata=0.; s.FOME_CRIT=90.; s.divida_mata=False
         # [E15 economia] flags/constantes — SO o agente E15 edita este bloco
         # doc 29. economia=False => IDENTIDADE BIT-EXATA (nada aloca, nada sorteia,
         # nenhum draw dos geradores do mundo se desloca).
@@ -852,6 +857,10 @@ def passo(m, esc):
         fer = (m.pneu < 30.) | (m.temp > 80.) | (m.oleo < 20.)
         dn = (c.D_PANE*sf.float() + c.D_FURO*fu.float() + c.D_OLEO*ol.float()
               + c.D_QUENTE*qt.float() + c.D_RODAR*(an & fer).float())
+        if c.fome_mata:   # E19: fome fere (parado tambem) — inanicao
+            dn = dn + c.fome_mata*((m.fome - c.FOME_CRIT)/(100. - c.FOME_CRIT)).clamp(0., 1.)
+        if c.divida_mata and c.economia:   # E19: divida alem do limite = perde o carro
+            dn = dn + 1000.*(m.dinh <= -c.LIMITE_DIVIDA).float()
         m.vida = (m.vida - dn).clamp(min=0); m.dano_soma += dn
         m.t_vida += viva.float()
     if c.com_agua:

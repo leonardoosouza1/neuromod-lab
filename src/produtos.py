@@ -105,6 +105,14 @@ class ReativoProduto(Reativo):
         return torch.stack([p, z, z, z, z], 1)
 
 
+class ReativoProdutoLimiar(ReativoProduto):
+    """E19: produto so liga quando a necessidade passa de um LIMIAR — relu(nec - theta).
+    Sem isso fome/fad/pneu nunca sao zero e o produto vira atracao constante ao servico
+    (onda 1: 5 produtos = -2.4 de fitness, 'descanso' 0.6-1.0 em 5/5). theta fixo (0.5)."""
+    nome='reativo-produto-limiar'; THETA=0.5
+    def _nec(s, m):
+        n = ReativoProduto._nec(m)
+        return (n - s.THETA).clamp(min=0.)/(1. - s.THETA)
 class ReativoProdutoFull(Reativo):
     """TODOS os produtos estado x distancia: 12 estados x 5 servicos = 60 genes.
 
