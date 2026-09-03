@@ -154,3 +154,14 @@ Leonardo descreveu — "o corpo grita e o cérebro ouve" — vira, na prática,
 É exatamente o achado de 2026 em "interoceptive attention" (AffectWorld):
 atenção dinâmica à necessidade mais urgente dobrou a sobrevivência. Próximo
 teste: E21, atenção interoceptiva (só a maior necessidade decide o serviço).
+
+## E21 — atenção interoceptiva (predição 11, antes de rodar)
+`ReativoAtencao`: no score de serviços, só a necessidade mais urgente (entre
+as disponíveis e pagáveis) mantém seu termo; as outras são canceladas
+(winner-take-all). `atencao off` é bit-igual ao Reativo. Variante `suave .3`
+mantém 30 % das outras.
+11. Triagem: `atencao` tem mortos ≤ direto − 0.10 e fome no fim ≤ 60 (a fome,
+    quando é a maior necessidade, decide sozinha), com fit ≥ direto − 0.5;
+    `suave .3` entre os dois. Se mortos não caírem: a fome raramente é a
+    MAIOR necessidade no momento em que há comida — e o conserto é a
+    persistência (uma vez eleita, a necessidade segue mandando por N passos).

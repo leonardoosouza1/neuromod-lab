@@ -6,6 +6,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import torch
 from lab import DEV, NF, gerar_cidade, Reativo, evoluir_sementes, rodar, modo_execucao
 from corpo_fala import fabrica
+from atencao import fabrica as fabrica_atencao
 import e15_economia as E15
 from e19_pacote import cfg_pacote, PRESET, PRESET_TRIAGEM, telemetria
 
@@ -19,7 +20,11 @@ BRACOS = [('direto (Reativo)',   Reativo),
           # triagem 2: codigo herdado
           ('K=2 corpo nasce falando',        fabrica(2, prior_corpo=True)),
           ('K=2 corpo fala + cerebro ouve',  fabrica(2, prior_corpo=True, prior_cerebro=True)),
-          ('K=2 so cerebro ouve',            fabrica(2, prior_cerebro=True))]
+          ('K=2 so cerebro ouve',            fabrica(2, prior_cerebro=True)),
+          # E21: atencao interoceptiva (so a maior necessidade decide o servico)
+          ('atencao interoceptiva',          fabrica_atencao(wta=True)),
+          ('atencao suave .3',               fabrica_atencao(wta=True, suave=.3)),
+          ('atencao off (== Reativo)',       fabrica_atencao(wta=False))]
 
 import copy
 def curriculo_fome(cfg, alvo, frac=.6, inicio=.03):
