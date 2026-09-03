@@ -85,3 +85,28 @@ pacote usa 90 (uma refeição por dia basta), com fome .15.
 mortos (o produto de comida com limiar agora tem trabalho). Se mortos
 ficarem ≥ 0.5: o gargalo é a DISTÂNCIA até a comida (poucos nós têm) e o
 conserto é densidade de serviço, não corpo.
+
+## e19c — refeição 90 (R=16, 5 sementes) e o diagnóstico
+
+| braço | fit | entregas | mortos | fome no fim |
+|---|---|---|---|---|
+| pacote ref90 fome .15 (cérebro com produtos) | 5.27 | 9.4 | 0.59 | 91 |
+| pacote ref90 fome .15 (Reativo) | 6.44 | 10.8 | 0.49 | 86 |
+
+Predição 8 ✗. Olhando o campeão (Reativo, 128 réplicas): **2.2 refeições em 5
+dias**, 34 de 1200 passos num nó com comida, e quando está num nó com comida
+com fome ≥ 60 come só **13 %** das vezes (13 oportunidades por vida). Peso
+evoluído da feature "distância até comida" ≈ 0 em 5/5 sementes; peso do
+serviço comida (1.4–3.5) menor que posto/oficina (4–5). Só **3 dos 26 nós**
+têm comida. O cérebro reativo não aprende a rotear pra comida — o mesmo
+limite que teve com o posto à noite — e dois recursos letais com 3 nós cada
+é demais pra política de 1 salto.
+
+**Conserto de mundo (e19d):** `comida_no_posto` — o posto vende comida
+(nós com comida 3 → ~6, e o ser já sabe ir ao posto). Predição 9 (antes de
+rodar): refeições/vida ≥ 5, fome no fim ≤ 60, mortos ≤ 0.35, entregas ≥ 9,
+ninguém parado; com refeição 45 (`ref45`) mortos ≤ 0.45 (o tamanho da
+refeição importa menos que o acesso). Se mortos continuarem ≥ 0.45 mesmo
+com comida no posto: o gargalo é a DECISÃO de comer (13 %), e o conserto é
+acoplar comer ao abastecer ("combo": abasteceu → comeu) ou dar ao cérebro o
+produto fome × distância com limiar alto.

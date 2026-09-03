@@ -18,9 +18,9 @@ from e15_economia import cfg_e15
 OUT = '/media/llm-data/universe-runs/neuromod-lab-taxi/e19'
 PRESET = dict(P=1024, G=60, T_evo=1200, T_aval=1200, R=16, seeds=(0,1,2,3,4))
 
-def cfg_pacote(economia=True, fome=.5, divida=True, refeicao=45., **kw):
+def cfg_pacote(economia=True, fome=.5, divida=True, refeicao=45., comida_no_posto=False, **kw):
     c = cfg_e15(economia=economia, **kw)      # reboque gordura->vida e o default novo
-    c.fome_mata = fome; c.divida_mata = divida; c.REFEICAO = refeicao
+    c.fome_mata = fome; c.divida_mata = divida; c.REFEICAO = refeicao; c.comida_no_posto = comida_no_posto
     return c
 
 BRACOS = [('pacote',            ReativoProdutoLimiar, dict()),
@@ -37,7 +37,11 @@ BRACOS = [('pacote',            ReativoProdutoLimiar, dict()),
           # e19c: o lado da COMIDA — refeicao de 90 (1/dia basta) com fome .15
           ('pacote ref90 fome .15',         ReativoProdutoLimiar, dict(fome=.15, refeicao=90.)),
           ('pacote ref90 fome .15 reativo', Reativo,              dict(fome=.15, refeicao=90.)),
-          ('pacote ref90 fome .15 - economia', ReativoProdutoLimiar, dict(fome=.15, refeicao=90., economia=False))]
+          ('pacote ref90 fome .15 - economia', ReativoProdutoLimiar, dict(fome=.15, refeicao=90., economia=False)),
+          # e19d: o POSTO vende comida (diagnostico: 2 refeicoes/vida, peso de d_comida ~0, 3 nos com comida)
+          ('pacote posto-comida reativo', Reativo,              dict(fome=.15, refeicao=90., comida_no_posto=True)),
+          ('pacote posto-comida limiar',  ReativoProdutoLimiar, dict(fome=.15, refeicao=90., comida_no_posto=True)),
+          ('pacote posto-comida ref45 reativo', Reativo,        dict(fome=.15, refeicao=45., comida_no_posto=True))]
 
 def telemetria(m, T):
     f = lambda x: round(float(x.mean()), 3)

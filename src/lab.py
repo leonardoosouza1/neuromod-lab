@@ -135,6 +135,7 @@ class Cfg:
         #   divida_mata dinh <= -LIMITE_DIVIDA (economia) = perde o carro = vida 0
         s.fome_mata=0.; s.FOME_CRIT=90.; s.divida_mata=False
         s.REFEICAO=45.         # quanto uma refeicao tira de fome (45 = identidade; fome sobe ~77/dia)
+        s.comida_no_posto=False  # E19d: o posto tambem vende comida (so 3 de 26 nos tem comida; o ser ja sabe ir ao posto)
         # [E15 economia] flags/constantes — SO o agente E15 edita este bloco
         # doc 29. economia=False => IDENTIDADE BIT-EXATA (nada aloca, nada sorteia,
         # nenhum draw dos geradores do mundo se desloca).
@@ -214,6 +215,8 @@ class Lote:
             [torch.tensor(c[k], device=DEV, dtype=dt) for c in cidades])
         s.Aa=st('A',torch.long); s.Wa=st('W'); s.DIa=st('DI')
         s.serva=st('serv'); s.grpa=st('grp',torch.long); s.tema=st('tem')
+        if cfg.comida_no_posto:   # E19d: comida disponivel onde ha posto (serva[...,1] herda serva[...,0])
+            s.serva = s.serva.clone(); s.serva[:,:,1] = torch.maximum(s.serva[:,:,1], s.serva[:,:,0])
         ds = []
         for c in range(NC):
             linha = []
