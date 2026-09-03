@@ -158,3 +158,24 @@ menos (aluguel, imposto, comida) e morre mais (a fome agora mata). É a
 linha de base HONESTA do mundo com corpo completo; toda alavanca nova (E21
 atenção, E22 aprender a ouvir) se mede contra 5.34 / 0.41 — ou, em 1000+,
 contra 6.90 / 0.35.
+
+## Quem ainda morre no pacote (campeão honesto, 5 sementes × 128 réplicas)
+
+| | mortos (n=680) | vivos |
+|---|---|---|
+| panes por vida | **12.2** | 1–2 |
+| refeições por vida | 2.2 | 5.2 |
+| fome ao morrer / no fim | 83 | 53 |
+| dinheiro | 29 (não quebrado) | — |
+| distância à comida ao morrer | 2.4 nós | — |
+| dia da morte | 3.5 | — |
+
+A assassina voltou a ser a **pane** (12 × −6 de vida = 72), com a fome
+somando. Não é dinheiro nem distância. O produto "tanque baixo × distância
+ao posto" (Noite24) cortou panes em um terço no mundo sem dentes (doc 27
+§6.20) e nunca foi testado aqui.
+
+**Predição 17 (antes de rodar, honesto R=16, 5 sementes, 1000+):** Noite24 no
+pacote vs Reativo (6.90 / 0.35 / panes 7.9): panes ≤ 5.5, mortos ≤ 0.28 com
+≥ 4/5 sementes abaixo, fit ≥ 6.6. Se panes caírem e mortos não: a fome é a
+segunda assassina e o próximo alvo é comer (5 refeições dos vivos vs 2).
