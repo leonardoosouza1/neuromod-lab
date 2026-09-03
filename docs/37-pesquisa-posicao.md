@@ -340,3 +340,17 @@ passos depois do pico, que é o que o Leonardo apontou: "só pensa em comer
 quando está com fome"); 28. τ evoluído das espécies > 20 passos em ≥ 3/5
 sementes (persistência é usada); se τ → 1: a persistência não paga e o
 produto instantâneo (Noite24) já é o teto.
+
+### E27 — pena de morte proporcional (morrer cedo custa mais): NULO na triagem
+
+| braço | pena fixa | pena proporcional 2·(1−t/T) |
+|---|---|---|
+| direto | 4.85 / mortos 0.60 | 5.55 / 0.48 |
+| noite24 | 5.36 / 0.51 | 5.28 / 0.56 |
+
+Sinal inverte entre as duas arquiteturas (n=3) → regra 13: nulo. Mecanismo
+que explica o nulo: quem morre no pacote morre por volta do dia 3.5 de 5,
+então o fator médio é 2·(1−0.7) ≈ 0.6 — a pena proporcional só ENCOLHEU a
+pena em ~40 % pra quase todo mundo; não abriu gradiente novo entre "morreu
+cedo" e "morreu tarde" porque quase ninguém morre cedo. Predição 20 não
+confirmada. Não sobe pro honesto; a avaliação fica com pena fixa 5.
