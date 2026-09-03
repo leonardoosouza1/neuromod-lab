@@ -287,3 +287,18 @@ O que isso diz do nosso projeto, com franqueza:
 
 Fonte: https://en.wikipedia.org/wiki/Where_Mathematics_Comes_From ·
 https://www.americanscientist.org/article/embodied-mathematics
+
+## 8. E29a — o cérebro em log (Leonardo, café com leite: "a lei tem multiplicação e divisão")
+Toda lei de mistura é produto/razão (`Pe = vL/D`, `k[A][B]`, `L²/D`); o
+Reativo só soma. `ReativoLog` (`src/quimico.py`): as features de distância e
+estado entram como `log(x + ε)` — a mesma soma de pesos vira **lei de
+potência** (`exp(score) = Π xᵢ^wᵢ`), que expressa tanque × distância,
+necessidade / custo, sem gene extra (NP = 44). Verificado: sem NaN, sem sync
+(o primeiro rascunho criava um tensor no laço — pego pelo detector).
+
+**Predição 26 (antes de rodar; triagem, depois honesto):** `log` ≥ `noite24`
+em mortos (≤ 0.35 no honesto) e ≥ `direto` em fit, sem gene extra; em
+cidades 2000+ perde MENOS que o linear (razões são adimensionais: queda
+≤ 30 % vs 45 % do direto). Se `log` ≈ `direto`: a não-linearidade que vale
+é o PORTÃO (só quando o tanque baixa), não a multiplicação em geral — e o
+E29b (reações espécie × sinal com portão) é o próximo.
