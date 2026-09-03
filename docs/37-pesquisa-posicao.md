@@ -255,3 +255,35 @@ experimento.
 - https://pubmed.ncbi.nlm.nih.gov/12371507/ · https://arxiv.org/pdf/2111.00134
 - https://pubmed.ncbi.nlm.nih.gov/21684297/ · https://www.frontiersin.org/journals/robotics-and-ai/articles/10.3389/frobt.2022.1052998
 - https://arxiv.org/abs/2002.01365 · https://arxiv.org/pdf/2409.02645 · https://www.pnas.org/doi/abs/10.1073/pnas.2509739123
+
+## 7. Matemática vem do corpo (Lakoff & Núñez, 2000) — e o que isso diz do lab
+
+"Where Mathematics Comes From": a matemática não é descoberta num céu
+platônico nem inventada do nada — é construída por **metáforas de
+fundamento** que projetam experiências corporais (juntar objetos, andar num
+caminho, encher um recipiente) em conceitos abstratos (adição, reta
+numérica, conjunto). Bebês já "subitizam" (contam até 3 sem contar). A
+matemática é humana porque tem corpo.
+
+O que isso diz do nosso projeto, com franqueza:
+1. **As nossas leis vieram do corpo.** A lei da poupança (doc 26) nasceu de
+   tanque, gordura e noite; a lei da moeda cruzada (EXP10, N16, N19) de
+   reboque, dinheiro e calorias; a regra da seleção cega (regra 14) de
+   mortes que ninguém via. Nenhuma foi derivada primeiro e testada depois —
+   foram sentidas no custo e depois escritas. É Lakoff & Núñez ao pé da
+   letra: a fórmula é a metáfora de fundamento tornada precisa.
+2. **"Fazer a rede falar matemática" tem duas metades, e só uma é
+   tradução.** A metade de tradução (frase ↔ Lean, política ↔ equação) já
+   existe na literatura e no lab. A metade que falta é a metáfora: a rede
+   precisa ter EXPERIÊNCIA do que a fórmula descreve pra que a fórmula
+   signifique algo pra ela. O E23 é o primeiro passo nessa direção: a
+   equação de 3 termos não foi imposta — foi a que sobreviveu, e por isso
+   "quer dizer" destino, posto e tanque.
+3. **A comunicação matemática ↔ PT-BR passa pelo corpo do leitor.** Uma
+   frase como "vou pro posto tanto mais quanto menos tanque tenho" é
+   compreendida porque o leitor tem tanque (ou fome). Documentar as leis com
+   a metáfora corporal ao lado da fórmula (como as "Aulas" fazem) não é
+   didática — é o mecanismo pelo qual a matemática é entendida.
+
+Fonte: https://en.wikipedia.org/wiki/Where_Mathematics_Comes_From ·
+https://www.americanscientist.org/article/embodied-mathematics
