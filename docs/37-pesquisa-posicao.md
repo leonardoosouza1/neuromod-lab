@@ -433,3 +433,13 @@ divisão, sim — mas a razão útil no táxi é entre NECESSIDADE e DISTÂNCIA
 (Noite24: tanque × d_posto), não o log de cada sinal sozinho. Isso fecha
 a pergunta "lei de potência ajuda?": não. A não-linearidade que paga é o
 produto com portão → E29b (reações), já na fila.
+
+**E29c (seguimento mecânico, na fila): log SÓ no corpo.** Se o log matou por
+achatar o longe, o teste limpo é aplicá-lo só aos 9 sinais internos
+(tanque, fome, fadiga, pneu, temperatura, óleo, dinheiro, reserva, dano) e
+deixar as distâncias lineares. **Predição 31 (antes de rodar; triagem):**
+log-corpo ≈ direto (fit 4.85 ± 0.5, mortos 0.60 ± 0.05) — a escala do
+sinal é absorvida pelo gene `w` (regra 15), Weber–Fechner não acrescenta
+informação que o gene linear não alcance. Se ficar MELHOR (mortos ≤ 0.52):
+o tanque-quase-vazio "gritar" 20× mais alto compra reabastecer a tempo, e
+o portão do Noite24 era um substituto disso.

@@ -25,3 +25,13 @@ class ReativoLog(Reativo):
         xl = torch.sign(x)*(torch.log(x.abs() + EPS) - LOG_EPS)   # LOG_EPS e float de Python: sem tensor novo no laco (sync)
         w = W[:, None, s.IDX]
         return (xl*w).sum(-1) - (x*w).sum(-1)              # troca o termo linear pelo termo em log
+
+
+# E29c: log so nos sinais do CORPO (distancias ficam lineares) — testa Weber-Fechner onde faz sentido.
+CORPO_LOG = ['e_fuel', 'e_fome', 'e_fadiga', 'e_pneu', 'e_temp', 'e_oleo', 'e_dinheiro', 'e_reserva', 'e_dano']
+
+class ReativoLogCorpo(ReativoLog):
+    nome = 'reativo-log-corpo'
+    def reset(s, m, W):
+        super().reset(m, W)
+        s.IDX = torch.tensor([i for i in range(NF) if NOMES_F[i] in CORPO_LOG], device=DEV, dtype=torch.long)
