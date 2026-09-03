@@ -124,3 +124,33 @@ mortos ≤ 0.70 na avaliação final com fome 0.15, fome no fim < 90) e o par
 sem código nenhum (`corpo fala K=2`) sai do deserto (mortos ≤ 0.85). Se
 nenhum sair: 40 gerações não bastam pra uma palavra — testar G=100 no
 honesto antes de mudar o desenho.
+
+## Honesto (R=16, 5 sementes) e currículo — fechamento do E20
+
+| braço | fit | entregas | mortos | fome no fim |
+|---|---|---|---|---|
+| direto (Reativo) | 6.90 | 11.5 | 0.35 | 69 |
+| K=2 corpo fala + cérebro ouve (código herdado) | 5.83 | 10.8 | 0.36 | 67 |
+| corpo fala K=2, infância protegida (triagem) | 1.74 | 4.5 | 0.97 | 100 |
+| corpo nasce falando + infância protegida (triagem) | 1.95 | 5.8 | 0.93 | 99 |
+
+- **Canal de 2 hormônios com código herdado: mesma mortalidade, −1.1 de
+  entregas** (4/5 sementes). Dois canais carregam o que mata (fome, gasolina)
+  e perdem o resto (dinheiro, pneu, calor, dano) — o cérebro direto vê dez
+  sinais. É o preço do gargalo, não um bug.
+- **Aprender o código do zero não emergiu**, nem com a fome ferindo pouco nas
+  primeiras gerações (predição 10 ✗). Com 126 genes, 40 gerações e um evento
+  raro dos dois lados (o corpo tem de produzir um canal que sobe com fome E o
+  cérebro tem de pesá-lo em comida), a seleção não acha a primeira palavra.
+  Bate com a literatura de comunicação emergente: gargalo sozinho não
+  produz código; precisa de pressão específica (aprendizado iterado,
+  jogos de sinalização) — e a biologia resolve herdando receptor e hormônio
+  juntos.
+
+**Veredito E20:** hormônios como canal funcionam quando nascem com o código
+(biologia); como linguagem que emerge, não nestes orçamentos. O que o
+Leonardo descreveu — "o corpo grita e o cérebro ouve" — vira, na prática,
+**priorização**: escolher a necessidade mais urgente e deixar só ela falar.
+É exatamente o achado de 2026 em "interoceptive attention" (AffectWorld):
+atenção dinâmica à necessidade mais urgente dobrou a sobrevivência. Próximo
+teste: E21, atenção interoceptiva (só a maior necessidade decide o serviço).
