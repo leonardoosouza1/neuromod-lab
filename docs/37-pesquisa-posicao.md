@@ -708,3 +708,13 @@ Leitura: a vida é um POOL drenado por várias fontes ao mesmo tempo (fome
 0.15/passo, rodar ferido, calor, furo); "fome ≥ 90 ao morrer" não prova
 que a fome matou. Próximo passo obrigatório: decompor o dreno de vida por
 fonte para os mortos, antes de desenhar mecanismo de comida.
+
+**E30 (na fila; triagem): viés POR SERVIÇO.** A autópsia mostrou que
+"comer" vence o argmax só 30–56 % das vezes quando deveria vencer sempre, e
+que os 5 serviços dividem UM viés. Quatro genes a mais (viés próprio de
+posto, comida, descanso, oficina) — genes 0 == base bit a bit, sem sync.
+**Predição 36 (antes de rodar):** reações + viés5 ≤ 0.26 de mortos na
+triagem (vs 0.31) e fome-no-fim ≤ 62 (vs 70); direto + viés5 ≤ 0.52 (vs
+0.60). Se nada mudar: o problema não é afinar o placar — é que "comer"
+compete com "andar" TODO passo (argmax único), e o caminho é decisão em
+duas etapas (primeiro "paro aqui?", depois "pra onde vou").

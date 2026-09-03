@@ -50,3 +50,21 @@ class ReativoReacoes2(ReativoReacoes):
     def reset(s, m, W):
         super().reset(m, W)
         o = Reativo.NP; s.theta = torch.sigmoid(W[:, o+6:o+8])   # (B,2) um portao por especie
+
+
+# E30 — VIES POR SERVICO: o Reativo tem UM vies pra 5 servicos (W[NF+5]); aqui cada servico ganha o seu
+# (4 genes extras: posto, comida, descanso, oficina; loja fica no vies comum). Genes 0 == base bit a bit.
+from lab import NF
+class ReativoVies5(Reativo):
+    nome = 'reativo-vies5'; NP = Reativo.NP + 4
+    def reset(s, m, W):
+        s.W = W; o = Reativo.NP
+        s.vb = torch.cat([W[:, o:o+4], torch.zeros(W.shape[0], 1, device=W.device)], 1)   # (B,5)
+    def extra_serv(s, m): return s.vb
+
+class ReacoesVies5(ReativoReacoes):
+    nome = 'reativo-reacoes-vies5'; NP = ReativoReacoes.NP + 4
+    def reset(s, m, W):
+        super().reset(m, W); o = ReativoReacoes.NP
+        s.vb = torch.cat([W[:, o:o+4], torch.zeros(W.shape[0], 1, device=W.device)], 1)
+    def extra_serv(s, m): return super().extra_serv(m) + s.vb
