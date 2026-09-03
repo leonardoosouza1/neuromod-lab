@@ -21,10 +21,10 @@ PRESET = dict(P=1024, G=60, T_evo=1200, T_aval=1200, R=16, seeds=(0,1,2,3,4))
 # Serve pra ver se a feature FUNCIONA e a direcao; mortalidade (sigma ~7 pp) so decide no honesto.
 PRESET_TRIAGEM = dict(P=1024, G=40, T_evo=1200, T_aval=1200, R=8, seeds=(0,1,2))
 
-def cfg_pacote(economia=True, fome=.5, divida=True, refeicao=45., comida_no_posto=False, fome_gracia=0, **kw):
+def cfg_pacote(economia=True, fome=.5, divida=True, refeicao=45., comida_no_posto=False, fome_gracia=0, pena_prop=False, **kw):
     c = cfg_e15(economia=economia, **kw)      # reboque gordura->vida e o default novo
     c.fome_mata = fome; c.divida_mata = divida; c.REFEICAO = refeicao; c.comida_no_posto = comida_no_posto
-    c.fome_gracia = fome_gracia
+    c.fome_gracia = fome_gracia; c.pena_prop = pena_prop
     return c
 
 BRACOS = [('pacote',            ReativoProdutoLimiar, dict()),

@@ -146,3 +146,10 @@ Yerkes-Dodson: imposto intermediário produz MAIS que zero.
 | genoma do Reativo tem 12 pesos mortos + 26 features | E23: 3 termos evoluem melhor que 44 genes em G=40 | proposta: `ReativoEnxuto` (só features úteis) como padrão de triagem; honesto decide |
 | hormônios tocavam preço de física | almoço grátis (N19) | regra 16; próximos hormônios só modulam aprendizado (Doya) |
 | perito como sonda de comida | exausto e quebrado, não come | não usar o perito pra testar decisão de comer |
+
+**Predição 20 (E27, antes de rodar; triagem, pena 5):** com a pena
+proporcional à vida perdida, a evolução prefere políticas que EVITAM morrer
+cedo (dia 1–2) mesmo aceitando morrer tarde: mortos totais ±0.05 (não muda
+muito) mas o dia médio da morte sobe ≥ +0.5 e as entregas sobem ≥ +0.3 (a
+pena fixa penalizava igual quem quase completou a vida). Se nada mudar: a
+pena fixa já bastava porque quase todas as mortes são no dia 3–4.
