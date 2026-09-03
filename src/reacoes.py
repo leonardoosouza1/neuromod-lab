@@ -68,3 +68,21 @@ class ReacoesVies5(ReativoReacoes):
         super().reset(m, W); o = ReativoReacoes.NP
         s.vb = torch.cat([W[:, o:o+4], torch.zeros(W.shape[0], 1, device=W.device)], 1)
     def extra_serv(s, m): return super().extra_serv(m) + s.vb
+
+
+# E32 — PORTAO QUE ABRE MAIS CEDO QUANTO MAIS LONGE O POSTO: theta_ef = theta - beta * d_posto_atual/8.
+# 1 gene extra (beta = softplus(gene), 0 quando gene -> -inf; gene 0 -> 0.69). Com beta=0 == reacoes bit a bit.
+class ReativoReacoesDist(ReativoReacoes):
+    nome = 'reativo-reacoes-dist'; NP = ReativoReacoes.NP + 1
+    def reset(s, m, W):
+        super().reset(m, W); o = ReativoReacoes.NP
+        s.beta = torch.nn.functional.softplus(W[:, o:o+1])            # (B,1)
+    def _ativ(s):
+        return (s.c - s.th_ef).clamp(min=0.)
+    def extra(s, m, W, viz):
+        dp = s._m_dposto(m)
+        s.th_ef = torch.cat([s.theta - s.beta*dp, s.theta], 1)          # so a SEDE abre mais cedo; fome fica
+        return super().extra(m, W, viz)
+    @staticmethod
+    def _m_dposto(m):
+        return (m.dsa[m.cidx, 0, m.no]/8.)[:, None]                      # distancia do no atual ao posto, /8

@@ -6,12 +6,16 @@ from e19_pacote import cfg_pacote
 from reacoes import ReativoReacoes
 from lab import GMAX
 FORCA = float(sys.argv[5]) if len(sys.argv) > 5 else 0.   # fome a partir da qual COMER e forcado (0 = desligado)
+FORCA_OF = float(sys.argv[8]) if len(sys.argv) > 8 else 0. # vida abaixo da qual OFICINA e forcada (0 = desligado)
 def _decidir(s, tudo, m):
     esc = tudo.argmax(1)
+    _, sv = m.serv_need()
     if FORCA:
-        _, sv = m.serv_need()
         forca = (m.fome >= FORCA) & (sv[:, 1] > 0) & (m.dinh >= 3.)
         esc = torch.where(forca, torch.full_like(esc, GMAX+1), esc)
+    if FORCA_OF:
+        forca = (m.vida <= FORCA_OF) & (sv[:, 3] > 0) & (m.dinh >= 10.)
+        esc = torch.where(forca, torch.full_like(esc, GMAX+3), esc)
     return esc
 class ReativoF(Reativo): decidir = _decidir
 class ReacoesF(ReativoReacoes): decidir = _decidir
@@ -79,6 +83,10 @@ if n:
         ev = torch.stack([m.av_fuel[sel], m.av_furo[sel], m.av_oleo[sel], m.av_quente[sel]], 1).mean(0)
         est = torch.stack([6.*ev[0], 5.*ev[1], 12.*ev[2], 10.*ev[3], .15*fer_passos[sel].mean()])
         print(f'  {nome_}: eventos/vida pane {ev[0]:.1f} furo {ev[1]:.1f} oleo {ev[2]:.1f} quente {ev[3]:.1f} | passos ferido {fer_passos[sel].mean():.0f} | dano estimado: pane {est[0]:.0f} furo {est[1]:.0f} oleo {est[2]:.0f} quente {est[3]:.0f} rodar-ferido<= {est[4]:.0f} (avarias medidas {float(dr_avaria[sel].mean()):.0f})')
+    print(f'  OFICINA por vida: mortos {float(m.n_oficina[mi].mean()):.1f} · vivos {float(m.n_oficina[vivo].mean()):.1f}   | vida media dos vivos no fim {float(m.vida[vivo].mean()):.0f}')
     tv = (dr_fome + dr_avaria)[vivo]; print(f'  dreno dos vivos: fome {float(dr_fome[vivo].mean()):.0f} · avarias {float(dr_avaria[vivo].mean()):.0f} por vida')
+    for ci in range(len(teste)):
+        sel = (m.cidx == ci); n_ = int(sel.sum()); dsa = m.dsa[ci]
+        print(f'  CIDADE {1000+ci}: mortos {float((~vivo)[sel].float().mean()):.2f} · panes/vida {float(m.av_fuel[sel].mean()):.1f} · oficina/vida {float(m.n_oficina[sel].mean()):.1f} · entregas {float(m.ent[sel].mean()):.1f} · nos {dsa.shape[1]} · d_posto media {float(dsa[0].mean()):.1f} max {float(dsa[0].max()):.0f} · d_oficina media {float(dsa[3].mean()):.1f} max {float(dsa[3].max()):.0f}')
 v = vivo
 print(f'  vivos no fim: fome {q(m.fome[v])}  dinheiro {q(m.dinh[v])}  d_comida agora {q(m.dsa[m.cidx[v],1,m.no[v]])}')

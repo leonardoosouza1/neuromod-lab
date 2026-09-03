@@ -728,3 +728,44 @@ espaço maior atrasa a busca em 40 gerações. Vale a cláusula: **afinar o
 placar não é o caminho; "comer" compete com "andar" a cada passo num
 argmax único**. E a autópsia por fonte (abaixo) mostra que o problema
 nem é comida.
+
+### Autópsia por fonte e por cidade (2026-09-03) — quem mata é a PANE, e a geografia manda
+
+Campeão das reações (s0), 192 vidas, dreno de vida decomposto por fonte:
+
+| | mortos | vivos |
+|---|---|---|
+| dreno por fome | 31 (23 %) | 16 |
+| dreno por avarias | 108 (77 %) | 121 |
+| … das quais pane (6 cada) | 75 (12.5 panes/vida) | 56 (9.4) |
+| … calor | 38 | 60 |
+| idas à oficina (reparo) | 3.4 | 8.7 |
+| panes à noite | 37 % (noite = 33 % do dia) | |
+
+"Morre com fome 100" era a última gota: **77 % do dreno é avaria, e a
+avaria é PANE** — mesmo com o reflexo (8–12 panes por vida). Pane não é
+noturna (37 % vs 33 % de noite): é proporcional ao rodar. Forçar
+"oficina se vida < 50" não muda (0.33 → 0.29) e não sobe as idas dos
+mortos (3.4 → 3.5): eles não ESTÃO em nó com oficina quando precisam.
+
+Por cidade (mesmo cérebro):
+
+| cidade | mortos | panes/vida | d_posto média / máx (saltos) | entregas |
+|---|---|---|---|---|
+| 1001 | **0.17** | 8.6 | 2.2 / **4** | 14.4 |
+| 1000 | 0.42 | 12.5 | 2.7 / **7** | 11.2 |
+| 1002 | 0.39 | 10.1 | 3.6 / **8** | 9.2 |
+
+A mortalidade acompanha a distância máxima ao posto. O reflexo dispara a
+~10 % de tanque — a 4 saltos do posto chega; a 7–8 não. **O limiar certo
+depende de onde o posto está**: "abaixo de X → posto" com X crescendo com
+d_posto. Isso é o produto tanque × d_posto do Noite24 posto no lugar
+certo: dentro do PORTÃO, não no ganho.
+
+**E32 (na fila; triagem): portão por distância** — θ_ef = θ − β·d_posto/8,
+1 gene (β = softplus), β→0 == reações bit a bit (verificado), sem sync.
+**Predição 37:** β evoluído > 0.3 em ≥ 2/3 sementes; panes ≤ 4.5 (vs 5.8)
+e mortos ≤ 0.26 (vs 0.31) na triagem; nas cidades 2000+ o ganho é maior
+(mapas com posto mais longe). Se β → 0: a evolução prefere aceitar panes
+a gastar entregas com desvios longos — e o preço da pane (6 de vida) é
+que está barato demais (lei da moeda cruzada: E33 = D_PANE maior).
