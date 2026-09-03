@@ -125,3 +125,22 @@ produto fome × distância com limiar alto.
 > cômputo real (gathers da economia), sem espera. Braços honestos passaram de
 > ~540 s para 625–730 s por isso. Preset `triagem` (R=8, G=40, 3 sementes,
 > ~2.5 min/braço) criado para validar direção; honesto só confirma.
+
+## e19e — posto vende comida (R=16, 5 sementes) e o resto do pacote
+
+| braço | fit | entregas | mortos | fome no fim | leitura |
+|---|---|---|---|---|---|
+| pacote ref90 − economia | 7.50 | 10.7 | 0.37 | 84 | sem aluguel/imposto: +1.1 sobre o pacote |
+| **pacote + posto vende comida (Reativo)** | 6.90 | 11.5 | **0.35** | **69** | comer ficou acessível: mortos 0.49 → 0.35 |
+| pacote + posto vende comida (cérebro com produtos) | 5.83 | 10.1 | 0.37 | 74 | produtos não ajudam a comer |
+| pacote + posto vende comida, refeição 45 | 6.03 | 10.7 | 0.41 | 77 | refeição menor: +6 pp de mortos |
+
+Predição 9: mortos ≤ 0.35 ✓ (no limite), entregas ≥ 9 ✓ (ninguém para),
+fome no fim ≤ 60 ✗ (69). O acesso resolveu metade; a outra metade é a
+DECISÃO de comer (13 % das vezes que pode): o sinal de fome entra como mais
+um número e a corrida grita mais alto. Próximo: E20 — o corpo fala por
+hormônios (doc 36), sem tocar no `lab.py`.
+
+**Estado do pacote:** fome mata (.15) fica; dívida mata fica (inerte em 5
+dias, sem custo); reboque gordura→vida fica; refeição 90 + comida no posto
+ficam; produto com limiar SAI do pacote (pior em 3 de 3 comparações).
