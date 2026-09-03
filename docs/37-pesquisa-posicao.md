@@ -788,3 +788,22 @@ na direção do "nascimento"): **todo gene novo tem de nascer DESLIGADO
 (igual ao pai) — a evolução liga se pagar.** Corrigido: β = softplus(gene
 − 4) (gene 0 → 0.018), verificado quase idêntico ao reações no perito.
 E32b refeito na fila. A predição 37 vale pro E32b.
+
+### E33 resultado (triagem n=3): a pane cara muda o comportamento, não a morte
+
+| custo da pane (vida) | fit | mortos | panes/vida | dano por pane (custo × panes) | entregas | fome fim |
+|---|---|---|---|---|---|---|
+| 6 (E29b) | 7.08 | 0.31 | 5.8 | 35 | 11.3 | 70 |
+| 12 | 6.17 | 0.42 | 2.9 | 35 | 9.9 | 73 |
+| 20 | 5.45 | 0.58 | 1.8 | 36 | 8.8 | 82 |
+
+Predição 38: a adaptação existe e é forte (panes ≤ 4.0 ✓, portões abaixo),
+mas mortos ≥ 0.40 ✗ → vale a cláusula: a pane cara mata mais do que o
+reflexo evita. O achado que não estava previsto: **o orçamento de dano por
+pane é CONSTANTE (35–36 de vida por vida)** em três preços diferentes. A
+evolução ajusta o número de panes até que o dano marginal iguale o custo
+marginal em entregas perdidas — e paga a pane cara com entregas (11.3 →
+8.8), dinheiro e comida (fome fim 70 → 82). É o mesmo princípio do
+"orçamento" do EXP10/E13: o ser não minimiza pane, minimiza o total. Mudar
+o preço no mundo não compra sobrevivência; o que sobra como alavanca é a
+GEOMETRIA (E32b: portão que sabe onde está o posto).
