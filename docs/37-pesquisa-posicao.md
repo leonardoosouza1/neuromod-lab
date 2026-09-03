@@ -574,3 +574,14 @@ panes; a diferença entre elas está DENTRO do ruído de mortos. A pergunta
 do dia ("a lei tem multiplicação — isso nos ajuda?") tem resposta medida:
 ajuda na pane (metade), não muda a morte além da régua — porque a morte
 tem 2.ª causa (fome) que o produto tanque × posto não toca.
+
+**E29e (na fila; triagem): portão POR ESPÉCIE.** No E29b o portão é um só
+(0.85–0.98) — pra `fome/100` isso é "só liga com fome > 85", quando o dano
+(FOME_CRIT 90) já está batendo. Com um portão por espécie a fome pode
+ligar em ~0.6. Verificado: genes 0 == Reativo bit a bit; θ iguais == E29b
+bit a bit; sem sync. **Predição 34:** portão da fome evoluído ≤ 0.7 em
+≥ 2/3 sementes E fome-no-fim ≤ 60 (vs 65–70) com mortos ≤ 0.28 na triagem
+(vs 0.31 do E29b). Se o portão da fome também for pra ~0.9: a fome não é
+resolvida por reflexo de distância porque a comida é rara (6 nós) e o
+táxi precisa PLANEJAR o desvio, não reagir — e o próximo passo é comida
+como parada no caminho (rota), não como reflexo.

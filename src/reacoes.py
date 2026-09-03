@@ -42,3 +42,11 @@ class ReativoReacoesSemPortao(ReativoReacoes):
     nome = 'reativo-reacoes-sem-portao'
     def reset(s, m, W):
         super().reset(m, W); s.theta = torch.zeros_like(s.theta)
+
+
+# E29e — portao POR ESPECIE (8 genes): a fome pode ligar cedo (0.6) enquanto a sede liga tarde (0.9).
+class ReativoReacoes2(ReativoReacoes):
+    nome = 'reativo-reacoes-2portoes'; NP = Reativo.NP + 8
+    def reset(s, m, W):
+        super().reset(m, W)
+        o = Reativo.NP; s.theta = torch.sigmoid(W[:, o+6:o+8])   # (B,2) um portao por especie
