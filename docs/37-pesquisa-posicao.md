@@ -807,3 +807,8 @@ marginal em entregas perdidas — e paga a pane cara com entregas (11.3 →
 "orçamento" do EXP10/E13: o ser não minimiza pane, minimiza o total. Mudar
 o preço no mundo não compra sobrevivência; o que sobra como alavanca é a
 GEOMETRIA (E32b: portão que sabe onde está o posto).
+
+Portões evoluídos: custo 6 → 0.87–0.93; custo 12 → 0.50 / 0.84 / 0.86;
+custo 20 → 0.63 / 0.79 / 0.76 (cláusula 1 da predição 38 ✓: o joelho desce
+quando a pane encarece — o reflexo dispara com 20–40 % de tanque em vez de
+10 %). O preço muda ONDE o reflexo dispara; não muda quanta vida sobra.
