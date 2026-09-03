@@ -8,7 +8,8 @@ from corpo_fala import fabrica as fabrica_corpo
 from aprender_ouvir import fabrica
 
 E20.BRACOS = [('direto (Reativo)',                    Reativo),
-              ('surdo (corpo fala, eta=0)',           fabrica(2, eta_fixa=0.)),
+              ('surdo (corpo fala, eta=0)',           fabrica(2, eta_fixa=0., explora=0.)),
+              ('curioso sem aprender (eta=0)',        fabrica(2, eta_fixa=0.)),
               ('aprende a ouvir (eta evolui)',        fabrica(2)),
               ('aprende a ouvir eta=.1 fixa',         fabrica(2, eta_fixa=.1)),
               ('hebb puro (sem recompensa)',          fabrica(2, hebb_puro=True, eta_fixa=.1)),

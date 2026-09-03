@@ -9,7 +9,9 @@ import torch
 from lab import Reativo, NF, DEV, GMAX
 from corpo_fala import fabrica as fabrica_corpo, _sinais, _feat_corpo, IDX_CORPO, NX, NH
 
-def fabrica(K=2, eta_max=.2, hebb_puro=False, eta_fixa=None, nome=None):
+def fabrica(K=2, eta_max=.2, hebb_puro=False, eta_fixa=None, nome=None, explora=3.):
+    """explora: desvio da inicializacao ALEATORIA (por vida, nao herdada) de Gserv — sem ela o servico
+    nunca e escolhido pela primeira vez e a regra nunca dispara (perito eta=.1: 0 refeicoes, 100 % de fome)."""
     Base = fabrica_corpo(K, prior_corpo=True)          # corpo nasce falando; Gserv do genoma sera IGNORADO
     class SerAprendeOuvir(Base):
         NP = Base.NP + 2                                # + eta, lambda
@@ -18,7 +20,9 @@ def fabrica(K=2, eta_max=.2, hebb_puro=False, eta_fixa=None, nome=None):
             B = m.B; o = Base.NP
             s.eta = (torch.sigmoid(W[:, o])*eta_max) if eta_fixa is None else torch.full((B,), eta_fixa, device=DEV)
             s.lam = 1. - 0.01*torch.sigmoid(W[:, o+1])  # decaimento por passo (0.99..1.0)
-            s.Gserv = torch.zeros(B, K, 5, device=DEV)  # SURDO ao nascer; aprende em vida
+            # nasce SURDO mas curioso: Gserv aleatorio pequeno POR VIDA (nao herdado) -> tenta servicos,
+            # a recompensa esculpe. Com explora=0 e eta=0 e identico ao corpo-nasce-falando.
+            s.Gserv = (torch.randn(B, K, 5, generator=m.gsim, device=DEV)*explora) if explora > 0 else torch.zeros(B, K, 5, device=DEV)
             s.Gmov = torch.zeros(B, K, device=DEV)
             s.h_prev = torch.zeros(B, K, device=DEV)
             s.ent_prev = m.ent.clone(); s.fome_prev = m.fome.clone(); s.fuel_prev = m.fuel.clone()
