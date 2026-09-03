@@ -718,3 +718,13 @@ triagem (vs 0.31) e fome-no-fim ≤ 62 (vs 70); direto + viés5 ≤ 0.52 (vs
 0.60). Se nada mudar: o problema não é afinar o placar — é que "comer"
 compete com "andar" TODO passo (argmax único), e o caminho é decisão em
 duas etapas (primeiro "paro aqui?", depois "pra onde vou").
+
+**E30 resultado (triagem n=3): viés por serviço PIORA.** direto+viés5 4.50 /
+0.57 (direto 4.85 / 0.60); reações+viés5 4.62 / 0.53 (reações 7.08 / 0.31),
+panes 8.9 (vs 5.8), idas ao posto 6–7 (vs 5). Predição 36 refutada com
+folga. Quatro genes de viés destroem a vantagem do reflexo: a evolução usa
+o viés pra ligar serviço "sempre" (sobre-serve, entrega 9.5 vs 11.3) e o
+espaço maior atrasa a busca em 40 gerações. Vale a cláusula: **afinar o
+placar não é o caminho; "comer" compete com "andar" a cada passo num
+argmax único**. E a autópsia por fonte (abaixo) mostra que o problema
+nem é comida.
