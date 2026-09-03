@@ -159,3 +159,28 @@ o fitness dela é o fitness.
     posto, comida, tanque, fome) ≥ 70 %; `mínimo 3` < 60 %. Se o mínimo-5
     ficar ≥ 85 %: o táxi "fala" em 5 termos e o resto da política é ruído
     co-adaptado. Mortalidade: mínimo-5 ≤ direto + 0.10.
+
+### E23 triagem (R=8, G=40, 3 sementes) — a predição 16 inverteu
+
+| política | termos de movimento | fit | mortos | panes |
+|---|---|---|---|---|
+| direto (Reativo) | 26 | 4.85 | 0.60 | 8.4 |
+| mínimo 10 | 10 | 6.67 | 0.36 | 8.0 |
+| mínimo 5 (destino, posto, comida, tanque, fome) | 5 | 6.39 | 0.35 | 7.4 |
+| **mínimo 3 (destino, posto, tanque)** | 3 | **6.42** | **0.35** | 6.8 |
+
+Menos termos, MELHOR: com 40 gerações e 32 vidas por genoma, a política de 3
+termos chega onde o cérebro completo só chega com 60 gerações e 64 vidas
+(honesto do direto: 6.90 / 0.35). Mecanismo: a busca — 44 genes co-adaptados
+demoram a se organizar; 3 + 6 genes se organizam em 40 gerações. É o oposto
+da poda (doc 37 §4): tirar termos DEPOIS quebra; evoluir SEM eles funciona.
+A equação de 3 termos é verificada por construção e cabe numa frase: "vou
+na direção do destino, na direção do posto, tanto mais quanto menos tanque
+tenho; uso o serviço cuja necessidade × peso vencer."
+
+**Predição 19 (antes de rodar, honesto R=16, 5 sementes):** mínimo 3 e mínimo
+5 ficam ≥ direto (6.90 / 0.35): fit ≥ 6.7 e mortos ≤ 0.35 com ≥ 3/5 sementes
+≤ 0.35. Se o direto passar os mínimos no honesto (≥ +0.8): a vantagem era só
+velocidade de busca (útil mesmo assim: triagem em 3 termos). Se os mínimos
+continuarem ≥ direto: os outros 23 termos são ruído co-adaptado e o táxi
+FALA em 3 termos.
