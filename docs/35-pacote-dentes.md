@@ -110,3 +110,10 @@ refeição importa menos que o acesso). Se mortos continuarem ≥ 0.45 mesmo
 com comida no posto: o gargalo é a DECISÃO de comer (13 %), e o conserto é
 acoplar comer ao abastecer ("combo": abasteceu → comeu) ou dar ao cérebro o
 produto fome × distância com limiar alto.
+
+> Operacional (2026-09-03 08:36): o processo da fila e19c morreu com o
+> reinício da sessão (último registro 00:53; GPU parada até 08:35); o 3º
+> braço (ref90 − economia) e a fila e19d nunca rodaram. Relançados juntos
+> como e19e (4 braços, ~50 min). Lição: filas longas precisam sobreviver ao
+> harness — `setsid nohup` não bastou; verificar `systemd-run --user` ou
+> `tmux` para a próxima.
