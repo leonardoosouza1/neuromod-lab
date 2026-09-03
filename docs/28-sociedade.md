@@ -154,6 +154,8 @@ muito) mas o dia médio da morte sobe ≥ +0.5 e as entregas sobem ≥ +0.3 (a
 pena fixa penalizava igual quem quase completou a vida). Se nada mudar: a
 pena fixa já bastava porque quase todas as mortes são no dia 3–4.
 
+**Resultado E27 (2026-09-03, triagem n=3): NULO.** direto 4.85/0.60 → 5.55/0.48, noite24 5.36/0.51 → 5.28/0.56 — sinal inverte (regra 13). Mecanismo: mortos morrem no dia ~3.5 de 5 → fator 2·(1−0.7)=0.6, a pena só encolheu ~40 %; não há gradiente novo porque quase ninguém morre cedo. Avaliação segue com pena fixa 5 (detalhe em doc 37 §5).
+
 **Predição 21 (E28, antes de rodar; honesto R=16, 5 sementes, 1000+):** enxuto
 (32 genes) ≥ direto (44) em fit (≥ 6.9) com mortos ≤ 0.35 — os pesos mortos
 só atrapalham a busca; mínimo-3 no honesto ≥ 6.7 / ≤ 0.35 (se ficar abaixo
