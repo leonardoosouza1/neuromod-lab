@@ -135,6 +135,7 @@ class Cfg:
         #   divida_mata dinh <= -LIMITE_DIVIDA (economia) = perde o carro = vida 0
         s.fome_mata=0.; s.FOME_CRIT=90.; s.divida_mata=False
         s.REFEICAO=45.         # quanto uma refeicao tira de fome (45 = identidade; fome sobe ~77/dia)
+        s.fome_gracia=0        # E25 infancia individual: passos de cada vida em que a fome NAO fere (0 = identidade)
         s.comida_no_posto=False  # E19d: o posto tambem vende comida (so 3 de 26 nos tem comida; o ser ja sabe ir ao posto)
         # [E15 economia] flags/constantes — SO o agente E15 edita este bloco
         # doc 29. economia=False => IDENTIDADE BIT-EXATA (nada aloca, nada sorteia,
@@ -861,8 +862,9 @@ def passo(m, esc):
         fer = (m.pneu < 30.) | (m.temp > 80.) | (m.oleo < 20.)
         dn = (c.D_PANE*sf.float() + c.D_FURO*fu.float() + c.D_OLEO*ol.float()
               + c.D_QUENTE*qt.float() + c.D_RODAR*(an & fer).float())
-        if c.fome_mata:   # E19: fome fere (parado tambem) — inanicao
-            dn = dn + c.fome_mata*((m.fome - c.FOME_CRIT)/(100. - c.FOME_CRIT)).clamp(0., 1.)
+        if c.fome_mata:   # E19: fome fere (parado tambem) — inanicao; E25: nao fere durante a graca (infancia)
+            gr = (m.t >= c.fome_gracia).float() if c.fome_gracia else 1.
+            dn = dn + c.fome_mata*gr*((m.fome - c.FOME_CRIT)/(100. - c.FOME_CRIT)).clamp(0., 1.)
         if c.divida_mata and c.economia:   # E19: divida alem do limite = perde o carro
             dn = dn + 1000.*(m.dinh <= -c.LIMITE_DIVIDA).float()
         m.vida = (m.vida - dn).clamp(min=0); m.dano_soma += dn

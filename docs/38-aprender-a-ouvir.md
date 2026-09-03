@@ -27,3 +27,34 @@ receptor se ajusta durante a vida**, guiado por um sinal de recompensa.
     fez no cérebro-por-órgãos: sem ela, acaso).
 15. Código herdado dos dois lados continua sendo o teto (≈ direto); a
     plasticidade chega a ≥ 70 % do teto.
+
+## Triagem (R=8, G=40, 3 sementes) — negativa com mecanismo
+
+| braço | fit | entregas | mortos | fome no fim |
+|---|---|---|---|---|
+| direto (Reativo) | 4.85 | 9.4 | 0.60 | 85 |
+| surdo (corpo fala, η=0) | 1.31 | 5.0 | 0.95 | 98 |
+| curioso sem aprender (Gserv aleatório por vida, η=0) | 0.39 | 4.3 | 0.96 | 99 |
+| aprende a ouvir (η evolui) | 0.68 | 4.1 | 0.95 | 99 |
+| aprende a ouvir (η=.1 fixa) | 0.82 | 4.3 | 0.95 | 99 |
+| Hebb puro (sem recompensa) | 0.64 | 4.4 | 0.97 | 99 |
+| teto: código herdado dos 2 lados | 4.38 | 9.3 | 0.58 | 80 |
+
+Predição 13 ✗ (a plasticidade não salva: 0.95 = surdo), 14 ✓ (Hebb puro não
+aprende — mas trivialmente, ninguém aprendeu), 15 ✓ (o teto continua sendo o
+código herdado). Mecanismo: a regra `ΔG = η·h·usou·r` só dispara depois da
+PRIMEIRA refeição, e a primeira refeição depende de escolher "comida" num nó
+com comida por acaso — com a fome matando em ~2 dias, o táxi morre antes do
+acaso. A curiosidade aleatória (Gserv ~ N(0,3)) não bastou. Quarta aparição
+do deserto: seleção (E19), currículo (E20), receptor (E20), plasticidade (E22).
+
+**O que o deserto pede:** tempo de explorar SEM morrer — infância individual
+(E8): a fome não fere nos primeiros 2 dias de cada vida (`fome_gracia`),
+depois fere normal. Não muda o objetivo nem o mundo adulto.
+
+**Predição 18 (antes de rodar, triagem, mesma bateria com `fome_gracia`=480):**
+`aprende a ouvir η=.1` ≤ surdo − 0.15 em mortos e ≥ 2/3 sementes com
+Gserv[fome→comida] > 0 no fim da vida; `direto` melhora (mortos ≤ 0.50);
+teto ≈ direto. Se `aprende` continuar = surdo mesmo com 2 dias de graça: a
+primeira refeição não acontece por acaso nem sem pressão — o gargalo é o
+número de nós com comida (6 de 26), não o tempo.
