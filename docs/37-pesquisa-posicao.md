@@ -564,3 +564,13 @@ outras). Correlação dentro do experimento, não prova; mas aponta o mesmo
 que o E29d vai testar por ablação. Predição 30 (τ divergem ≥ 3×): 3/5,
 e sem padrão de escala — τ da sede vai de 1 a 7.5 nas que usam o reflexo;
 a persistência é livre, o que é fixo é o JOELHO.
+
+**Régua das panes (mesma função, honesto):** direto 7.9 · direto s5–9 8.1 ·
+enxuto 8.3 → espalhamento 0.4. Panes é a métrica mais estável do lab (o
+oposto de mortos). Com ela, o que já é afirmação no honesto: **Noite24 4.0
+(−50 %), reações 5.2 (−36 %), mínimo-3 6.6 (−18 %)** — toda forma de
+"tanque × distância" (produto suave, portão duro, ou só 3 termos) corta as
+panes; a diferença entre elas está DENTRO do ruído de mortos. A pergunta
+do dia ("a lei tem multiplicação — isso nos ajuda?") tem resposta medida:
+ajuda na pane (metade), não muda a morte além da régua — porque a morte
+tem 2.ª causa (fome) que o produto tanque × posto não toca.
