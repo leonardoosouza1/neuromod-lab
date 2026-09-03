@@ -126,3 +126,26 @@ Se fecha, temos a comunicação matemática ↔ PT-BR verificada, não só bonit
 - https://arxiv.org/abs/2007.02686 · https://arxiv.org/html/2406.09787
 - https://arxiv.org/abs/2608.14221 · https://arxiv.org/pdf/2606.05400 · https://arxiv.org/pdf/2510.15681 · https://arxiv.org/pdf/2607.04655 · https://arxiv.org/pdf/2607.07779
 - https://openreview.net/forum?id=xLycLWUMas · https://www.nature.com/articles/s41467-025-61575-7 · https://arxiv.org/abs/2601.21720
+
+## 4. Primeira destilação simbólica (2026-09-03) — negativa com mecanismo
+
+`src/destilar.py`: ranqueia os termos da política do campeão por |peso| ×
+desvio da feature numa vida, poda para k termos e VERIFICA rodando a
+política podada (128 réplicas × 3 cidades).
+
+| k termos (de 26 de movimento) | fit | mortos | campeão |
+|---|---|---|---|
+| 5 | 4.48 | 0.61 | 6.94 / 0.30 |
+| 10 | 4.88 | 0.53 | |
+| 15 | 5.89 | 0.43 | |
+
+**A política evoluída não é esparsa.** Zerar os termos "pequenos" quebra a
+política porque os pesos são co-adaptados (o mesmo mecanismo do N9): a
+equação curta que descreve o campeão não existe por poda — precisa de
+RE-AJUSTE (aprender uma política de k termos que imite as decisões do
+campeão, e verificar). É o que a destilação simbólica de 2025 (SPID) faz de
+fato: regressão, não poda. Fica como E23. A frase em português que a poda
+produz ("prefiro o vizinho com +2.1·distância ao destino +1.2·hora +3.0·tanque
+−4.9·dinheiro −3.4·temperatura") é uma DESCRIÇÃO, não uma equação
+verificada — e a diferença entre as duas é exatamente a diferença entre
+falar sobre matemática e falar matemática.
