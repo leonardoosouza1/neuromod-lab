@@ -620,3 +620,27 @@ fica abaixo da régua (0.65 / 8.5 pp). A semente 3 — a que não montou o
 reflexo da sede — é a pior nos dois conjuntos (0.43 e 0.59): a estrutura
 prevê a morte dentro do experimento. Decisão fica com as sementes 5–9
 (10 sementes em 1000+, régua ~6 pp).
+
+### E29b com 10 sementes — AFIRMAÇÃO: o reflexo de emergência mata menos
+
+Sementes 5–9: 7.13 / 0.27 [.38 .12 .33 .17 .32], panes 6.3. Juntando 0–9:
+
+| | mortos (10 sem.) | fit (10 sem.) | panes |
+|---|---|---|---|
+| direto (15 sementes) | 0.36 | 6.63 | 7.9–8.3 |
+| **reações** | **0.28** (sd .095) | 7.05 (sd .80) | 5.2 / 6.3 |
+| diferença, não pareada | **−8.2 pp, t = −2.4** | +0.43, t = 1.5 | −30 % |
+| diferença pareada por semente (0–9) | **−9.3 pp, t = −3.3, 9/10 sementes** | +0.32, t = 1.2, 6/10 | |
+
+Mortalidade passa a régua (n=10 → ~6 pp): **−8 a −9 pp, 9 de 10 sementes
+morrem menos**. Fit: tendência (+0.3–0.4), não afirmação. Panes: −30 %,
+claro. Predição 27 confirmada no que importa (mortos), errada no MOTIVO
+(não é persistência — é o joelho; E29d).
+
+Em português: dar ao táxi UM reflexo — "abaixo de 10 % de tanque, larga
+tudo e vai ao posto" — com o limiar e o ganho evoluídos (7 genes) tira
+8 de cada 100 mortes e um terço das panes. É o primeiro mecanismo do
+pacote de dentes que passa a régua honesta, e é o mais barato: sem
+espécie lenta, sem produto geral, sem log. A trajetória do dia:
+triagem −29 pp → 5 sementes −6.6 pp → 10 sementes −8.2 pp. O honesto
+com 5 tinha subestimado; a triagem tinha inflado 3×.
