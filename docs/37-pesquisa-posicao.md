@@ -396,3 +396,19 @@ se a reação paga, os τ evoluídos das 2 espécies DIVERGEM (razão ≥ 3× em
 passos, fome em ~600), e a população precisa de um τ por escala pra
 "decodificar" cada urgência. Se convergirem pro mesmo τ, a persistência é
 genérica e um só integrador bastava.
+
+### E28 honesto — enxuto (32 genes) vs direto (44): o PISO DE RUÍDO do honesto
+
+| | fit | mortos | por semente (fit) |
+|---|---|---|---|
+| direto 44 genes | 6.90 | 0.35 | 6.24 7.45 7.18 7.27 6.41 |
+| enxuto 32 genes (mesma função) | 6.43 | 0.34 | 5.77 6.88 5.86 6.61 7.02 |
+
+Mesma política, mesma avaliação, só o gerador aleatório muda de forma
+(W com 32 colunas em vez de 44) → 0.47 de fit de diferença. Isso é a
+régua: **no honesto, diferença < 0.5 fit ou < 0.03 mortos é ruído.**
+Reavaliando com a régua: E23 (3 termos = direto) é EMPATE dentro do ruído
+(a conclusão "3 termos bastam" fica, a de "melhor" não existe); E20 corpo
+fala −1.1 = 2× ruído, real; E24 Noite24 panes −49 % é outra métrica, fica.
+Predição 21 (enxuto ≥ direto) não confirmada; tirar os 12 genes mortos não
+muda nada, como era de esperar de genes que não entram na conta.
