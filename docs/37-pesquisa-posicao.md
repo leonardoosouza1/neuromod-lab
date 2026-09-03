@@ -664,3 +664,47 @@ fome é ROTA — precisa de planejamento do desvio (parar pra comer no
 caminho da entrega), não de reação. Próximo passo: autópsia de quem
 morre de fome (onde está, quanto dinheiro tem, a que distância da comida
 morre, se está com passageiro) antes de desenhar qualquer mecanismo.
+
+### E29d reflexo puro HONESTO (5 sementes): 7.22 / 0.31 [.53 .27 .27 .21 .26], panes 6.3
+≈ reações (7.05 / 0.28 em 10 sementes). **Predição 35 confirmada: a
+persistência (τ) não conta.** O E29b é um reflexo de limiar: "tanque < ~10 %
+→ posto", 5 genes bastam (w, portão, ganho de serviço). A semente 0 (0.53)
+repete o padrão da s3 do E29b: quando a evolução não monta o reflexo, a
+mortalidade volta ao nível do direto.
+
+### Autópsia (2026-09-03) — quem morre, como, e a intervenção "come forçado"
+Campeões honestos rodados em 192 vidas (3 cidades × 64), estado no instante da morte:
+
+| | reações s0 | direto s5 |
+|---|---|---|
+| mortos | 0.33 | 0.47 |
+| morre com fome ≥ 90 | 65 % | 71 % |
+| morre com tanque vazio | **0 %** | 2 % |
+| dia da morte (mediana) | 3.3 | 3.6 |
+| dinheiro ao morrer (mediana) | 56 | 29 |
+| distância à comida ao morrer | 3 nós | 3 nós |
+| com passageiro a bordo | 76 % | 79 % |
+| oportunidades reais de comer faminto (parado em nó com comida, fome ≥ 70), por vida | mortos 4.7 / vivos 10.1 | mortos 8.2 / vivos 13.0 |
+| … das quais comeu | 1.1 / 3.0 | 1.2 / 2.7 |
+| "comer" vence o argmax quando faminto sobre comida | 40 % (sem pax) / 56 % (com) | 29 % / 42 % |
+
+O reflexo do tanque apagou a morte por pane (2 % → 0 %) e a sangria de
+dinheiro (29 → 56). O que sobra: morrer com fome 100, dinheiro no bolso, a
+3 nós da comida, trabalhando. A decisão de comer é uma MOEDA (vence 30–56 %
+quando deveria vencer 100 %): o placar de serviço `necessidade × gene +
+viés` compete passo a passo com o movimento, e o viés é UM só pra 5
+serviços — não dá pra afinar "comer" sem mexer em "posto".
+
+**Intervenção (sem evoluir):** forçar "come se fome ≥ θ e há comida aqui":
+
+| | sem força | θ = 70 | θ = 50 |
+|---|---|---|---|
+| reações s0 | 0.33 | 0.32 | 0.31 |
+| direto s5 | 0.47 | 0.38 | 0.40 |
+
+No direto a decisão vale 7–9 pp; nas reações, quase nada — e os mortos
+continuam com fome 100 E tanque ~6 E 27–35 % morrendo "sem causa única".
+Leitura: a vida é um POOL drenado por várias fontes ao mesmo tempo (fome
+0.15/passo, rodar ferido, calor, furo); "fome ≥ 90 ao morrer" não prova
+que a fome matou. Próximo passo obrigatório: decompor o dreno de vida por
+fonte para os mortos, antes de desenhar mecanismo de comida.
