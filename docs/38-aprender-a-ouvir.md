@@ -77,3 +77,8 @@ infância** — com probabilidade ε o táxi usa um serviço disponível ao acas
 Gserv[fome→comida] > 0 em ≥ 2/3 sementes); η=.3 + ε=.4 melhor ainda. Se o
 aprendiz continuar = surdo curioso: a regra de recompensa está errada (não
 é falta de tentativa).
+| teto (código herdado dos 2 lados), com graça | 3.56 | 0.57 | 80 |
+
+Teto com graça (3.56 / 0.57) ≈ sem graça (4.38 / 0.58): a infância não muda
+quem já nasce sabendo; muda quem precisa aprender — e o aprendiz precisa
+ANTES conseguir tentar (E25b).
