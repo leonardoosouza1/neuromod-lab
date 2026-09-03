@@ -967,3 +967,28 @@ pai. Honesto semeado (controle vs abastecer, 5 sementes) na fila.
 Correção de fila: os 4 braços gravaram no mesmo JSON (tag igual) — os
 genes do controle/abastecer/viés se perderam (números estão nos logs);
 honesto relançado com tags distintas.
+
+### 9.2 Por que "um gene a mais" quebrou a montagem — o custo da complexidade (lido 2026-09-03)
+**Orr, "Adaptation and the cost of complexity", Evolution 54:13 (2000):** no
+modelo geométrico de Fisher, a taxa de adaptação cai pelo menos como
+**1/n**, n = número de caracteres independentes, com mutações do mesmo
+tamanho fenotípico. Organismo mais complexo adapta mais devagar — e é isso
+que o E30/E32/E35 mostraram do zero: com NP 51 → 52–55, as 40 gerações da
+triagem que bastavam pra montar o reflexo deixam de bastar (e no honesto de
+60 já falhava 1 em 5). **Welch & Waxman, "Modularity and the cost of
+complexity", Evolution 57:1723 (2003):** modularidade (mutações que mexem
+em poucos caracteres) alivia o custo — no nosso caso, nascer do campeão com
+o gene novo em zero é modularidade imposta pelo protocolo: a mutação só
+precisa achar UMA dimensão nova, as outras 51 já estão no lugar. Literatura
+de evolução aberta (Artificial Life, número especial 2024; "Tokyo OEE"
+tipos 2–3: evolução da evolvabilidade, transições maiores) chama isso de
+"stepping stones": o próximo degrau só é alcançável de cima do anterior.
+
+Regra 19 (derivada): **variante de arquitetura só se testa SEMEADA do
+melhor pai, com controle semeado** — comparar do-zero-contra-do-zero mede
+o custo da complexidade (1/n), não o mecanismo. Corolário honesto: as
+"refutações" E30, E32b, E35 do-zero medem exatamente isso e ficam no doc
+como o que são.
+Fontes: https://academic.oup.com/evolut/article-abstract/54/1/13/6758049 ·
+https://academic.oup.com/evolut/article/57/8/1723/6755709 ·
+https://dx.doi.org/10.1162/artl_e_00445
