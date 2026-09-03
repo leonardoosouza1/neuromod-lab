@@ -450,3 +450,43 @@ perdem menos ao trocar de cidade: ≤ 30 % vs 45 %") também cai: o log perde
 73 % de fit (2.19 → 0.72) contra 45 % do linear (4.85 → 2.66). Faz sentido
 pelo mesmo mecanismo: em cidades maiores o "longe" é mais longe, e o
 achatamento piora. E29a encerrado: log/lei de potência não entra no lab.
+
+### E29b resultado (2026-09-03, triagem n=3) — reações: o melhor do pacote até hoje
+
+| política | 1000+ fit / mortos | 2000+ fit / mortos | panes | fome fim |
+|---|---|---|---|---|
+| direto (linear) | 4.85 / 0.60 | 2.66 / 0.66 | 8.4 | 85 |
+| noite24 (1 produto) | 5.36 / 0.51 | 2.50 / 0.64 | 8.2 | 80 |
+| **reações (sede, fome; portão; τ)** | **7.08 / 0.31** | **4.36 / 0.46** | 5.8 | 70 |
+
+Mortos por semente 1000+: .40 .27 .26 (direto: .60 .51 .67) — as três
+sementes das reações ficam abaixo da MELHOR do direto. Predição 27 (mortos
+≤ 0.32, fit ≥ 6.6) bate na triagem; vale como afirmação só depois do
+honesto (na fila, 5 sementes).
+
+**Os genes que a evolução escolheu (3/3 sementes):**
+
+| semente | τ sede | τ fome | w sede | w fome | portão θ |
+|---|---|---|---|---|---|
+| 0 | 1.1 | 5.0 | +4.81 | +0.43 | 0.93 |
+| 1 | 1.1 | 3.3 | +3.04 | +1.82 | 0.88 |
+| 2 | 2.6 | 1.3 | +1.13 | +0.79 | 0.87 |
+
+Leitura: **portão 0.87–0.93** — a reação só liga quando `1 − tanque/cap`
+passa de ~0.9, isto é, tanque abaixo de ~10 %. **τ da sede ≈ 1** — a
+espécie NÃO persiste; é instantânea. **w sede grande e positivo** — no
+código o termo é `−w·a·d_posto`, então +w = "quanto mais perto do posto,
+melhor" com força 3–5 (o gene linear de d_posto no direto fica ~0.5–1).
+Conclusão mecânica: o que paga não é a persistência química (predição 27
+errou o MOTIVO) nem a "mistura" — é um **reflexo de emergência com limiar
+alto**: abaixo de 10 % de tanque, esquece tudo e vai ao posto. É o mesmo
+portão que o Noite24 aproximava com o produto suave (tanque × d_posto), só
+que agora com o joelho no lugar certo e ganho 5×. Fome: τ 3–5 e w menor —
+segunda faca, mais fraca.
+
+Predição 29 ("w NEGATIVO em ≥ 4/5"): **errei a letra** — escrevi o sinal
+contra a convenção do código (o `−` já está no termo); o mecanismo previsto
+(sede empurra PRA o posto) bateu 3/3. Fica registrado como erro de
+redação, não como acerto. Predição 30 (τ divergem ≥ 3×): 2/3 na triagem,
+mas no sentido oposto ao imaginado — não é "um τ por escala de urgência",
+é "sede instantânea, fome com 3–5 passos de memória"; julgo no honesto.
