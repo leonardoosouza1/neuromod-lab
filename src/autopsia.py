@@ -23,7 +23,12 @@ ARQS = {'Reativo': ReativoF, 'ReativoReacoes': ReacoesF}
 path, braco, sd = sys.argv[1], sys.argv[2], sys.argv[3]; A = ARQS[sys.argv[4] if len(sys.argv) > 4 else 'Reativo']
 W = torch.tensor(json.load(open(path))['bracos'][braco]['W'][sd], device=DEV)[None, :]
 c = cfg_pacote(fome=.15, refeicao=90., comida_no_posto=True)
-teste = [gerar_cidade(1000 + s) for s in range(3)]
+import os
+if os.environ.get('POSTOS_EXTRA'):
+    from e34_posto_denso import com_postos_extra
+    teste = [com_postos_extra(1000 + s, int(os.environ['POSTOS_EXTRA'])) for s in range(3)]
+else:
+    teste = [gerar_cidade(1000 + s) for s in range(3)]
 RR = int(sys.argv[6]) if len(sys.argv) > 6 else 64; SEED = int(sys.argv[7]) if len(sys.argv) > 7 else 1000
 m = Lote(teste, 1, c, seed=SEED, R=RR); Wb = W[m.gidx]; a = A(); a.reset(m, Wb)
 T = 1200; vivo = torch.ones(m.B, dtype=torch.bool, device=DEV); reg = []
@@ -32,8 +37,10 @@ from lab import NF
 gap_pax=[]; gap_solo=[]; venceu=torch.zeros(2, device=DEV); conta=torch.zeros(2, device=DEV)
 dr_fome = torch.zeros(m.B, device=DEV); dr_avaria = torch.zeros(m.B, device=DEV); fer_passos = torch.zeros(m.B, device=DEV)
 pane_noite = torch.zeros(m.B, device=DEV); pane_dia = torch.zeros(m.B, device=DEV)
+posto_baixo = torch.zeros(m.B, device=DEV); abasteceu = torch.zeros(m.B, device=DEV); pane_meio = torch.zeros(m.B, device=DEV)
 for t in range(T):
-    fome0 = m.fome.clone(); vida0 = m.vida.clone(); av0 = m.av_fuel.clone()
+    fome0 = m.fome.clone(); vida0 = m.vida.clone(); av0 = m.av_fuel.clone(); fuel0 = m.fuel.clone()
+    _, sv0 = m.serv_need(); oport = vivo & (m.rest <= 0) & (m.tpar <= 0) & (sv0[:, 0] > 0) & (fuel0 < .5*m.capf())
     if t % 4 == 0:   # placar comer vs andar (so leitura; obs() e pura)
         F, val = m.obs(); viz = m.A_().clamp(min=0)
         sc = torch.einsum('bgf,bf->bg', F, Wb[:, :NF]) + a.extra(m, Wb, viz); sc = sc.masked_fill(~val, -1e9)
@@ -51,6 +58,7 @@ for t in range(T):
     f_part = torch.minimum(f_part, queda); dr_fome += f_part; dr_avaria += queda - f_part
     fer_passos += (vivo & ((m.pneu < 30.) | (m.temp > 80.) | (m.oleo < 20.))).float()
     nv = m.noite_(); pn = (m.av_fuel > av0)
+    posto_baixo += oport.float(); abasteceu += (oport & (m.fuel > fuel0 + 5.)).float(); pane_meio += (pn & (m.rest > 0)).float()
     if nv is not None: pane_noite += (pn & nv).float(); pane_dia += (pn & ~nv).float()
     tem_comida = m.serva[m.cidx, m.no][:, 1] > 0
     fam = (fome0 >= 70) & vivo & (m.rest <= 0) & (m.tpar <= 0)
@@ -83,6 +91,7 @@ if n:
         ev = torch.stack([m.av_fuel[sel], m.av_furo[sel], m.av_oleo[sel], m.av_quente[sel]], 1).mean(0)
         est = torch.stack([6.*ev[0], 5.*ev[1], 12.*ev[2], 10.*ev[3], .15*fer_passos[sel].mean()])
         print(f'  {nome_}: eventos/vida pane {ev[0]:.1f} furo {ev[1]:.1f} oleo {ev[2]:.1f} quente {ev[3]:.1f} | passos ferido {fer_passos[sel].mean():.0f} | dano estimado: pane {est[0]:.0f} furo {est[1]:.0f} oleo {est[2]:.0f} quente {est[3]:.0f} rodar-ferido<= {est[4]:.0f} (avarias medidas {float(dr_avaria[sel].mean()):.0f})')
+    print(f'  POSTO com tanque < 50 % (parado, aberto): mortos {float(posto_baixo[mi].mean()):.1f} oportunidades/vida, abasteceu {float(abasteceu[mi].mean()):.1f} · vivos {float(posto_baixo[vivo].mean()):.1f} / {float(abasteceu[vivo].mean()):.1f} · panes no meio da rua {float(pane_meio.sum()/(pane_noite.sum()+pane_dia.sum()).clamp(min=1)):.0%}')
     print(f'  OFICINA por vida: mortos {float(m.n_oficina[mi].mean()):.1f} · vivos {float(m.n_oficina[vivo].mean()):.1f}   | vida media dos vivos no fim {float(m.vida[vivo].mean()):.0f}')
     tv = (dr_fome + dr_avaria)[vivo]; print(f'  dreno dos vivos: fome {float(dr_fome[vivo].mean()):.0f} · avarias {float(dr_avaria[vivo].mean()):.0f} por vida')
     for ci in range(len(teste)):

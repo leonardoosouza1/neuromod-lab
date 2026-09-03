@@ -852,3 +852,23 @@ correlação por cidade da autópsia (0.17 vs 0.42) era com outra coisa
 (tamanho das viagens / estrutura), não com d_posto por si. Honesto do E34
 na fila (dois braços, 5 sementes) — se confirmar, "reflexo ≡ 2 postos" vira
 afirmação: 7 genes compram a mesma sobrevivência que 67 % mais infraestrutura.
+
+### Autópsia: o táxi passa no posto e não enche
+
+Campeão das reações (s0), oportunidades = parado num posto ABERTO com
+tanque < 50 %: mortos 3.0 por vida, abasteceram em 1.2; vivos 6.9 / 3.6.
+Em ~60 % das chances de encher o tanque, o táxi segue viagem — porque o
+MESMO portão (0.9) governa "desviar pro posto" e "abastecer estando no
+posto": ele só enche com tanque < 10 %, mesmo parado na bomba. Panes no
+meio da rua: 0 % (a pane acontece ao chegar no nó). A cidade 1000 (5
+postos) mata 0.59 com d_posto média 1.7 — não é distância; é não encher
+quando passa.
+
+**E35 (na fila; triagem): portão separado pra abastecer.** θ_s =
+sigmoid(g_θ + g_extra), gene extra 0 → θ_s = θ (nasce igual ao pai,
+verificado bit a bit; sem sync). **Predição 40 (antes de rodar):** θ_s
+evoluído ≤ 0.6 em ≥ 2/3 sementes (enche com < 40–60 % de tanque quando
+já está no posto) enquanto θ do desvio fica ≥ 0.8; panes ≤ 3.5 (vs 5.8) e
+mortos ≤ 0.24 (vs 0.31). Se θ_s ficar em 0.9: encher cedo custa mais (3 de
+dinheiro por parada? tempo?) do que a pane — e o orçamento de pane do E33
+é mesmo a resposta racional do ser.

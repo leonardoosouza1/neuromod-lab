@@ -86,3 +86,16 @@ class ReativoReacoesDist(ReativoReacoes):
     @staticmethod
     def _m_dposto(m):
         return (m.dsa[m.cidx, 0, m.no]/8.)[:, None]                      # distancia do no atual ao posto, /8
+
+
+# E35 — PORTAO SEPARADO PRA ABASTECER: o desvio pro posto usa theta; encher o tanque quando JA esta no posto usa
+# theta_s = sigmoid(g_theta + g_extra). Gene extra 0 -> theta_s == theta (nasce igual ao pai, regra 17).
+class ReativoReacoesTopUp(ReativoReacoes):
+    nome = 'reativo-reacoes-topup'; NP = ReativoReacoes.NP + 1
+    def reset(s, m, W):
+        super().reset(m, W); o = Reativo.NP
+        s.theta_s = torch.sigmoid(W[:, o+6:o+7] + W[:, ReativoReacoes.NP:ReativoReacoes.NP+1])
+    def extra_serv(s, m):
+        a = torch.cat([(s.c[:, 0:1] - s.theta_s).clamp(min=0.), (s.c[:, 1:2] - s.theta).clamp(min=0.)], 1)
+        _, svpaga = m.serv_need(); z = torch.zeros_like(a[:, 0])
+        return svpaga*torch.stack([s.v[:, 0]*a[:, 0], s.v[:, 1]*a[:, 1], z, z, z], 1)
