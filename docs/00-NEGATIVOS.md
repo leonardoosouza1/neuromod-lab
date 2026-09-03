@@ -174,3 +174,30 @@ experimentador e o seletor pelo mesmo motivo.
 compete (o gene de timing O(1) contra serviços O(20) era inerte por
 construção — ReativoHora ×3 e ReativoNoite). Testar a alavanca à mão com
 ganho grande (k=8, +50) ANTES de pedir à evolução que a ache.
+
+## N19 — Glândulas evolutivas: o ganho era desconto de física, não hormônio (E16, 2026-09-02/03)
+
+**Afirmação:** K=2 glândulas (integrador com vazamento, entradas = déficits +
+eventos, saídas = ganhos multiplicativos em 5 canais) deram +3.25 de fitness
+(5/5 sementes, R=16) com hormônio barato (κ=0.05) — e o ganho inteiro vinha
+do canal de METABOLISMO em 0.73 (30 % menos combustível por passo por 0.05
+de caloria por passo). Provas: metabolismo limitado a ≥ 1 → ganho zero
+(9.02 vs 9.05) e glândulas desligadas; sem regime de preço → 13.05 (o ganho
+não dependia do mundo mudar). Com o preço padrão (κ=0.25) a seleção desliga
+o hormônio em toda condição.
+
+**Regra 16:** canal de modulação que mexe em PREÇO de física (consumo,
+velocidade, calor) tem que ser limitado a ≥ 1 (só pode piorar) ou custar
+mais do que economiza no pior caso — senão a seleção o usa como desconto e
+o "hormônio" vira um multiplicador fixo saturado (h ≈ 0.98). Almoço grátis é
+a 3ª cara da moeda cruzada (EXP10 tempo, N16 dinheiro, N15 pane, agora
+caloria barata).
+
+**O que NÃO é negativo:** a FORMA emergiu sem roteiro (n=1 e n=5): uma
+glândula que sobe com fome e reduz gasto; outra que sobe ao abastecer e
+aumenta manutenção; e um modo não desenhado (peso negativo em déficit =
+detector de "tudo bem"). Hormônio que só modula DECISÃO (necessidade,
+exploração, sono) não pagou em G=60/R=16 neste mundo — a Tese do Corpo
+previa teto alto com estados lentos acoplados; o teto realizável ficou em
+zero. Próxima chance honesta: mundo com REGIME que exige trocar de política
+(greve, preços por distrito, mercado) e canais só de decisão.

@@ -139,3 +139,28 @@ dos cinco modos que mantém o mundo vivo E a pane custando. Escada final:
 | gordura → vida, 3× | 6.11 | 0.28 |
 | gordura → tanque (1× ou 3×) | −0.5 / −0.7 | paralisia |
 | âncora sem economia | 8.54 | 0.19 |
+
+### O controle "eficiência não se compra" (onda 1f)
+
+| braço | fit | mortos | metabolismo | velocidade | leitura |
+|---|---|---|---|---|---|
+| κ=0.05 + regime (o +3.25) | 12.30 | 0.14 | 0.73 | – | o salto |
+| **κ=0.05 + regime, metabolismo ≥ 1** | **9.02** | 0.19 | 1.00 | 0.93 | ganho SUMIU (Reativo regime: 9.05); glândulas quase desligadas |
+| κ=0.05 **sem regime** | 13.05 | 0.15 | 0.74 | 0.75 | o salto nem precisava do mundo mudar |
+| κ=0.25, metabolismo ≥ 1 | 8.62 | 0.23 | 1.00 | 1.01 | desligada, pior |
+
+**Veredito:** os +3.25 eram **almoço grátis**. O canal de metabolismo podia
+descer até 0.70 (30 % menos combustível por passo) e o hormônio custava
+0.05 por passo — comprar eficiência abaixo do preço. Prova dupla: proibir o
+desconto apaga o ganho; tirar o regime não apaga. O padrão "modo economia"
+(necessidade ×2, exploração ×0.5, sono ×1.6) era o embrulho, não o
+conteúdo. Predição registrada antes (doc 33, "se cair para ≤ +1.0, o grosso
+era almoço grátis") ✓.
+
+**O que fica de verdade:** (1) hormônio que mexe em PREÇO de física
+(metabolismo, velocidade) tem que ser limitado a ≥ 1 ou custar mais que
+economiza — senão a seleção o usa como desconto (regra 16); (2) com os canais
+de decisão sozinhos (necessidade, exploração, sono) a evolução não achou
+uso em G=60/R=16 — as glândulas ficaram inertes; (3) o que EMERGIU segue
+válido como forma (uma glândula sobe com fome e freia; outra sobe com
+abastecer e mantém), mas não paga neste mundo. Encerrado como N19.
