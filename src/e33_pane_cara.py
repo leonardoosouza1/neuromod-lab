@@ -14,7 +14,10 @@ if __name__ == '__main__':
     ap.add_argument('--tag', default=''); ap.add_argument('--curriculo', action='store_true')
     ap.add_argument('--dpane', type=float, default=12.)
     a = ap.parse_args()
-    E20.MUNDO = dict(E20.MUNDO, D_PANE=a.dpane)
+    _orig = E20.cfg_pacote
+    def _cfg(**kw):
+        c = _orig(**kw); c.D_PANE = a.dpane; return c
+    E20.cfg_pacote = _cfg          # cfg_pacote nao aceita D_PANE por kw: ajusta depois de montar
     E20.BRACOS = [(f'reacoes, pane custa {a.dpane:.0f}', ReativoReacoes)]
     E20.OUT = a.out
     E20.main(a)
