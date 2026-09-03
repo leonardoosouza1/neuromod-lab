@@ -910,3 +910,25 @@ e 3/3 sementes no mesmo sentido); nunca pra afirmar direção fina.** Tudo
 que passar da triagem vai pro honesto ANTES de virar frase no doc, e a
 frase da triagem é escrita já como "provisório". Custo: 11 min por braço
 — mais barato que 8 correções por dia.
+
+### E35 resultado (triagem): 4.63 / 0.60, panes 9.0 — e o diagnóstico é MONTAGEM, não mecanismo
+Genes: portão de abastecer foi a 1.00 (nunca) em 2/3; w da sede −0.18 /
++5.00 / +0.02 — o reflexo não se montou em 2/3. Terceira vez hoje que
+"reações + 1 gene neutro" (E30, E32b, E35) volta ao nível do direto: com
+NP maior a evolução de 40 gerações não consegue MONTAR o reflexo (nem no
+honesto ele monta sempre: s3 do E29b, s0 do E29d). Esses três resultados
+não refutam os mecanismos — refutam o protocolo. **E36: evolução SEMEADA.**
+`evoluir_sementes(W0=…)`: a população nasce do campeão das reações (5
+sementes do honesto), genes novos em 0 (desligados, regra 17), ruído
+σ = 0.2. Testa o INCREMENTO. Verificado: perito bit a bit (lab.py mudou),
+testes ok, 1 geração semeada mantém genes e fitness do campeão.
+
+Braços (triagem, semeados do campeão da mesma semente): reações + portão
+de abastecer (E35), reações + viés por serviço (E30), reações + 2 portões
+(E29e), e **controle: reações semeadas de si mesmas**. **Predição 41
+(antes de rodar):** controle ≥ 6.8 / ≤ 0.33 (o campeão sobrevive à
+semeadura); E35 semeado: portão de abastecer < θ em ≥ 2/3 e panes ≤ 4.5 —
+o mecanismo era bom e a montagem que falhava; E30 semeado ≈ controle (viés
+não ajuda nem atrapalha); E29e semeado: portão da fome ≥ 0.85 (fome não é
+reflexo, agora com teste justo). Se o E35 semeado continuar ≈ controle: o
+portão único é mesmo o ótimo e encher cedo custa entregas.
