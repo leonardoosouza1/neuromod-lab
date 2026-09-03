@@ -18,3 +18,9 @@ A comparação limpa: o direto com a mesma infância faz 0.47 mortos (E25).
 sobrevive ao pacote; o E26 (transmissão) dependia dele → cancelado. Se a
 linha voltar, volta por outro caminho: plasticidade no MOVIMENTO
 (recompensa ao chegar num serviço com necessidade alta), não nos ganhos.
+
+Cláusula pré-registrada da predição 25 ("se o aprendiz continuar = surdo
+curioso, a regra de recompensa está errada, não é falta de tentativa"):
+aprendiz 0.94 = surdo curioso 0.93 → **a regra de recompensa está errada.**
+Ela recompensa o ganho do serviço USADO; o que faltava era recompensar
+CHEGAR. Fica como o diagnóstico da linha.

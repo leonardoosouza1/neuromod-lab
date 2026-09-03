@@ -1,5 +1,7 @@
 # 39 — E26: pressão de aprendibilidade (Kirby no táxi) — desenho, ainda não rodado
 
+> **CANCELADO (2026-09-03):** dependia do aprendiz do E22/E25 sair do deserto; E25b confirmou o deserto (0.93 mortos) e fechou a linha. Predições 22–24 não rodam. Ver doc 38.
+
 **De onde vem:** Kirby / Ren et al. 2020 (aprendizado iterado): um código fica
 mais simples e aprendível quando cada geração tem de REAPRENDÊ-LO com pouco
 input. No táxi não há pai que ensine, mas há morte: se o receptor
