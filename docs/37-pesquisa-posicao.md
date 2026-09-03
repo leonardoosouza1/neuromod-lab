@@ -835,3 +835,20 @@ fixo não tem isso: o tanque só desce até abastecer. Linha encerrada; se
 voltar, volta com HISTERESE (portão que, uma vez aberto, só fecha ao
 abastecer) — e isso é exatamente uma espécie lenta com τ, que o E29d
 disse que não paga. A geometria fica com o E34 (mundo).
+
+### E34 resultado (triagem n=3): o reflexo VALE dois postos
+
+| | 3 postos (padrão) | 5 postos (+2 nos nós mais longe) |
+|---|---|---|
+| direto | 4.85 / 0.60 / panes 8.4 | **6.87 / 0.37 / panes 5.6** |
+| reações | 7.08 / 0.31 / panes 5.8 | 7.22 / 0.30 / panes 4.8 |
+
+Predição 39: direto ≤ 0.50 ✓ (com folga: −23 pp); reações ≤ 0.22 ✗
+(0.30, igual). **Pro cérebro sem reflexo a geografia é a alavanca; pro
+cérebro com reflexo, mais posto não muda nada** — o reflexo já resolveu o
+que dois postos resolvem. Vale a cláusula pré-registrada: o que sobra nas
+reações (30 %) é orçamento comportamental (E33), não geometria; a
+correlação por cidade da autópsia (0.17 vs 0.42) era com outra coisa
+(tamanho das viagens / estrutura), não com d_posto por si. Honesto do E34
+na fila (dois braços, 5 sementes) — se confirmar, "reflexo ≡ 2 postos" vira
+afirmação: 7 genes compram a mesma sobrevivência que 67 % mais infraestrutura.
