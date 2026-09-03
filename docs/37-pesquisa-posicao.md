@@ -932,3 +932,10 @@ o mecanismo era bom e a montagem que falhava; E30 semeado ≈ controle (viés
 não ajuda nem atrapalha); E29e semeado: portão da fome ≥ 0.85 (fome não é
 reflexo, agora com teste justo). Se o E35 semeado continuar ≈ controle: o
 portão único é mesmo o ótimo e encher cedo custa entregas.
+
+**E34 honesto, cidades 2000+ (reações + 2 postos, 5 sementes): 6.12 / 0.29
+[.33 .33 .27 .32 .22], panes 3.6.** Seis cidades: **7.31 / 0.235** — contra
+5.34 / 0.41 do pacote original (direto, 3 postos) e 5.66 / 0.36 das
+reações com 3 postos. Metade dos mortos do baseline de 6 cidades. Panes
+3.6–3.9 nos dois conjuntos (era 8): o reflexo + 2 postos corta a pane
+pela metade em qualquer mapa.
