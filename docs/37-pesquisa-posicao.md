@@ -872,3 +872,10 @@ já está no posto) enquanto θ do desvio fica ≥ 0.8; panes ≤ 3.5 (vs 5.8) e
 mortos ≤ 0.24 (vs 0.31). Se θ_s ficar em 0.9: encher cedo custa mais (3 de
 dinheiro por parada? tempo?) do que a pane — e o orçamento de pane do E33
 é mesmo a resposta racional do ser.
+
+**E34 honesto, braço 1 (direto, +2 postos; 5 sementes): 7.86 / 0.23 [.22
+.31 .29 .16 .18], panes 5.5, fome fim 56, entregas 12.2** — contra 6.63 /
+0.36 / 8.1 com 3 postos. −13 pp de mortos e +1.2 de fit: bem acima da
+régua (8.5 pp / 0.65). Dois postos a mais são, pro cérebro linear, o maior
+efeito do pacote inteiro — maior que o reflexo (−8 pp). Braço das reações
+rodando; a comparação decide se "reflexo ≡ 2 postos" ou se os dois somam.
