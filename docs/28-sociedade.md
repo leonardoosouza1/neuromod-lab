@@ -116,3 +116,23 @@ Yerkes-Dodson: imposto intermediário produz MAIS que zero.
   33); E15 âncora + 2 braços fechados (doc 33); glândulas relançadas (a 1ª
   tentativa caiu por flag inexistente `--preset` no runner do E16 — o runner
   usa `--P/--G/--T-evo/--T-aval/--R`); economia tanque/só-gordura na fila.
+
+## 6. Diário pós-onda 1 (2026-09-03)
+- **E19 pacote de dentes** (doc 35): parar era grátis → fome mata (.15),
+  dívida tira o carro, reboque gordura→vida, refeição 90, comida no posto;
+  limiar de produto sai. Linha de base honesta do mundo com corpo completo:
+  6 cidades 5.34 / mortos 0.41.
+- **E20 corpo fala** (doc 36): canal de 2 hormônios transmite com código
+  herdado (mesma morte, −1.1 fit); código não emerge do zero nem com
+  infância protegida (deserto).
+- **E21 atenção interoceptiva**: neutra no honesto (triagem enganou).
+- **E22 aprender a ouvir em vida** (doc 38): plasticidade não salva (regra
+  só dispara após a 1ª refeição; deserto 4ª vez) → **E25 infância
+  individual** (fome não fere nos 2 primeiros dias de cada vida) na fila.
+- **E23 equação mínima** (doc 37 §5): evoluir só 3 termos (destino, posto,
+  tanque) bate o cérebro completo na triagem (6.42/0.35 vs 4.85/0.60) —
+  honesto na fila.
+- **E24**: Noite24 (tanque × d_posto) no mundo com dentes, honesto, na fila
+  (os mortos do pacote morrem de 12 panes).
+- Ferramentas: preset `triagem` (2.5 min/braço), `destilar.py` (poda não
+  destila), regra: portão + sync-check + fumaça a cada mudança.
