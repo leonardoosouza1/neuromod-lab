@@ -144,3 +144,17 @@ hormônios (doc 36), sem tocar no `lab.py`.
 **Estado do pacote:** fome mata (.15) fica; dívida mata fica (inerte em 5
 dias, sem custo); reboque gordura→vida fica; refeição 90 + comida no posto
 ficam; produto com limiar SAI do pacote (pior em 3 de 3 comparações).
+
+## Números finais do pacote (Reativo, posto vende comida; R=16, 5 sementes)
+
+| cidades | fit | mortos | fome no fim |
+|---|---|---|---|
+| 1000+ | 6.90 | 0.35 | 69 |
+| 2000+ | 3.77 | 0.47 | 71 |
+| **média 6 cidades** | **5.34** | **0.41** | 70 |
+
+Contra o mundo recomendado sem dentes (7.08 / 0.24): o pacote entrega 1.7 a
+menos (aluguel, imposto, comida) e morre mais (a fome agora mata). É a
+linha de base HONESTA do mundo com corpo completo; toda alavanca nova (E21
+atenção, E22 aprender a ouvir) se mede contra 5.34 / 0.41 — ou, em 1000+,
+contra 6.90 / 0.35.
