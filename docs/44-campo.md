@@ -276,3 +276,9 @@ triagem; se os centros colapsarem num só, o mundo ainda não pede modos.
   sem loja, mínimo-3 perde ≥ 10 pp de mortos pro produto/modos (precisa de
   d_comida/d_agua), e a mortalidade geral sobe (mundo mais duro). Retratos
   dos campeões (mínimo-3, linear, modos) enfileirados.
+  Genes dos modos (predição 66): os 3 centros SE SEPARAM (distância entre
+  pares ≥ 1 σ em 3/3 sementes; pares 0.8–13 σ) e o modo com centro em
+  "com passageiro" tem o peso de destino mais forte em 2/3 (s1: −2.03, s2:
+  −2.75; s0 ✗). Mas o GANHO da mistura ficou baixo (0.53 / 0.17 / 0.09):
+  a estrutura aparece e não é usada — bate com "modos = linear" na régua.
+  Cláusula: o mundo (com loja no posto) ainda não pede modos; E47 decide.

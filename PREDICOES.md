@@ -1034,7 +1034,7 @@ Regras novas: 17 (gene novo nasce desligado), 18 (triagem só descarta), 19 (var
 | 49 | E42 mundo: mínimo-3 perde ≥ 1.0 fit pro completo na cidade grande | (agente MUNDO; rodando) |
 | 50 | E42 cérebro: hipocampo de distrito ≥ 5 pp mortos ou +10 % renda | (SerCamadas merged; estimativa do agente ~30 %) |
 | 51 | E42 cérebro: tálamo usado em ≥ 3/5 (gate < 0.8) | (versão estrita com --init-from; ~50 %) |
-| 52–55 | E43 campo: 3 termos perdem ≥ 1.0; litros ≥ 75 em L=800 / ≤ 50 em L=200; campo ≥ 5× grafo-500; joelho reaparece 3/5 | (campo.py pronto: 26 ms/passo @65k; fumaça rodando) |
+| 52–55 | E43 campo: 3 termos perdem ≥ 1.0; litros ≥ 75 em L=800 / ≤ 50 em L=200; campo ≥ 5× grafo-500; joelho reaparece 3/5 | 52 ✗ (triagem L=200: mínimo-3 é o MELHOR, 0.57 vs 0.61–0.63 — loja no posto colapsa o problema); 53: L=200 dá 50–78 L/parada (✓ na metade); 54: campo 1.3 ms vs grafo-500 não medido; 55: reflexo evolui portão no campo (a ver no retrato) |
 | 56 | E43 fumaça: linear ≥ 0.9 mortos (preso no potencial), produto ≤ 0.6 | (parcial: linear 0.01 mortos com ZERO entregas — vive de poupança em 5 dias; produto/reflexo rodando) |
 | 57 | E44: com prefeito, mortos −15 pp vs preços fixos em L=200; ≥ 2 obras de água/comida por mandato | ✗ fumaça: −4 pp (0.96 vs 1.00); obras 27 postos / 1 comida / 0 água — alavancas sensatas, obra errada; população não come (gargalo é o ser) |
 | 58 | E44: prefeito pago pelo caixa sobe imposto até quebrar a cidade (mortos ≥ 0.6) | (variante; não rodada) |
@@ -1045,5 +1045,6 @@ Regras novas: 17 (gene novo nasce desligado), 18 (triagem só descarta), 19 (var
 | 63 | E45 semeado da base (25 ger.) ≥ do-zero (25 ger.) por ≥ 20 pp de mortos | (na fila) |
 | 64 | E45 preço = diversidade (fingerprint entre sementes < 0.3) | (na fila) |
 | 65 | E43 fumaça 8 (calor sustentável a 70 % de rodagem, D_QUENTE 6): reflexo ≤ 0.6 mortos e ≥ 20 entregas; linear ≤ 0.8 | linear 0.63/26.7 ✓; reflexo 0.69/26.1 (≤0.6 ✗, ≥20 ✓); produto 0.77/23.9 — de 0.96 pra 0.63 |
-| 66 | E46 modos gaussianos: 3 centros se separam (≥ 1 σ) em ≥ 2/3; modo 'com passageiro' tem d_alvo mais forte | (triagem na fila) |
-| 67 | E46 modos ≥ linear por ≥ 5 pp de mortos na triagem L=200 | (na fila) |
+| 66 | E46 modos gaussianos: 3 centros se separam (≥ 1 σ) em ≥ 2/3; modo 'com passageiro' tem d_alvo mais forte | centros separam 3/3 ✓; pax-modo com d_alvo mais forte 2/3 ✓; mas ganho da mistura ≤ 0.5 — estrutura sem uso |
+| 67 | E46 modos ≥ linear por ≥ 5 pp de mortos na triagem L=200 | ✗ (0.63 vs 0.62) |
+| 68 | E47 serviços separados (sem loja no posto): mínimo-3 perde ≥ 10 pp pro produto/modos; mortalidade geral sobe | (na fila) |
