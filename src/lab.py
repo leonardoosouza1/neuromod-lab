@@ -1,3 +1,4 @@
+import os as _os; _os.environ.setdefault('TORCHINDUCTOR_COMPILE_THREADS', '1')   # [auditoria 16] pool de 17 processos de compilacao travava a CPU
 import torch, numpy as np, json, time, os
 from datetime import datetime
 DEV = 'cuda' if torch.cuda.is_available() else 'cpu'

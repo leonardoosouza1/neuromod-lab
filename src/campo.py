@@ -2,7 +2,8 @@
 (Voronoi), ruas/transito = campo de custo (textura), passageiros = pontos com destino. Corpo: gasolina, AGUA, fome, fadiga,
 calor, vida, dinheiro, reserva. Litros escolhidos no posto. Tudo tensor; nada por passo na CPU; sem sync no laco.
 Interface igual ao grafo: m.obs() -> (F (B,G,NF), val (B,G)); m.serv_need() -> (svn, sv) (B,S); esc < G move, esc >= G serve."""
-import math, torch
+import os, math, torch
+os.environ.setdefault('TORCHINDUCTOR_COMPILE_THREADS', '1')   # [auditoria 16] sem pool de 17 processos de compilacao
 from lab import DEV, evoluir_sementes
 
 G = 9                                   # 8 direcoes + ficar
@@ -84,7 +85,7 @@ class Campo:
         s.px = s._perto(s.pos, c.NPX); s.pxd = s._destino(s.px)   # passageiros privados por ser, nascem perto
         s.pd_ = torch.full((B,), -1., device=DEV); s.dest = torch.zeros(B, 2, device=DEV); s.orig_d = torch.zeros(B, dtype=torch.long, device=DEV); s.emb = torch.zeros(B, 2, device=DEV)
         s.t = torch.zeros((), dtype=torch.long, device=DEV)
-        s.recusa = torch.zeros(B, dtype=torch.bool, device=DEV)
+        s.recusa = torch.zeros(B, dtype=torch.bool, device=DEV); s.ARB = torch.arange(B, device=DEV)
         s.n_agua = torch.zeros(B, device=DEV); s.parado_dia = torch.zeros(B, device=DEV); s.imp = torch.zeros(B, device=DEV)   # [E44] sentidos do prefeito
         s.pref_mult = torch.ones(s.NC, 6, device=DEV)     # [E44] alavancas do prefeito por mapa: aliq, p_fuel, p_agua, p_comida, aluguel, tarifa (1 = mapa)
     # --- geometria
@@ -194,8 +195,7 @@ class Campo:
         s.res = (s.res*(1. - c.perda_res)).clamp(min=0.)
         # pane: reboque ate o posto mais perto, cobra calorias da reserva -> vida
         s.avar += pane.float(); s.av_fuel += pane.float(); s.tpar = torch.where(pane, torch.full_like(s.tpar, 18.), s.tpar)
-        ci = s.cidx; pts = s.serv['posto'][ci]; msk = s.serv_msk['posto'][ci]
-        dp = (s.pos[:, None, :] - pts).norm(dim=-1).masked_fill(~msk, 1e9); kp = dp.argmin(1); posto_pos = pts[torch.arange(B, device=DEV), kp]
+        ci = s.cidx; posto_pos = s._ptos[:, 0]                                    # [auditoria 7] posto mais perto ja calculado no obs() (quem entra em pane nao moveu)
         s.pos = torch.where(pane[:, None], posto_pos, s.pos); s.fuel = torch.where(pane, torch.full_like(s.fuel, 15.), s.fuel)
         kcal = torch.minimum(s.res, torch.full_like(s.res, c.KCAL_PANE)); s.res = s.res - kcal*pane.float()
         dn = c.D_PANE*pane.float() + (c.KCAL_PANE - kcal)*pane.float()
@@ -216,7 +216,7 @@ class Campo:
         desc = usa[:, 8] > 0; s.fad = torch.where(desc, torch.minimum(s.fad, torch.full_like(s.fad, 40.)), s.fad); s.tpar = torch.where(desc, torch.full_like(s.tpar, 12.), s.tpar)   # [G6] descanso nunca aumenta fadiga
         ofi = usa[:, 9] > 0; s.vida = torch.where(ofi, (s.vida + c.REPARO).clamp(max=100.), s.vida); s.calor = torch.where(ofi, torch.full_like(s.calor, 25.), s.calor); s.n_oficina += ofi.float()
         # passageiros: embarque (raio) e entrega
-        dpx = (s.px - s.pos[:, None, :]).norm(dim=-1); kx = dpx.argmin(1); ar = torch.arange(B, device=DEV)
+        dpx = (s.px - s.pos[:, None, :]).norm(dim=-1); kx = dpx.argmin(1); ar = s.ARB
         pega = livre & (s.pd_ < 0) & (dpx[ar, kx] <= c.raio) & ~s.recusa & ~pode
         s.dest = torch.where(pega[:, None], s.pxd[ar, kx], s.dest); s.emb = torch.where(pega[:, None], s.pos, s.emb)
         s.orig_d = torch.where(pega, s.distrito(s.pos), s.orig_d); s.pd_ = torch.where(pega, torch.ones_like(s.pd_), s.pd_)
@@ -280,10 +280,33 @@ def fabrica_minimo(permitidas):
             return -torch.einsum('bgf,bf->bg', F, W[:, :NF]*(1. - s.msk)[None, :])   # cancela os sentidos proibidos
     return Minimo
 
+_PASSO_C = None; _COMPILE_OK = None
+def _passo_fn():
+    """[auditoria 1] torch.compile do passo do campo: 16.3 -> 2.3 ms/passo @65k; identidade compile x eager provada bit a bit. NM_COMPILE=0 desliga."""
+    global _PASSO_C, _COMPILE_OK
+    if os.environ.get('NM_COMPILE', '1') == '0' or DEV != 'cuda' or _COMPILE_OK is False: return um_passo
+    if _PASSO_C is None:
+        try:
+            import torch._dynamo; torch._dynamo.config.cache_size_limit = 64
+            _PASSO_C = torch.compile(um_passo, dynamic=False)
+        except Exception:
+            _COMPILE_OK = False; return um_passo
+    return _PASSO_C
+
+def modo_execucao():
+    return 'eager' if (os.environ.get('NM_COMPILE', '1') == '0' or DEV != 'cuda' or _COMPILE_OK is False) else 'compile'
+
 def rodar(Arq, W, mapas, cfg, T, seed, R=1):
-    m = Campo(mapas, W.shape[0], cfg, seed=seed, R=R); Wb = W[m.gidx]; a = Arq(); a.reset(m, Wb)
+    global _COMPILE_OK
+    m = Campo(mapas, W.shape[0], cfg, seed=seed, R=R); Wb = W[m.gidx]; a = Arq(); a.reset(m, Wb); fn = _passo_fn()
     for t in range(T):
-        um_passo(m, a, Wb); a.atualizar(m)
+        try: fn(m, a, Wb)
+        except Exception as e:
+            if fn is not um_passo and t == 0:
+                print(f'  [campo: compile falhou ({type(e).__name__}); refazendo em eager]', flush=True); _COMPILE_OK = False
+                return rodar(Arq, W, mapas, cfg, T, seed, R=R)
+            raise
+        a.atualizar(m)
     return m
 
 def _fit(m, cfg, T):
@@ -330,10 +353,10 @@ class Produto(Linear):
 
 def rodar_com_prefeito(Arq, W, mapas, cfg, T, seed, R=1, Wp=None, prefeito_cls=None):
     """como rodar(), mas com um prefeito por mapa agindo a cada dia (t % dia == 0). Wp=None -> identico a rodar()."""
-    m = Campo(mapas, W.shape[0], cfg, seed=seed, R=R); Wb = W[m.gidx]; a = Arq(); a.reset(m, Wb)
+    m = Campo(mapas, W.shape[0], cfg, seed=seed, R=R); Wb = W[m.gidx]; a = Arq(); a.reset(m, Wb); fn = _passo_fn()
     pref = prefeito_cls(m, Wp) if Wp is not None else None
     for t in range(T):
         if pref is not None and t > 0 and t % cfg.dia == 0:
             pref.receita(m.imp); pref.agir(t//cfg.dia)
-        um_passo(m, a, Wb); a.atualizar(m)
+        fn(m, a, Wb); a.atualizar(m)
     return m, pref
