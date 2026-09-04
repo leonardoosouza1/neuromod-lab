@@ -153,3 +153,11 @@ Profissões, prefeito, vários seres no mesmo mapa (fase 2), furo/óleo, loja.
   0 == Linear bit a bit sob compile (Produto, Reflexo). **1.34 ms/passo @
   49 k; sem sync.** Compile é o modo padrão do campo; regra do grafo
   mantida: todos os braços de uma bateria no mesmo modo.
+- **23:51 fumaça 5 (10 dias, compilada, régua B, L=200, G=25, 1 semente):**
+  linear 11.3 entregas / 5.9 abastecimentos de 45 L / reserva 64 / dinheiro
+  73; produto 10.0 / 3.6 × 66 L / 56; reflexo 9.3 / 1.9 × 122 L / 55 —
+  **os seres trabalham, poupam e abastecem; e 100 % morrem com fome 87–100
+  e dinheiro no bolso.** Predição 59: "viver de renda colapsa" ✓; "produto
+  sobrevive" ✗; entregas ≥ 6 ✓; reserva > 10 ✓. O que falha agora é COMER
+  (comida custa 2–3, eles têm 60–73). Diagnóstico enfileirado (refeições
+  por vida, estado na morte, comer forçado).
