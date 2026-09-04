@@ -189,3 +189,20 @@ Profissões, prefeito, vários seres no mesmo mapa (fase 2), furo/óleo, loja.
   comem, poupam e morrem. Predição 61: entregas ≥ 8 ✓; mortos 0.3–0.8 ✗
   (0.96 em G=25). Braços reflexo/produto relançados + diagnóstico do linear
   na fila (12:05).
+
+## 9. E45 — Base fechada (ideia do Leonardo, 2026-09-04 12:15)
+"Como no Universe/forja: reproduzir o cérebro do campeão por fórmula fechada;
+treinar uma base quase pronta e deixar a evolução só pro resto." Política
+linear = nota Φ·W ⇒ ridge fechado `W* = (ΦᵀΦ+λI)⁻¹ΦᵀY` a partir de um
+PROFESSOR de utilidade de um passo (o que cada opção compra em vida, fome,
+água, tanque, dinheiro; movimento = reduzir a distância ao que FALTA,
+necessidade ao quadrado). Argmax é invariante a deslocamento → Y centrado
+por linha. `src/base_fechada.py`: coleta ~200 k estados (professor com
+ruído), resolve W_base (movimento por ridge; serviços por coluna), mede a
+base sozinha, e compara evoluir do zero vs semeado da base (25 ger.).
+**Predições 62–64 (antes de rodar):** 62. base sozinha ≥ 0.6 de vivos em 10
+dias (o professor guloso resolve o básico); 63. semeado da base em 25 ger.
+≥ do-zero em 25 ger. por ≥ 20 pp de mortos; 64. o preço é diversidade
+(fingerprint entre sementes < 0.3). Cláusula: se a base sozinha morrer
+(≥ 0.8), o professor está errado (escalas entre movimento e serviço), não a
+ideia — corrigir o professor antes de julgar.
