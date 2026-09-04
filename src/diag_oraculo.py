@@ -5,6 +5,7 @@ import sys, os, json, argparse
 sys.path.insert(0, os.path.dirname(__file__))
 import torch
 from campo import *
+from campo import _passo_fn
 from oraculo_campo import fabrica_oraculo, VARIANTES
 from e43_campo import BRACOS
 
