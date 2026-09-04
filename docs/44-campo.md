@@ -399,3 +399,10 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
   do ser sozinho = 0.53 mortos / 28.7 entregas em 10 dias** — a régua que o
   prefeito v3 e o comitê/olho multi-escala precisam bater. ~55 min de GPU
   por braço (327 k seres/passo).
+- **16:33 E48 comitê (triagem L=200):** comitê (4 campeões + inércia)
+  **0.58 / 27.4** vs modos K=3 do zero 0.67 / 24.6 — bate o controle por
+  9 pp, EMPATA com o melhor campeão sozinho (mínimo-3 0.57 na triagem;
+  0.53 no honesto). A base "média dos 4 campeões" sem evoluir morre (0.98):
+  média de políticas diferentes não é política — o comitê só volta a viver
+  quando o portão separa os modos. Predição 72 (≥ melhor campeão por 3 pp):
+  ✗ na régua; genes abaixo dizem se os modos foram usados.
