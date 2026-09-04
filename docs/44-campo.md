@@ -146,3 +146,10 @@ Profissões, prefeito, vários seres no mesmo mapa (fase 2), furo/óleo, loja.
   campo → fumaça 5 de 10 dias compilada → prefeito → portões do grafo). O
   resultado do linear na fumaça 4 (0.01 mortos, 0 entregas, viver de
   poupança) fica registrado; reflexo/produto da 4 não existem.
+- **23:46 portões do campo (`testes_campo.py`, GPU sozinha):** compile ×
+  eager: 1–2 seres de 384 com posição diferente por ≤ 9.5e-07 (Linear,
+  Produto, Reflexo; T=60 e 300), demais campos 0 ou 7.6e-06 (res/dinh) —
+  arredondamento, SEM amplificação de trajetória (no grafo amplificava). Genes
+  0 == Linear bit a bit sob compile (Produto, Reflexo). **1.34 ms/passo @
+  49 k; sem sync.** Compile é o modo padrão do campo; regra do grafo
+  mantida: todos os braços de uma bateria no mesmo modo.
