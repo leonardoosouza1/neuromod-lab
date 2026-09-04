@@ -1052,6 +1052,6 @@ Regras novas: 17 (gene novo nasce desligado), 18 (triagem só descarta), 19 (var
 | 70 | E44 v2 (moeda cruzada): ganho do prefeito cai mas fica (−15 a −30 pp na triagem); ≥ 1 alavanca acima de 1.0 além da tarifa | ✓ triagem: 0.62 → 0.16 (−46 pp), comida ×1.76; obras 53 → 7; brecha: caixa negativo (v3 fecha) |
 | 71 | Honesto campo L=200 (5 sem., 120 ger.): reflexo < mínimo-3 em mortos por ≥ 5 pp; ambos ≤ 0.5 | ✗ idênticos: 0.53 / 28.7 os dois (estratégias diferentes: 10×54 L vs 15×39 L); teto honesto do ser sozinho = 0.53 |
 | 72 | E48 comitê (4 campeões + inércia): ≥ melhor campeão por ≥ 3 pp SÓ se ganho > 1 e τ > 4 em ≥ 2/3 | ✗ 0.58 = mínimo-3 0.57; ganho 0.19–0.62, τ > 4 em 1/3 — cláusula ✓ (com loja não há o que combinar); bate modos-do-zero por 9 pp |
-| 73 | E49 olho multi-escala (need + a·micro + b·macro no produto): genes ≠ 0 em ≥ 2/3; panes −20 % vs produto; mortos −5 pp | (na fila) |
+| 73 | E49 olho multi-escala (need + a·micro + b·macro no produto): genes ≠ 0 em ≥ 2/3; panes −20 % vs produto; mortos −5 pp | ✗ 0.66/25.2 vs 0.62/26.2 (ruído, pior) — em 10 dias não há macro que valha |
 | 74 | E44 v3 (orçamento fecha): mantém ≥ −30 pp; gasolina não fica abaixo de ×0.8 sem compensação | (na fila) |
 | 75 | E50 reflexo 2 raízes (histerese): largura > 0.15 em ≥ 2/3; panes −15 % vs reflexo | (na fila) |

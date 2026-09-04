@@ -415,3 +415,7 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
 - **16:43 E49 portão passou** (trend genes 0 == produto em eager e compile;
   sem sync; NP 48). Triagem: produto 0.62 / 26.2 (replica a triagem de
   ontem: 0.63 / 26.6 — régua estável); braço produto-trend rodando.
+- **16:44 E49 (triagem):** produto-trend 0.66 / 25.2 vs produto 0.62 / 26.2
+  — nada (ruído, levemente pior). Predição 73 ✗. Cláusula: em 10 dias não
+  há macro que valha — a escala de dias é do prefeito. Genes de tendência
+  (abaixo) dizem se a evolução os moveu.
