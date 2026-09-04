@@ -282,3 +282,30 @@ triagem; se os centros colapsarem num só, o mundo ainda não pede modos.
   −2.75; s0 ✗). Mas o GANHO da mistura ficou baixo (0.53 / 0.17 / 0.09):
   a estrutura aparece e não é usada — bate com "modos = linear" na régua.
   Cláusula: o mundo (com loja no posto) ainda não pede modos; E47 decide.
+- **13:35 E45 v2b:** professor guloso morre 1.00 (0.9 entregas; morre todo
+  entre o dia 1.7 e 3.3 = quebra e a dívida fere): não valoriza dinheiro.
+  v3: custo pesa pela escassez de dinheiro; trabalhar pesa mais quando pobre.
+  E variante **clonagem**: professor = campeão evoluído (mínimo-3 da
+  triagem, 43 % vivos) — Y = as notas dele; testa a ideia com professor
+  garantido (quantas gerações a base poupa) e a transferência entre
+  arquiteturas. Os dois na fila atrás do prefeito v2. Predição 69: a
+  clonagem dá base sozinha ≈ campeão (±5 pp) e semeado-da-base em 25 ger.
+  ≥ do-zero em 40 ger. (triagem); o professor v3 ainda morre ≥ 0.6 (guloso
+  é míope pra dinheiro por construção).
+- **13:35 triagem L=400:** 0.90–0.95 mortos em todos os braços, 8–9.5
+  entregas (viagens 2× mais longas, renda cai pela metade); mínimo-3 ainda
+  o melhor (0.90). Mapa grande em 10 dias pede vida mais longa ou economia
+  mais densa — alavanca do prefeito (E44 v2 na fila).
+- **13:35 E44 fumaça 3 (população que trabalha):** com o prefeito no teste
+  **0.77 → 0.19 de mortos, 24 → 32.5 entregas**. Alavancas: imposto ×0.5,
+  gasolina ×0.5, água ×2, comida ×0.5, aluguel ×0.5, tarifa ×2; obras: 27
+  comidas + 26 postos. Funciona — talvez demais: o caixa vinha do imposto
+  de 128–2048 cópias do mesmo táxi (cidade "grátis"), baixar preço não
+  custava a ninguém, dobrar tarifa não afastava passageiro. **E44 v2 (moeda
+  cruzada do prefeito):** caixa per capita (cidade de 16 táxis), subsídio
+  pago do caixa e sobretaxa entra nele, tarifa com elasticidade (passageiro
+  reaparece com prob. 1/(20·mult)), obra 60. Predição 70: com a moeda
+  cruzada o ganho do prefeito cai mas fica (mortos −15 a −30 pp vs sem
+  prefeito na triagem), e ele para de baixar tudo (≥ 1 alavanca acima de
+  1.0 além da tarifa); se o ganho sumir, o prefeito v1 era só a cidade
+  grátis.
