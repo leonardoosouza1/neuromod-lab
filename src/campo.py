@@ -498,7 +498,7 @@ class Cerebro(Linear):
         s.U = W[:, s.O_U:s.O_BU].view(-1, H, NF); s.bU = W[:, s.O_BU:s.O_V]; s.V = W[:, s.O_V:s.O_U2]
         s.U2 = W[:, s.O_U2:s.O_B2].view(-1, K, s.NC_); s.b2 = W[:, s.O_B2:s.O_TAU]
         off = torch.tensor(s.OFF_TAU, device=DEV); s.tau = 1. + 200.*torch.sigmoid(W[:, s.O_TAU:s.O_M] + off - 4.)   # gene 0 -> ~4.6 / ~24 / ~101 ticks
-        s.M = W[:, s.O_M:s.O_P].view(-1, K, NF); s.P = W[:, s.O_P:s.NP].view(-1, K, S)
+        s.M = W[:, s.O_M:s.O_P].view(-1, K, NF); s.P = W[:, s.O_P:Cerebro.NP].view(-1, K, S)     # Cerebro.NP, nao s.NP: subclasses (completo) tem genes depois
         s.z = torch.zeros(m.B, K, device=DEV); s.corpo = torch.zeros(m.B, s.NC_, device=DEV); s.h = None
     def extra(s, m, W, F):
         s.corpo = F[:, G - 1, len(NOMES_OP):]                                                # sentidos do corpo (iguais nas 9 opcoes): opcao 'ficar'
