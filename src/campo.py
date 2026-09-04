@@ -399,3 +399,32 @@ class Modos(Linear):
         x = s._x(m); d = x[:, None, :] - s.mu
         q = (d[..., 0]**2 + d[..., 1]**2)*torch.exp(-2*s.ls[..., 0]) + (d[..., 2]**2 + d[..., 3]**2)*torch.exp(-2*s.ls[..., 1]) + d[..., 4]**2*torch.exp(-2*s.ls[..., 2])
         return torch.softmax(-.5*q, 1)
+
+
+class Comite(Modos):
+    """E48 COMITE (Leonardo: 'rodar todos os tipos de cerebro num ser'; 'andar 4 ticks pra comida e depois voltar pra agua'):
+    Modos gaussianos com K modos e INERCIA — a responsabilidade e um EMA com tau (gene): o ser se compromete a um modo por trechos.
+    Os dW_k nascem dos campeoes (W_k - W_media) via W0; genes de portao/tau nascem em 0 (tau -> 1 = sem inercia = Modos)."""
+    nome = 'comite-campo'; K = 4; NEED = 5
+    NP = Linear.NP + K*(NEED + 3 + NF) + 1 + 1          # + tau
+    def reset(s, m, W):
+        Modos.reset(s, m, W); s.tau = 1. + 30.*torch.sigmoid(W[:, -1] - 3.)   # gene 0 -> tau 1.4 (quase sem inercia); gene 4 -> ~23 ticks
+        s.r = torch.full((m.B, s.K), 1./s.K, device=DEV)
+    def _resp(s, m):
+        x = s._x(m); d = x[:, None, :] - s.mu
+        q = (d[..., 0]**2 + d[..., 1]**2)*torch.exp(-2*s.ls[..., 0]) + (d[..., 2]**2 + d[..., 3]**2)*torch.exp(-2*s.ls[..., 1]) + d[..., 4]**2*torch.exp(-2*s.ls[..., 2])
+        return torch.softmax(-.5*q, 1)
+    def extra(s, m, W, F):
+        Wm = torch.einsum('bk,bkf->bf', s.r*s.ganho[:, None], s.dW)          # usa a responsabilidade COM inercia (estado)
+        return torch.einsum('bgf,bf->bg', F, Wm)
+    def atualizar(s, m):
+        s.r = s.r + (s._resp(m) - s.r)/s.tau[:, None]                         # in-place fora do grafo: compromisso por trechos
+    def ativacao(s, m): return s.r
+
+def W0_comite(campeoes):
+    """monta o genoma inicial do comite a partir de K campeoes lineares (NP=Linear.NP): parte linear = media; dW_k = W_k - media."""
+    Wk = torch.stack([torch.as_tensor(w, dtype=torch.float32, device=DEV)[:Linear.NP] for w in campeoes]); K = Wk.shape[0]
+    med = Wk.mean(0); W = torch.zeros(Comite.NP, device=DEV); W[:Linear.NP] = med
+    o = Linear.NP + K*Comite.NEED + K*3
+    W[o:o+K*NF] = (Wk[:, :NF] - med[:NF]).reshape(-1)                        # so os pesos de MOVIMENTO diferem por modo (servicos ficam na media)
+    return W

@@ -329,3 +329,16 @@ triagem; se os centros colapsarem num só, o mundo ainda não pede modos.
   +3.6, água50 +3.2, comida +3.1, dinheiro −1.7, destino −1.7. É o joelho do
   E29b de novo: onde o reflexo deve entrar (honesto 120 ger. na fila:
   reflexo vs mínimo-3, 5 sementes).
+
+## 11. E48 — Comitê com inércia (Leonardo, 14:15: "rodar todos os cérebros num ser"; "andar 4 ticks pra comida, depois água")
+Medido no retrato do mínimo-3: as 3 linhagens são a MESMA política (corr
+0.86–0.96 sem atraso em vida/gasolina/reserva); ciclo de gasolina ~475
+passos; dinheiro segue a gasolina com 150 passos (+0.38); reserva anda
+contra o dinheiro (−0.19). Juntar cópias da mesma solução não soma nada;
+juntar cérebros DIFERENTES com COMPROMISSO pode. `Comite` = Modos K=4 com
+inércia (responsabilidade = EMA com τ gene, atualizada fora do grafo),
+nascido dos 4 campeões da triagem (parte linear = média; dW_k = W_k −
+média nos pesos de movimento). **Predição 72:** comitê ≥ melhor campeão
+por ≥ 3 pp na triagem SÓ se o portão ficar desigual (ganho > 1) e τ > 4
+ticks em ≥ 2/3 sementes; se uniforme, cérebros diferentes não têm o que
+combinar neste mundo. Controle: Modos K=3 do zero.

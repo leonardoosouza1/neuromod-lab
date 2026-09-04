@@ -1051,3 +1051,4 @@ Regras novas: 17 (gene novo nasce desligado), 18 (triagem só descarta), 19 (var
 | 69 | E45 clonagem (professor = campeão mínimo-3): base sozinha ≈ campeão (±5 pp); semeado 25 ger. ≥ do-zero 40 ger.; professor v3 guloso ainda morre ≥ 0.6 | (na fila) |
 | 70 | E44 v2 (moeda cruzada): ganho do prefeito cai mas fica (−15 a −30 pp na triagem); ≥ 1 alavanca acima de 1.0 além da tarifa | (na fila) |
 | 71 | Honesto campo L=200 (5 sem., 120 ger.): reflexo < mínimo-3 em mortos por ≥ 5 pp (o joelho evita o tanque vazio que mata 69 % dos mortos do mínimo-3); ambos ≤ 0.5 | (na fila) |
+| 72 | E48 comitê (4 campeões + inércia): ≥ melhor campeão por ≥ 3 pp SÓ se ganho > 1 e τ > 4 em ≥ 2/3 | (na fila) |
