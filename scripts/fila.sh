@@ -1,4 +1,5 @@
 #!/bin/bash
+export TORCHINDUCTOR_COMPILE_THREADS=1 OMP_NUM_THREADS=4 MKL_NUM_THREADS=4
 # scripts/fila.sh — fila genérica de baterias (E18, doc 28 §1 / doc 32-avaliacao.md)
 #
 # Padroniza o que era feito à mão em

@@ -1,4 +1,5 @@
 #!/bin/bash
+export TORCHINDUCTOR_COMPILE_THREADS=1 OMP_NUM_THREADS=4 MKL_NUM_THREADS=4   # [2026-09-03] nada de pool de compilacao (17 procs x 1 GB, 200% CPU): 1 thread; BLAS/CPU limitado
 # scripts/fila.sh — fila genérica de baterias (E18, doc 28 §1 / doc 32-avaliacao.md)
 #
 # Padroniza o que era feito à mão em

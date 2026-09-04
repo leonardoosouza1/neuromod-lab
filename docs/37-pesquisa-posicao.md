@@ -1225,3 +1225,21 @@ fome-no-fim ≤ 35 e panes ≤ 2.5 (ser calmo), entregas ≤ 10, mortos ≤ 0.12
 controle) — cinco estilos, com pelo menos uma semente ≤ 0.10 de mortos e
 uma ≥ 13 de entregas; se todas convergirem pro mesmo ponto, a frente de
 Pareto deste mundo é estreita e "estilo" não existe aqui.
+
+### E41 régua A (sobrevive-primeiro), honesto semeado, 5 postos — primeiro braço
+| | mortos | entregas | panes | fome fim | fit (régua padrão, p/ comparar) |
+|---|---|---|---|---|---|
+| controle (E37b, régua padrão) | 0.15 | 13.2 | 3.7 | 50 | 9.20 |
+| **A sobrevive-primeiro** | **0.11** [.13 .11 .12 .12 .08] | **11.5** | 3.8 | 49 | 7.12 |
+Predição 46: mortos ≤ 0.08 ✗ (0.11, −4 pp); entregas ≤ 11 ✗ por pouco
+(11.5); tempo com passageiro: ver retrato. A troca que o Leonardo descreveu
+apareceu: o ser entrega menos e morre menos — a régua muda o ser. B e C
+rodando.
+
+**Custo de CPU descoberto (22:05):** o `torch.compile` abre um pool de 17
+subprocessos de compilação (1 GB de RSS cada, processo principal a 196 %
+de CPU) toda vez que um grafo novo aparece (régua B acrescentou um op em
+`passo`). É isso que trava a máquina, não a simulação. Correção em
+`scripts/fila*.sh`: `TORCHINDUCTOR_COMPILE_THREADS=1`, `OMP_NUM_THREADS=4`.
+Regra 20: **toda execução longa exporta essas variáveis; nada de compute
+na CPU além do dispatch de kernels.**
