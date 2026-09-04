@@ -13,7 +13,7 @@ class Prefeito:
     """genes: W (NS x NA) + memoria de ontem (NS) -> NP = NS*NA + NS. Alavancas sao MULTIPLICADORES em torno do mapa (exp(tanh(.)*log 2)):
     x0.5 .. x2 por dia, acumulando; construir = probabilidade sigmoid(.) de abrir um ponto no distrito com pior sentido, pagando do caixa."""
     NP = NS*NA + NS
-    def __init__(s, m, Wp, custo_obra=40.):
+    def __init__(s, m, Wp, custo_obra=60.):
         s.m = m; s.NC = m.NC; s.Wp = Wp                       # (NC, NP)
         s.W = Wp[:, :NS*NA].view(s.NC, NS, NA); s.Wmem = Wp[:, NS*NA:]
         s.ontem = torch.zeros(s.NC, NS, device=DEV); s.caixa = torch.zeros(s.NC, device=DEV); s.custo_obra = custo_obra
@@ -45,9 +45,11 @@ class Prefeito:
             s.caixa = s.caixa - s.custo_obra*quer.float(); s.obras[:, k] += quer.float()
             m.construir(t, quer)
         s.hist.append((int(dia), s.mult.detach().clone(), s.obras.detach().clone()))
+    N_REF = 16.        # [E44 v2] caixa PER CAPITA: a cidade e de 16 taxis; P*R copias do mesmo genoma nao sao 2048 contribuintes
     def receita(s, imposto_total):
-        """imposto arrecadado no mapa desde ontem entra no caixa (o campo acumula m.imp por ser)"""
-        ci = s.m.cidx; tot = torch.zeros(s.NC, device=DEV).index_add_(0, ci, imposto_total)
+        """imposto arrecadado no mapa desde ontem entra no caixa, MENOS o subsidio pago (mult<1) — tudo normalizado per capita"""
+        m = s.m; ci = m.cidx; n_por_mapa = torch.zeros(s.NC, device=DEV).index_add_(0, ci, torch.ones_like(imposto_total)).clamp(min=1)
+        tot = torch.zeros(s.NC, device=DEV).index_add_(0, ci, imposto_total - m.subs)*(s.N_REF/n_por_mapa)
         s.caixa = s.caixa + (tot - s.imp_ontem); s.imp_ontem = tot
     def fitness(s):
         """bem-estar agregado da cidade (regua B) — o prefeito e pago por isso; caixa e restricao, nao objetivo"""

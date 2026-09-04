@@ -84,9 +84,10 @@ class Campo:
         s.dano_soma = torch.zeros(B, device=DEV); s.t_vida = torch.zeros(B, device=DEV); s.bem_soma = torch.zeros(B, device=DEV)
         s.px = s._perto(s.pos, c.NPX); s.pxd = s._destino(s.px)   # passageiros privados por ser, nascem perto
         s.pd_ = torch.full((B,), -1., device=DEV); s.dest = torch.zeros(B, 2, device=DEV); s.orig_d = torch.zeros(B, dtype=torch.long, device=DEV); s.emb = torch.zeros(B, 2, device=DEV)
+        s.px_ok = torch.ones(B, c.NPX, dtype=torch.bool, device=DEV)   # [E44 v2] demanda: slot de passageiro ativo; tarifa alta = reaparece devagar
         s.t = torch.zeros((), dtype=torch.long, device=DEV)
         s.recusa = torch.zeros(B, dtype=torch.bool, device=DEV); s.ARB = torch.arange(B, device=DEV)
-        s.n_agua = torch.zeros(B, device=DEV); s.parado_dia = torch.zeros(B, device=DEV); s.imp = torch.zeros(B, device=DEV)   # [E44] sentidos do prefeito
+        s.n_agua = torch.zeros(B, device=DEV); s.parado_dia = torch.zeros(B, device=DEV); s.imp = torch.zeros(B, device=DEV); s.subs = torch.zeros(B, device=DEV)   # [E44] sentidos do prefeito; subs = subsidio pago
         s.pref_mult = torch.ones(s.NC, 6, device=DEV)     # [E44] alavancas do prefeito por mapa: aliq, p_fuel, p_agua, p_comida, aluguel, tarifa (1 = mapa)
     # --- geometria
     def custo_em(s, p):                       # p (B,...,2) -> custo (B,...)
@@ -209,6 +210,8 @@ class Campo:
         k = (esc - G).clamp(0, S - 1); onehot = torch.nn.functional.one_hot(k, S).float()*pode[:, None].float()*sv
         paga = (s.dinh[:, None] >= cs).float(); usa = onehot*paga                                  # (B,S)
         s.dinh = s.dinh - (usa*cs).sum(1)
+        pf_ = s.pref_mult[ci]; base_ = torch.stack([cs[:, k]/pf_[:, {'posto': 1, 'agua': 2, 'comida': 3}.get(ACOES[k][0], 0)] if ACOES[k][0] in ('posto', 'agua', 'comida') else cs[:, k] for k in range(S)], 1)
+        s.subs = s.subs + (usa*(base_ - cs)).sum(1)                                                  # [E44 v2] caixa paga subsidio (mult<1) ou recebe sobretaxa (mult>1)
         litros = usa[:, 0]*25. + usa[:, 1]*50. + usa[:, 2]*75. + usa[:, 3]*100. + usa[:, 4]*150.
         abast = litros > 0; s.n_posto += abast.float(); s.litros += litros
         novo = s.fuel + litros; sobra = (novo - 100.).clamp(min=0.); s.fuel = novo.clamp(max=100.)
@@ -218,18 +221,22 @@ class Campo:
         desc = usa[:, 8] > 0; s.fad = torch.where(desc, torch.minimum(s.fad, torch.full_like(s.fad, 40.)), s.fad); s.tpar = torch.where(desc, torch.full_like(s.tpar, 12.), s.tpar)   # [G6] descanso nunca aumenta fadiga
         ofi = usa[:, 9] > 0; s.vida = torch.where(ofi, (s.vida + c.REPARO).clamp(max=100.), s.vida); s.calor = torch.where(ofi, torch.full_like(s.calor, 25.), s.calor); s.n_oficina += ofi.float()
         # passageiros: embarque (raio) e entrega
-        dpx = (s.px - s.pos[:, None, :]).norm(dim=-1); kx = dpx.argmin(1); ar = s.ARB
+        dpx = (s.px - s.pos[:, None, :]).norm(dim=-1).masked_fill(~s.px_ok, 1e9); kx = dpx.argmin(1); ar = s.ARB
         pega = livre & (s.pd_ < 0) & (dpx[ar, kx] <= c.raio) & ~s.recusa & ~pode
         s.dest = torch.where(pega[:, None], s.pxd[ar, kx], s.dest); s.emb = torch.where(pega[:, None], s.pos, s.emb)
         s.orig_d = torch.where(pega, s.distrito(s.pos), s.orig_d); s.pd_ = torch.where(pega, torch.ones_like(s.pd_), s.pd_)
         novo_px = s._perto(s.pos, 1)[:, 0]; novo_d = s._destino(novo_px[:, None, :])[:, 0]
         s.px[ar, kx] = torch.where(pega[:, None], novo_px, s.px[ar, kx]); s.pxd[ar, kx] = torch.where(pega[:, None], novo_d, s.pxd[ar, kx])
+        s.px_ok[ar, kx] = s.px_ok[ar, kx] & ~pega                                                   # slot usado fica inativo
+        volta = torch.rand(B, c.NPX, generator=s.g, device=DEV) < (1./(20.*s.pref_mult[ci, 5]))[:, None]   # elasticidade: tarifa x2 = espera 2x
+        s.px_ok = s.px_ok | volta
         cheg = livre & (s.pd_ >= 0) & ((s.pos - s.dest).norm(dim=-1) <= c.raio)
         pf = s.pref_mult[ci]; aliq = (s.aliq[ci, s.orig_d]*pf[:, 0]).clamp(0., .6)
         dist = (s.dest - s.emb).norm(dim=-1); bruta = (c.tarifa_base + c.tarifa_km*dist)*s.pmul[ci, s.orig_d]*pf[:, 5]; tarifa = bruta*(1. - aliq)
         s.dinh = s.dinh + tarifa*cheg.float(); s.rec += tarifa*cheg.float(); s.imp += bruta*aliq*cheg.float(); s.ent += cheg.float(); s.pd_ = torch.where(cheg, -torch.ones_like(s.pd_), s.pd_)
         # aluguel a meia-noite (distrito-casa)
-        meia = ((s.t.float() + s.fase) % c.dia) < 1.; s.dinh = s.dinh - c.aluguel*s.alug[ci, s.casa]*s.pref_mult[ci, 4]*meia.float()*vivo.float()
+        meia = ((s.t.float() + s.fase) % c.dia) < 1.; alug_base = c.aluguel*s.alug[ci, s.casa]; s.dinh = s.dinh - alug_base*s.pref_mult[ci, 4]*meia.float()*vivo.float()
+        s.subs = s.subs + alug_base*(1. - s.pref_mult[ci, 4])*meia.float()*vivo.float()
         s.parado_dia = (s.parado_dia + (~mov & livre).float())*(1. - meia.float())
         # dano por fome / sede / divida
         dn = dn + c.fome_mata*((s.fome - c.FOME_CRIT)/(100. - c.FOME_CRIT)).clamp(0., 1.) + c.agua_mata*((c.AGUA_CRIT - s.agua)/c.AGUA_CRIT).clamp(0., 1.)
