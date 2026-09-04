@@ -15,7 +15,7 @@ def main(a):
     if a.seeds: p['seeds'] = tuple(a.seeds)
     if a.R: p['R'] = a.R
     if a.G: p['G'] = a.G
-    cfg = CfgCampo(L=a.L, pena_morte=a.pena, fitness=a.fitness)
+    cfg = CfgCampo(L=a.L, pena_morte=a.pena, fitness=a.fitness, loja_no_posto=not a.sem_loja)
     treino = [gerar_mapa(s, L=a.L) for s in range(4)]; teste = [gerar_mapa(a.teste_seed + s, L=a.L) for s in range(3)]
     res = dict(preset=a.preset, L=a.L, fitness=a.fitness, pena=a.pena, NF=NF, S=S, bracos={})
     print(f'== E43 campo | {a.preset} L={a.L} dias={a.dias} regua={a.fitness} P={p["P"]} G={p["G"]} R={p["R"]} x{len(p["seeds"])} | pena {a.pena} ==', flush=True)
@@ -44,5 +44,5 @@ if __name__ == '__main__':
     ap.add_argument('--fitness', default='sobrevive', choices=('padrao', 'sobrevive', 'bemestar')); ap.add_argument('--pena', type=float, default=5.)
     ap.add_argument('--out', default='/media/llm-data/universe-runs/neuromod-lab-taxi/e43'); ap.add_argument('--so', nargs='*', default=None)
     ap.add_argument('--seeds', type=int, nargs='*', default=None); ap.add_argument('--R', type=int, default=None); ap.add_argument('--G', type=int, default=None)
-    ap.add_argument('--teste-seed', type=int, default=1000); ap.add_argument('--tag', default=''); ap.add_argument('--dias', type=float, default=10.); ap.add_argument('--init-from', nargs=2, default=None)
+    ap.add_argument('--teste-seed', type=int, default=1000); ap.add_argument('--tag', default=''); ap.add_argument('--dias', type=float, default=10.); ap.add_argument('--sem-loja', action='store_true', help='servicos SEPARADOS: comida/agua nao vendidas no posto (E47)'); ap.add_argument('--init-from', nargs=2, default=None)
     main(ap.parse_args())

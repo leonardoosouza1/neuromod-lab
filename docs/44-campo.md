@@ -256,3 +256,23 @@ triagem; se os centros colapsarem num só, o mundo ainda não pede modos.
   bateria 1. **Portão do E46 (modos gaussianos) passou:** genes 0 == linear
   (eager e compile), sem sync, NP 132, responsabilidades iniciais
   0.35/0.33/0.32. Triagem L=200 (5 braços) rodando.
+- **13:00 triagem L=200 (3 sementes, G=40, 10 dias, régua B, nasce pobre,
+  loja no posto, calor sustentável):**
+
+| braço | mortos | entregas | panes | abastecimentos × L | reserva |
+|---|---|---|---|---|---|
+| linear | 0.62 | 26.6 | 6.2 | 7.2 × 74 | 27 |
+| reflexo | 0.61 | 26.6 | 5.6 | 8.5 × 57 | 21 |
+| produto | 0.63 | 26.6 | 5.9 | 6.7 × 78 | 29 |
+| modos gaussianos K=3 | 0.63 | 26.2 | 6.4 | 7.5 × 66 | 24 |
+| **mínimo 3 (destino, posto, tanque)** | **0.57** | **28.6** | **5.1** | 10.1 × 50 | 22 |
+
+  Todos empatam na régua da triagem, e a política de 3 termos é a melhor —
+  como no grafo. **Predição 52 ✗ (o campo não pede mais que 3 termos) e 67 ✗
+  (modos = linear).** Mecanismo: a loja no posto fez comida e água caberem
+  na ida ao posto, que os 3 termos já fazem; os sentidos extras (fome, água,
+  dinheiro, distrito) não têm o que decidir. Pra exigir cérebro os serviços
+  têm de ficar SEPARADOS: **E47 (`--sem-loja`) na fila** — predição 68:
+  sem loja, mínimo-3 perde ≥ 10 pp de mortos pro produto/modos (precisa de
+  d_comida/d_agua), e a mortalidade geral sobe (mundo mais duro). Retratos
+  dos campeões (mínimo-3, linear, modos) enfileirados.

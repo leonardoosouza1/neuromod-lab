@@ -97,7 +97,7 @@ p{{max-width:72ch}} .card{{background:var(--panel);border:1px solid var(--line);
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument('json'); ap.add_argument('braco'); ap.add_argument('tag'); ap.add_argument('--out', default='/media/llm-data/universe-runs/neuromod-lab-taxi/retratos'); ap.add_argument('--T', type=int, default=1200)
     a = ap.parse_args(); J = json.load(open(a.json)); b = J['bracos'][a.braco]; L = float(J['L']); cfg = CfgCampo(L=L, fitness=J.get('fitness', 'sobrevive'), pena_morte=J.get('pena', 5.))
-    A = {'linear': Linear, 'reflexo': Reflexo}.get(a.braco.split(' ')[0], None) or fabrica_minimo(['d_alvo', 'd_posto', 'e_fuel'])
+    A = {'linear': Linear, 'reflexo': Reflexo, 'produto': Produto, 'modos': Modos}.get(a.braco.split(' ')[0], None) or fabrica_minimo(['d_alvo', 'd_posto', 'e_fuel'])
     mapas = [gerar_mapa(1000 + s, L=L) for s in range(3)]; R = dict(tag=a.tag, braco=a.braco, L=L, fitness=cfg.fitness, sementes={})
     for sd, W in b['W'].items():
         tr, fim, heat, m = rastro(A, torch.tensor(W, device=DEV), mapas, cfg, T=a.T); R['sementes'][sd] = resumo(tr, fim, heat, a.T)
