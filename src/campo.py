@@ -481,3 +481,33 @@ class ReflexoAlcance(Reflexo):
     def extra(s, m, W, F):
         s.d_posto = m._dist[:, 0]                                             # distancia atual ao posto mais perto (obs() acabou de calcular)
         return Reflexo.extra(s, m, W, F)
+
+
+class Cerebro(Linear):
+    """E53 CEREBRO LIVRE (Leonardo, 2026-09-04 18:50: 'gate focado e voce resolvendo pelo modelo; o interessante e deixar ele
+    tentar ate achar algo'). Substrato generico SEM pista: camada RAPIDA (H unidades relu que leem os 24 sentidos de cada opcao,
+    somam na nota de movimento) + camada LENTA (K unidades relu sobre o corpo, com estado z_k = EMA de tau_k num BANCO log-espacado
+    ~5/~25/~100 ticks; z modula os pesos de movimento (bilinear z x sentido) e as notas de servico). Nasce TRANSPARENTE (regra 17):
+    V = M = P = 0 -> identico ao Linear bit a bit; U/U2 (entradas) nascem aleatorios e so importam quando a saida liga."""
+    nome = 'cerebro-campo'; H = 4; K = 3; NC_ = len(NOMES_CORPO); OFF_TAU = (0., 2., 4.)
+    O_U = Linear.NP; O_BU = O_U + H*NF; O_V = O_BU + H
+    O_U2 = O_V + H; O_B2 = O_U2 + K*NC_; O_TAU = O_B2 + K; O_M = O_TAU + K; O_P = O_M + K*NF
+    NP = O_P + K*S
+    def reset(s, m, W):
+        s.W = W; H, K = s.H, s.K
+        s.U = W[:, s.O_U:s.O_BU].view(-1, H, NF); s.bU = W[:, s.O_BU:s.O_V]; s.V = W[:, s.O_V:s.O_U2]
+        s.U2 = W[:, s.O_U2:s.O_B2].view(-1, K, s.NC_); s.b2 = W[:, s.O_B2:s.O_TAU]
+        off = torch.tensor(s.OFF_TAU, device=DEV); s.tau = 1. + 200.*torch.sigmoid(W[:, s.O_TAU:s.O_M] + off - 4.)   # gene 0 -> ~4.6 / ~24 / ~101 ticks
+        s.M = W[:, s.O_M:s.O_P].view(-1, K, NF); s.P = W[:, s.O_P:s.NP].view(-1, K, S)
+        s.z = torch.zeros(m.B, K, device=DEV); s.corpo = torch.zeros(m.B, s.NC_, device=DEV); s.h = None
+    def extra(s, m, W, F):
+        s.corpo = F[:, G - 1, len(NOMES_OP):]                                                # sentidos do corpo (iguais nas 9 opcoes): opcao 'ficar'
+        h = torch.relu(torch.einsum('bgf,bhf->bgh', F, s.U) + s.bU[:, None, :]); s.h = h         # (B,G,H) camada rapida
+        rapida = torch.einsum('bgh,bh->bg', h, s.V)
+        Wm = torch.einsum('bk,bkf->bf', s.z, s.M); lenta = torch.einsum('bgf,bf->bg', F, Wm)      # pesos modulados pelo estado lento
+        return rapida + lenta
+    def extra_serv(s, m): return torch.einsum('bk,bks->bs', s.z, s.P)
+    def atualizar(s, m):
+        x = torch.relu(torch.einsum('bf,bkf->bk', s.corpo, s.U2) + s.b2)                          # (B,K)
+        s.z = s.z + (x - s.z)/s.tau
+    def ativacao(s, m): return s.z

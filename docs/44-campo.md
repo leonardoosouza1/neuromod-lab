@@ -538,3 +538,19 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
   caixa, tanque, fome), dano por causa e orçamento de tempo — campeão vs
   oráculos. `docs/painel-51-autopsia.html` ·
   https://claude.ai/code/artifact/042b657f-9bd5-48a0-bc03-a409233cce5f
+- **19:05 Leonardo: "gate focado é você resolvendo pelo modelo; o
+  interessante é deixar ele tentar até achar algo que crie". E: "mediu o
+  cérebro? ativação, distribuição de pesos, camadas lentas e rápidas, por
+  tempo?"** Resposta honesta: no campo o ser é 35–48 números sem camada; medi
+  genes, τ do reflexo (1,4–5,5 ticks: tudo rápido; w ≈ 0) e retrato do corpo,
+  não neurônios — porque não havia. → **E52 vira controle** (mede o prêmio do
+  alcance) e a linha principal é **E53 cérebro livre**: camada rápida (4
+  unidades relu sobre os 24 sentidos de cada opção → nota de movimento) +
+  camada lenta (3 unidades relu sobre o corpo, estado EMA com τ próprio num
+  banco log-espaçado ~5/25/100 ticks; z modula os pesos de movimento
+  (bilinear) e as notas de serviço). Nasce transparente (V = M = P = 0 ==
+  linear). Sem dica. Fila: portão → triagem 40 → 300 gerações → **retrato do
+  cérebro** (`retrato_cerebro.py`: EEG das unidades tick a tick, τ, o que
+  cada unidade lê, contribuição de cada parte, ablação, pesos por bloco).
+  Predição 79 (aposta honesta: a evolução NÃO monta o alcance em 300 ger.;
+  o ganho é ver o cérebro).
