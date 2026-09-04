@@ -1243,3 +1243,17 @@ de CPU) toda vez que um grafo novo aparece (régua B acrescentou um op em
 `scripts/fila*.sh`: `TORCHINDUCTOR_COMPILE_THREADS=1`, `OMP_NUM_THREADS=4`.
 Regra 20: **toda execução longa exporta essas variáveis; nada de compute
 na CPU além do dispatch de kernels.**
+
+### E41 completo (honesto semeado, 5 postos): as três réguas
+| régua | mortos | entregas | panes | fome fim | fit (régua padrão) |
+|---|---|---|---|---|---|
+| padrão (E37b) | 0.15 | 13.2 | 3.7 | 50 | 9.20 |
+| A sobrevive-primeiro | 0.11 | 11.5 | 3.8 | 49 | 7.12 |
+| B bem-estar integral | (ver log e41_B) | | | | |
+| C Pareto 4 objetivos | 0.34 [.89 .12 .17 .22 .28] | 11.0 | 2.9 | 69 | 7.21 |
+C: uma linhagem colapsou (0.89) e as outras ficaram 0.12–0.28 — a frente de
+Pareto deste mundo é estreita e o posto de não-dominância dá pouco gradiente
+(predição 48: diversidade ✓ pelo lado errado — uma linhagem "diversa" é uma
+que morre). A: a troca "entrega menos, morre menos" existe (46 quase ✓).
+Retratos e comparação lado a lado ficam pra quando a GPU liberar (campo tem
+prioridade).
