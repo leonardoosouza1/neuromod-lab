@@ -23,13 +23,13 @@ NOMES_F = NOMES_OP + NOMES_CORPO + [f'sv_{a[0]}{int(a[1]) if a[1] else ""}' for 
 class CfgCampo:
     def __init__(s, L=400., **kw):
         s.L = float(L); s.dia = 240; s.noite = True; s.vel = 1.0; s.vel_noite = .7
-        s.NPX = 12; s.K = max(3, round(6*s.L/200.)); s.tex = 64; s.raio = 4.; s.raio_px = 60.; s.dinh0 = 100.
-        s.fuel_passo = .2; s.agua_passo = .08; s.agua_calor = .12; s.fome_passo = .32; s.fad_passo = .15   # agua ~2 dias; gasolina ~250 passos
+        s.NPX = 12; s.K = max(3, round(6*s.L/200.)); s.tex = 64; s.raio = 4.; s.raio_px = 45.; s.dinh0 = 100.
+        s.fuel_passo = .15; s.agua_passo = .08; s.agua_calor = .12; s.fome_passo = .32; s.fad_passo = .15   # agua ~2 dias; gasolina ~250 passos
         s.calor_sobe = .25; s.calor_desce = .6      # dirigindo direto: 30 -> 92 em ~135 passos; parado esfria .6/passo
         s.CALOR_MAX = 92.; s.D_QUENTE = 10.; s.D_PANE = 6.; s.D_RODAR = .15
         s.fome_mata = .15; s.FOME_CRIT = 90.; s.agua_mata = .15; s.AGUA_CRIT = 10.; s.KCAL_PANE = 20.
-        s.preco_L = .5; s.preco_agua = .05; s.preco_comida = 2.; s.HOTEL = 8.; s.preco_oficina = 10.; s.REPARO = 25.
-        s.tarifa_base = 3.; s.tarifa_km = .2; s.aluguel = 4.; s.LIMITE_DIVIDA = 60.; s.PERDA_ARMAZ = .15; s.RES_MAX = 120.; s.perda_res = .02/240
+        s.preco_L = .3; s.preco_agua = .05; s.preco_comida = 2.; s.HOTEL = 8.; s.preco_oficina = 10.; s.REPARO = 25.
+        s.tarifa_base = 3.; s.tarifa_km = .25; s.aluguel = 4.; s.LIMITE_DIVIDA = 60.; s.PERDA_ARMAZ = .15; s.RES_MAX = 120.; s.perda_res = .02/240
         s.REFEICAO = 90.; s.pena_morte = 5.; s.fitness = 'sobrevive'
         for k, v in kw.items(): setattr(s, k, v)
 

@@ -1257,3 +1257,11 @@ Pareto deste mundo é estreita e o posto de não-dominância dá pouco gradiente
 que morre). A: a troca "entrega menos, morre menos" existe (46 quase ✓).
 Retratos e comparação lado a lado ficam pra quando a GPU liberar (campo tem
 prioridade).
+
+**E41 régua B (bem-estar integral): 8.42 (régua padrão) / 0.10 [.13 .13 .06 .08 .11] / entregas 12.5 / panes 2.8 / fome fim 47.**
+A melhor das três: mortalidade menor que a padrão (0.15) e que a A (0.11)
+SEM perder entregas (12.5 vs 13.2; A caiu pra 11.5). Predição 47: mortos ✓,
+panes ≈ (2.8 vs ≤ 2.5), entregas ✗ (subiram, não caíram), fome ✗ (47, não
+≤ 35). Leitura: pagar bem-estar ao longo da vida faz o ser cuidar do corpo
+sem virar preguiçoso — "entregas como meio". **Régua B vira a candidata a
+padrão do campo** (o campo nasceu com a A; troca fácil: cfg.fitness).
