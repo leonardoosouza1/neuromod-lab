@@ -85,7 +85,9 @@ def main():
     cfg = CfgCampo(L=a.L, fitness=a.fitness); treino = [gerar_mapa(s, L=a.L) for s in range(4)]; teste = [gerar_mapa(1000 + s, L=a.L) for s in range(3)]
     W_pro = None
     if a.professor:
-        Jp = json.load(open(a.professor[0]))['bracos'][a.professor[1]]; W_pro = torch.tensor(Jp['W'][sorted(Jp['W'])[0]], device=DEV)
+        Jp = json.load(open(a.professor[0]))['bracos'][a.professor[1]]; W_pro = torch.tensor(Jp['W'][sorted(Jp['W'])[0]], device=DEV)[:Linear.NP].clone()
+        if a.professor[1].startswith('minimo'):     # o minimo-3 ZERA os sentidos proibidos ao decidir: clonar exige a mesma mascara nos pesos crus
+            perm = [NOMES_F.index(n) for n in ('d_alvo', 'd_posto', 'e_fuel')]; msk = torch.zeros(NF, device=DEV); msk[perm] = 1.; W_pro[:NF] = W_pro[:NF]*msk
         print(f'professor = campeao {a.professor[1]} (clonagem de comportamento)', flush=True)
     t0 = time.time(); Phis, Ys, m_pro = coletar(treino, cfg, T=T, W_pro=W_pro)
     print(f'== E45 base fechada | L={a.L} dias={a.dias} | professor: {sum(p[0].shape[0] for p in Phis)} estados em {time.time()-t0:.0f}s | professor puro: mortos {float((m_pro.vida<=0).float().mean()):.2f} ent {float(m_pro.ent.mean()):.1f} come {float(m_pro.n_come.mean()):.1f} abast {float(m_pro.n_posto.mean()):.1f}', flush=True)

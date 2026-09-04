@@ -355,3 +355,11 @@ necessidades do produto (e, depois, nas coordenadas dos modos/comitê).
 **Predição 73:** genes de tendência ≠ 0 em ≥ 2/3 sementes; panes −20 % vs
 produto (antecipa o tanque); mortos −5 pp. Se ficarem em zero: 10 dias não
 têm macro que valha — a escala de dias é do prefeito.
+- **14:29 E45 v3:** professor guloso com dinheiro ainda morre 1.00 (3.7
+  entregas, come 5.5) — três tentativas, abandono o professor à mão (é míope
+  por construção: a sobrevivência aqui precisa de sequência, não de passo).
+  **Clonagem do mínimo-3 morreu por BUG meu:** o campeão de 3 termos tem
+  pesos nos 24 sentidos e a arquitetura ZERA os proibidos ao decidir; clonei
+  os pesos crus → política de lixo. Corrigido (máscara), e clonagem do
+  campeão LINEAR também na fila (não precisa de máscara). Predição 69
+  segue valendo pra clonagem corrigida.
