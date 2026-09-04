@@ -64,3 +64,20 @@ tamanhos.
 
 ## 7. Fora desta fase
 Profissões, prefeito, vários seres no mesmo mapa (fase 2), furo/óleo, loja.
+
+## 8. Diário
+- **22:20** `src/campo.py` v1: distâncias por força bruta = 320 ms/passo
+  (65 k seres) — tensores de 300 MB por tipo de serviço.
+- **22:30** v2: campos de distância e de distrito pré-computados na GPU
+  (grade 128×128 por mapa), obs uma vez por passo, gasolina 0.25/u·custo →
+  **25.7 ms/passo @ 65 536 seres, 0.29 GB de VRAM**; sem sync; reflexo com
+  genes 0 == linear bit a bit; 4 mapas L=400 gerados em 0.31 s na GPU.
+  Honesto (G=120) ≈ 62 min por braço; triagem ≈ 12 min.
+- **22:35** fumaça (P=256, G=15, T=600): o ser "vence" parado (0 entregas,
+  fome 100, água 0, 7 % mortos) — parar é de graça em vida curta (lição do
+  E19). Fumaça passa a vida inteira (T=1200) e G=25; régua ganhou gradiente
+  entre os mortos (morrer mais tarde > morrer cedo), senão deserto.
+- **22:40** SerCamadas (agente) merged no main: 92 genes (tálamo 51–65,
+  córtex 66–89, hipocampo 90–91), nasce bit-igual ao reflexo; portões ok.
+  Ainda é do grafo (usa m.e15_dist/obs de 26 features) — a versão de campo
+  precisa de adaptação de índices (fase seguinte).
