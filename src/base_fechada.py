@@ -72,7 +72,8 @@ def resolver(Phis, Ys, lam=1e-2):
     for k in range(S):
         x = Fs[:, k]; y = Ys_[:, k]; msk = x > 0
         ws.append(float(((x[msk]*y[msk]).sum())/((x[msk]*x[msk]).sum() + lam)) if bool(msk.any()) else 0.)
-    b = float((Ys_ - Fs[:, :S]*torch.tensor(ws, device=DEV)[None, :]).mean())
+    ok = Ys_ > -1e8                                                            # [E45 v4] servico INDISPONIVEL vale -1e9 na nota do professor: fora do ajuste (o bias absorvia -1e9 x fracao indisponivel = -8.9e8 e o clone nunca servia)
+    b = float(((Ys_ - Fs[:, :S]*torch.tensor(ws, device=DEV)[None, :])[ok]).mean())
     W = torch.cat([Wm, torch.tensor(ws, device=DEV), torch.tensor([b], device=DEV)])
     # escala comum: notas de movimento (centradas) e de servico precisam competir na mesma unidade -> normaliza pelo desvio de Y_mov
     return W

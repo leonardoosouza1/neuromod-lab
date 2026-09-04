@@ -436,3 +436,11 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
   mapas × 128 cópias, L=200 e L=400. Lê-se: oráculo vive onde a evolução
   morre → gargalo é montagem (e o alvo trancado vira arquitetura evoluível,
   E52); oráculo também morre → recalibrar o mundo primeiro. Predição 76.
+- **17:15 E45 clonagem — 1ª rodada inválida por bug do solver:** os dois
+  professores vivem (mínimo-3 0.58, linear 0.55) mas o clone por ridge morre
+  1.00 com 0 abastecimentos: |W| = 2.5e7 porque o bias dos serviços foi
+  ajustado sobre notas que incluíam a máscara −1e9 dos serviços indisponíveis
+  (b = −8.9e8 → nunca serve). Conserto: o ajuste do bias só olha linhas com
+  serviço disponível. Semeado do clone contaminado ainda deu 0.60 (linear)
+  vs 0.77 do-zero em 25 ger. — número suspeito, refazer. Re-enfileirado
+  (e45h) atrás do E51; o honesto v3 passa pra trás dele (5 min a mais).
