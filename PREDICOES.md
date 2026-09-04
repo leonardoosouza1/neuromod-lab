@@ -1050,7 +1050,7 @@ Regras novas: 17 (gene novo nasce desligado), 18 (triagem só descarta), 19 (var
 | 68 | E47 serviços separados (sem loja no posto): mínimo-3 perde ≥ 10 pp pro produto/modos; mortalidade geral sobe | mortalidade sobe ✓ (0.86–0.92); mínimo-3 NÃO perde (0.89 = produto 0.89, modos 0.92) ✗ — ninguém aprende a comer longe; reflexo melhor (0.86) |
 | 69 | E45 clonagem (professor = campeão mínimo-3): base sozinha ≈ campeão (±5 pp); semeado 25 ger. ≥ do-zero 40 ger.; professor v3 guloso ainda morre ≥ 0.6 | (na fila) |
 | 70 | E44 v2 (moeda cruzada): ganho do prefeito cai mas fica (−15 a −30 pp na triagem); ≥ 1 alavanca acima de 1.0 além da tarifa | ✓ triagem: 0.62 → 0.16 (−46 pp), comida ×1.76; obras 53 → 7; brecha: caixa negativo (v3 fecha) |
-| 71 | Honesto campo L=200 (5 sem., 120 ger.): reflexo < mínimo-3 em mortos por ≥ 5 pp (o joelho evita o tanque vazio que mata 69 % dos mortos do mínimo-3); ambos ≤ 0.5 | (na fila) |
+| 71 | Honesto campo L=200 (5 sem., 120 ger.): reflexo < mínimo-3 em mortos por ≥ 5 pp; ambos ≤ 0.5 | ✗ idênticos: 0.53 / 28.7 os dois (estratégias diferentes: 10×54 L vs 15×39 L); teto honesto do ser sozinho = 0.53 |
 | 72 | E48 comitê (4 campeões + inércia): ≥ melhor campeão por ≥ 3 pp SÓ se ganho > 1 e τ > 4 em ≥ 2/3 | (na fila) |
 | 73 | E49 olho multi-escala (need + a·micro + b·macro no produto): genes ≠ 0 em ≥ 2/3; panes −20 % vs produto; mortos −5 pp | (na fila) |
 | 74 | E44 v3 (orçamento fecha): mantém ≥ −30 pp; gasolina não fica abaixo de ×0.8 sem compensação | (na fila) |

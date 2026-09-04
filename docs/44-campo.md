@@ -386,3 +386,16 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
   seres/passo). Espalhamento entre sementes ±0.02: a régua do campo é bem
   mais apertada que a do grafo (±0.07). Predição 71 (reflexo ≤ 0.5): ✗ por
   pouco (0.53); a comparação com mínimo-3 decide a cláusula dos 5 pp.
+- **16:18 honesto L=200 completo (5 sementes, 120 ger., 10 dias, régua B):**
+
+| braço | mortos | entregas | panes | abastecimentos × L | reserva | dinheiro |
+|---|---|---|---|---|---|---|
+| reflexo | 0.53 [.52 .56 .51 .53 .52] | 28.7 | 5.3 | 10.0 × 54 | 23 | 31 |
+| mínimo-3 | 0.53 [.53 .52 .57 .52 .50] | 28.7 | 4.8 | 14.7 × 39 | 23 | 35 |
+
+  Idênticos na régua (mortos, entregas, reserva), estratégias diferentes
+  (mínimo-3: paradas frequentes e curtas; reflexo: raras e cheias).
+  Predição 71 ✗ (sem 5 pp; nenhum ≤ 0.5). Δ = 0 neste mundo: **teto honesto
+  do ser sozinho = 0.53 mortos / 28.7 entregas em 10 dias** — a régua que o
+  prefeito v3 e o comitê/olho multi-escala precisam bater. ~55 min de GPU
+  por braço (327 k seres/passo).
