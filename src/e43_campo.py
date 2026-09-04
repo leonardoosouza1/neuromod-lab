@@ -11,13 +11,14 @@ BRACOS = [('linear', Linear), ('reflexo', Reflexo), ('produto (need x dist, port
 
 def main(a):
     p = dict(PRESETS[a.preset]); os.makedirs(a.out, exist_ok=True)
+    p['T_evo'] = p['T_aval'] = int(240*a.dias)          # vida em dias (5 dias = viver de poupanca e otimo; 10 obriga a trabalhar)
     if a.seeds: p['seeds'] = tuple(a.seeds)
     if a.R: p['R'] = a.R
     if a.G: p['G'] = a.G
     cfg = CfgCampo(L=a.L, pena_morte=a.pena, fitness=a.fitness)
     treino = [gerar_mapa(s, L=a.L) for s in range(4)]; teste = [gerar_mapa(a.teste_seed + s, L=a.L) for s in range(3)]
     res = dict(preset=a.preset, L=a.L, fitness=a.fitness, pena=a.pena, NF=NF, S=S, bracos={})
-    print(f'== E43 campo | {a.preset} L={a.L} regua={a.fitness} P={p["P"]} G={p["G"]} R={p["R"]} x{len(p["seeds"])} | pena {a.pena} ==', flush=True)
+    print(f'== E43 campo | {a.preset} L={a.L} dias={a.dias} regua={a.fitness} P={p["P"]} G={p["G"]} R={p["R"]} x{len(p["seeds"])} | pena {a.pena} ==', flush=True)
     for nome, A in BRACOS:
         if a.so and nome not in a.so: continue
         t1 = time.time(); W0 = None
@@ -43,5 +44,5 @@ if __name__ == '__main__':
     ap.add_argument('--fitness', default='sobrevive', choices=('padrao', 'sobrevive', 'bemestar')); ap.add_argument('--pena', type=float, default=5.)
     ap.add_argument('--out', default='/media/llm-data/universe-runs/neuromod-lab-taxi/e43'); ap.add_argument('--so', nargs='*', default=None)
     ap.add_argument('--seeds', type=int, nargs='*', default=None); ap.add_argument('--R', type=int, default=None); ap.add_argument('--G', type=int, default=None)
-    ap.add_argument('--teste-seed', type=int, default=1000); ap.add_argument('--tag', default=''); ap.add_argument('--init-from', nargs=2, default=None)
+    ap.add_argument('--teste-seed', type=int, default=1000); ap.add_argument('--tag', default=''); ap.add_argument('--dias', type=float, default=10.); ap.add_argument('--init-from', nargs=2, default=None)
     main(ap.parse_args())

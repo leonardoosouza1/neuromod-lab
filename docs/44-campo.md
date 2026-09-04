@@ -131,3 +131,12 @@ Profissões, prefeito, vários seres no mesmo mapa (fase 2), furo/óleo, loja.
   bit a bit no Linear/60 passos; meu teste (Produto/200) deu diferença —
   quantificar no script (mesma regra do grafo: todos os braços de uma
   bateria no mesmo modo, gravado no JSON).
+- **00:15** fumaça 4 (código auditado, eager), braço linear: **mortos 0.01
+  com ZERO entregas** — come, bebe o mínimo e vive das economias (100 → 51).
+  Sob bem-estar, com vida de 5 dias, viver de poupança é a estratégia ótima.
+  É o ponto do Leonardo ("você treina só 5 dias"): o horizonte curto não
+  cobra trabalho. Vida passa a 10 dias (`--dias`, padrão 10; T=2400) — com
+  compile são ~3 min por braço honesto mesmo assim. **Predição 59:** com 10
+  dias o linear "vive de renda" colapsa (mortos ≥ 0.5) e o produto só
+  sobrevive entregando ≥ 6 por vida; a reserva (gordura) aparece como
+  poupança de quem trabalha (res médio dos vivos > 10).
