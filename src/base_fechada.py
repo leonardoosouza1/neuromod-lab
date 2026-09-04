@@ -5,6 +5,7 @@ Professor (por opcao g, tudo em forma fechada a partir de obs() e do estado): ut
 (vida, fome, agua, tanque, dinheiro), com pesos fixos; servicos: utilidade do que compram; movimento: reducao ponderada das
 distancias ao que FALTA. Y e a utilidade centrada por linha (argmax e invariante a deslocamento)."""
 import sys, os, json, time, argparse
+os.environ.setdefault('TORCHINDUCTOR_COMPILE_THREADS', '1')
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import torch
 from campo import *
@@ -40,7 +41,9 @@ def coletar(mapas, cfg, n_est=200_000, T=1200, seed=11, W_pro=None):
     m = Campo(mapas, P, cfg, seed=seed, R=16); B = m.B
     g = torch.Generator(device=DEV); g.manual_seed(seed)
     Phis, Ys = [], []
+    t0 = time.time()
     for t in range(T):
+        if t % 400 == 0: print(f'  [professor] passo {t}/{T} {time.time()-t0:.0f}s vivos {float((m.vida>0).float().mean()):.2f} ent {float(m.ent.mean()):.1f}', flush=True)
         F, val = m.obs(); U = utilidade_professor(m, F)
         svn, sv = m.serv_need()
         # Phi da politica linear: features por opcao (B,G,NF) + servicos (B,S) com need*sv e bias
