@@ -194,6 +194,29 @@ class Cfg:
         # [E16 fim]
         # [E17 produtos] flags/constantes — SO o agente E17 edita este bloco
         # [E17 fim]
+        # [E42 mundo] flags/constantes da CIDADE GRANDE — SO o agente E42-mundo
+        # edita este bloco. Doc 42. Todas nascem no comportamento de hoje:
+        # moradia=False, pax_cruza=0, tarifa_distrito=False, rua_nao_dorme=False
+        # => IDENTIDADE BIT-EXATA (nada aloca, nada sorteia, nenhum draw se desloca).
+        #   moradia         m.casa = distrito de NASCIMENTO; descansar no distrito-casa
+        #                   e como hoje, fora custa HOTEL (preco base x fator do
+        #                   distrito, igual a qualquer gasto); libera os sentidos
+        #                   `e_em_casa` e `e_aliq_local` nos slots reservados
+        #                   (ex-h_gl0/h_gl1, so quando as glandulas estao desligadas)
+        #   HOTEL           preco BASE da diaria fora de casa (x fator do distrito)
+        #   ALUGUEL_D       (D,) multiplicador do aluguel por LINHA da tabela de
+        #                   precos (None = 1.0). O aluguel e cobrado pelo distrito
+        #                   da CASA, nao pelo lugar onde o ser esta.
+        #   rua_nao_dorme   parado por fadiga (fad>=95) a NOITE e fora do distrito-casa
+        #                   nao repoe fadiga: perde o tempo e acorda cansado
+        #   pax_cruza       >0: destino do passageiro ~ 1/(1+d) (nunca o proprio no)
+        #                   com no minimo esta FRACAO da massa em OUTRO distrito
+        #   tarifa_distrito tarifa = base x distancia x multiplicador de preco do
+        #                   distrito de ORIGEM (o imposto pela origem ja e do E15:
+        #                   nao duplicar)
+        s.moradia=False; s.HOTEL=8.; s.ALUGUEL_D=None
+        s.rua_nao_dorme=False; s.pax_cruza=0.; s.tarifa_distrito=False
+        # [E42 fim]
         s.RES_MAX=60.; s.NIVEL=50.; s.PERDA_ARMAZ=.10; s.MOB=25.; s.TPAR_MOB=3.
         s.WF=.10; s.WR=.30; s.KAPPA_F=.05
 
@@ -310,6 +333,11 @@ class Lote:
                                  'ponha cfg.pane_dinh=0 (N16 / regra 12: multa na moeda '
                                  'que compra a recuperacao = espiral de pobreza).')
             D = cfg.D_DIST
+            # [E42 mundo] D generalizado (era 3 fixo): as tabelas TEM que ter D linhas,
+            # senao AL[pr] indexa fora / ignora linhas em silencio.
+            if len(cfg.ALIQ) != D or len(cfg.PMUL) != D:
+                raise ValueError(f'E15/E42: D_DIST={D} mas ALIQ tem {len(cfg.ALIQ)} e '
+                                 f'PMUL tem {len(cfg.PMUL)} valores (use cfg_cidade_grande).')
             # DISTRITOS por particao espacial (k-means determinista: sementes por
             # ponto-mais-distante + 8 iteracoes de Lloyd). Roda 1x por Lote, no host.
             # A geografia e a MESMA em todos os mundos da cidade; o que muda por
@@ -354,6 +382,38 @@ class Lote:
             s.div_max=z(); s.t_divida=z(); s.kcal_reb=z()
             s.ent_dist=torch.zeros(B,D,device=DEV); s.t_dist=torch.zeros(B,D,device=DEV)
         # [E15 fim]
+        # [E42 mundo] MORADIA + destino que cruza distrito — SO o agente E42-mundo.
+        # Gerador PROPRIO (g42): ligar a moradia/o destino cruzado NAO desloca
+        # nenhum draw de `g` nem de `gsim` — o mundo (npc, perda, spawn de
+        # passageiro, congestao) fica IDENTICO ao do braco sem as flags.
+        s.g42 = torch.Generator(device=DEV); s.g42.manual_seed(seed + 424243)
+        if cfg.moradia or cfg.pax_cruza or cfg.tarifa_distrito or cfg.rua_nao_dorme:
+            if not cfg.economia:
+                raise ValueError('E42: moradia/pax_cruza/tarifa_distrito/rua_nao_dorme '
+                                 'precisam de cfg.economia=True (distritos vem do E15).')
+        if cfg.moradia:
+            D = cfg.D_DIST
+            # CASA = distrito onde NASCEU (v1: nao muda na vida)
+            s.casa = s.e15_dist[s.cidx, s.no]                       # (B,)
+            AM = torch.tensor(cfg.ALUGUEL_D if cfg.ALUGUEL_D is not None else (1.,)*D,
+                              device=DEV, dtype=torch.float32)
+            if AM.numel() != D:
+                raise ValueError(f'E42: ALUGUEL_D tem {AM.numel()} valores, D={D}')
+            s.e42_alug = AM[s.e15_rank]              # (B,D) aluguel por distrito GEOGRAFICO
+            # aliquota do distrito atual NORMALIZADA 0..1 (regra 15: escala do
+            # gene — crua ela e 0.05..0.35 e o peso teria de ser 3x maior que
+            # o das outras features pra dizer a mesma coisa)
+            amin = float(AL.min()); amax = float(AL.max())
+            s.e42_aliqn = (s.e15_aliq - amin)/max(amax - amin, 1e-6)
+            z42 = lambda: torch.zeros(B, device=DEV)
+            s.t_casa=z42(); s.n_hotel=z42(); s.e42_hotel=z42(); s.n_rua=z42()
+            s.ent_cruza=z42()
+        if cfg.pax_cruza:
+            # destino inicial pela MESMA regra do respawn (senao os NPX primeiros
+            # passageiros do episodio seriam uniformes e o mundo mudaria com o tempo)
+            for k in range(NPX):
+                s.pd[:,k] = s._spawn_destino(s.po[:,k])
+        # [E42 fim]
         # [E16 glandulas] estado (h, genes copiados no reset, censo) — SO E16
         # NAO consome o Generator `g`: ligar as glandulas nao desloca nenhum
         # sorteio do mundo (`s.perda` logo abaixo continua identico).
@@ -435,6 +495,31 @@ class Lote:
         u = torch.rand(s.B, s.n, generator=s.gsim, device=DEV).clamp(min=1e-20)
         return (-d/3. - torch.log(-torch.log(u))).argmax(1)
 
+    # [E42 mundo] destino do passageiro que CRUZA distrito
+    def _spawn_destino(s, orig):
+        """(B,) destino ~ 1/(1+d(orig,.)), nunca o proprio no, com no minimo
+        `cfg.pax_cruza` da massa em OUTRO distrito. Tudo (B,n) na GPU, sorteio
+        por Gumbel-argmax (multinomial faz sync). Usa o gerador g42: nao mexe
+        no stream do mundo.
+
+        Reescala: se a massa que ja cai fora do distrito for >= f, nao mexe;
+        senao multiplica o de fora por f/P_fora e o de dentro por (1-f)/(1-P_fora)
+        — a fracao fora fica EXATAMENTE f, sem tocar na forma 1/(1+d) dentro de
+        cada lado."""
+        n = s.n; f = s.cfg.pax_cruza
+        arn = torch.arange(n, device=DEV)[None,:].expand(s.B,-1)
+        d = s.DIa[s.cidx[:,None].expand(-1,n), orig[:,None].expand(-1,n), arn]
+        w = (1./(1.+d))*(arn != orig[:,None]).float()      # ninguem pega taxi pra ficar parado
+        dist = s.e15_dist[s.cidx]                          # (B,n) distrito de cada no
+        fora = (dist != dist.gather(1, orig[:,None])).float()
+        tot = w.sum(1, keepdim=True).clamp(min=1e-20)
+        pf = (w*fora).sum(1, keepdim=True)/tot              # massa que ja cruza
+        ef = (f/pf.clamp(min=1e-20)).clamp(min=1.)
+        ed = ((1.-f)/(1.-pf).clamp(min=1e-20)).clamp(max=1.)
+        w = w*(fora*ef + (1.-fora)*ed)
+        u = torch.rand(s.B, n, generator=s.g42, device=DEV).clamp(min=1e-20)
+        return (torch.log(w.clamp(min=1e-20)) - torch.log(-torch.log(u))).argmax(1)
+
     # resolve "qual cidade" por mundo
     def A_(s):    return s.Aa[s.cidx, s.no]
     def W_(s):    return s.Wa[s.cidx, s.no]
@@ -515,9 +600,15 @@ class Lote:
                             if s.cfg.economia else torch.zeros_like(s.fuel)),
                            # [E16 features] h/H_MAX de cada glandula: o cerebro SENTE o
                            # hormonio (nao o controla). Zero sem cfg.glandulas.
-                           (s.h[:,0]/s.cfg.H_MAX) if s.cfg.glandulas else torch.zeros_like(s.fuel),
-                           (s.h[:,1]/s.cfg.H_MAX) if (s.cfg.glandulas and s.cfg.GL_K > 1)
-                           else torch.zeros_like(s.fuel)], -1)   # E12: reserva+hora; E13: dano
+                           # [E42 mundo] os MESMOS dois slots viram `e_em_casa` e
+                           # `e_aliq_local` quando ha moradia e nao ha glandulas
+                           # (as duas linhas nunca rodam juntas; ver NOMES_F em rodar.py)
+                           (s.h[:,0]/s.cfg.H_MAX) if s.cfg.glandulas else
+                           ((s.e15_dist[s.cidx, s.no] == s.casa).float() if s.cfg.moradia
+                            else torch.zeros_like(s.fuel)),
+                           (s.h[:,1]/s.cfg.H_MAX) if (s.cfg.glandulas and s.cfg.GL_K > 1) else
+                           (s.e42_aliqn.gather(1, s.e15_dist[s.cidx, s.no][:,None]).squeeze(1)
+                            if s.cfg.moradia else torch.zeros_like(s.fuel))], -1)   # E12: reserva+hora; E13: dano
         F = torch.cat([(-dal/6.)[...,None], (-cus/4.)[...,None], (-cong/2.)[...,None],
                        vd[...,None], (-ds.permute(0,2,1)/6.),
                        est[:,None,:].expand(-1,G,-1),
@@ -612,7 +703,13 @@ def passo(m, esc):
     ch = (m.pd_>=0) & (m.no==m.pd_) & (m.rest<=0)
     if viva is not None: ch = ch & viva
     d = m.DIa[m.cidx, m.po_.clamp(min=0), m.pd_.clamp(min=0)]
-    br = (c.base+c.km*d)*m.tar(); im = br*c.imposto
+    br = (c.base+c.km*d)*m.tar()
+    # [E42 mundo] TARIFA pelo distrito de ORIGEM: base x distancia x multiplicador
+    # de preco de onde o passageiro EMBARCOU (m.e15_dorig, gravado no embarque).
+    # O imposto pela origem ja e do E15 e sai de `br` — nao se duplica nada aqui.
+    if c.tarifa_distrito:
+        br = br*m.e15_pmul.gather(1, m.e15_dorig[:,None]).squeeze(1)
+    im = br*c.imposto
     m.ent += ch.float(); m.rec += br*ch.float(); m.imp += im*ch.float()
     m.dinh += (br-im)*ch.float()
     m.po_ = torch.where(ch, torch.full_like(m.po_,-1), m.po_)
@@ -626,7 +723,15 @@ def passo(m, esc):
     ap = m.fad>=95
     m.par_fad += ap.float()
     m.tpar = torch.where(ap, torch.full_like(m.tpar,12.), m.tpar)
-    m.fad  = torch.where(ap, torch.full_like(m.fad,40.), m.fad)
+    # [E42 mundo] DORMIR NA RUA nao repoe: a parada por fadiga so devolve o corpo
+    # (fad 95+ -> 40) de dia OU dentro do distrito-casa. A noite e fora de casa o
+    # ser perde os 12 passos e acorda do mesmo jeito — o descanso pago (hotel ou
+    # casa) passa a ser a UNICA forma de zerar fadiga a noite.
+    rep = ap
+    if c.rua_nao_dorme and c.moradia and noite is not None:
+        rep = ap & ((~noite) | (m.e15_dist[m.cidx, m.no] == m.casa))
+        m.n_rua += (ap & (~rep)).float()
+    m.fad  = torch.where(rep, torch.full_like(m.fad,40.), m.fad)
     pode = livre & (m.rest<=0) & (~ap)
     if viva is not None: pode = pode & viva
     sv = m.serv_ab(noite)
@@ -643,15 +748,22 @@ def passo(m, esc):
         m.imp_orig = m.imp_orig + br*alq_o*ch.float()
         rk_o = m.e15_rank.gather(1, m.e15_dorig[:,None])          # posto na tabela de precos
         m.ent_dist = m.ent_dist + (rk_o == m.ARD[None,:]).float()*ch.float()[:,None]
+        # [E42 mundo] entregas que CRUZARAM distrito (quem entrega esta parado no
+        # destino: m.no aqui e o no de destino da corrida que acabou de fechar)
+        if c.moradia:
+            m.ent_cruza = m.ent_cruza + ch.float()*(m.e15_dist[m.cidx, m.no] != m.e15_dorig).float()
         # (2) ALUGUEL + AGUA + JUROS a meia-noite. Mascara `meia` recalculada aqui:
         # nao depende do bloco da reserva (E12), que so existe com cfg.reserva.
         pos_prev = (m.t - 1 + m.fase_dia.long()) % c.dia
         meia = (((m.t + m.fase_dia.long()) % c.dia) < pos_prev).float()
         if viva is not None: meia = meia*viva.float()    # morto nao paga aluguel
         jur = m.dinh.clamp(max=0.)*c.JUROS*meia          # juros sobre o saldo NEGATIVO
-        m.dinh = m.dinh + jur - (c.ALUGUEL + c.AGUA)*meia
+        # [E42 mundo] o aluguel e do distrito da CASA (x ALUGUEL_D), nao de onde o
+        # ser esta: morar no distrito caro custa ate 2x. Sem moradia, fator 1.0.
+        alug = c.ALUGUEL*(m.e42_alug.gather(1, m.casa[:,None]).squeeze(1) if c.moradia else 1.)
+        m.dinh = m.dinh + jur - (alug + c.AGUA)*meia
         m.juros_pago = m.juros_pago - jur
-        m.aluguel_pago = m.aluguel_pago + (c.ALUGUEL + c.AGUA)*meia
+        m.aluguel_pago = m.aluguel_pago + (alug + c.AGUA)*meia
         # saldo ANTES das compras: o 2o bloco reconstroi a partir daqui porque a linha
         # da multa da pane termina em .clamp(min=0) e apagaria a divida todo passo.
         m.e15_d0 = m.dinh
@@ -712,6 +824,11 @@ def passo(m, esc):
     else:
         novo_po = torch.randint(0,m.n,(B,),generator=m.gsim,device=DEV)
     novo_pd = torch.randint(0,m.n,(B,),generator=m.gsim,device=DEV)
+    # [E42 mundo] destino que CRUZA distrito. O randint acima segue sendo
+    # consumido de proposito: o stream do mundo (npc, spawn de origem, avarias)
+    # fica IDENTICO ao braco sem a flag — so o destino muda.
+    if c.pax_cruza:
+        novo_pd = m._spawn_destino(novo_po)
     ks1 = ks[:,None]
     m.po.scatter_(1, ks1, torch.where(pega, novo_po,
                    m.po.gather(1,ks1).squeeze(1))[:,None])
@@ -782,6 +899,16 @@ def passo(m, esc):
         fat = m.e15_fat.gather(1, dn[:,None]).squeeze(1)
         oo = torch.stack([o1,o2,o3,o4,o5], 1).float()
         gasto = (oo*m.CUSTO[None,:]).sum(1)              # descanso custa 0: nao paga imposto
+        # [E42 mundo] HOTEL: descansar FORA do distrito-casa custa HOTEL (o preco
+        # base entra no `gasto`, entao leva o fator do distrito e o imposto como
+        # qualquer compra). Dentro de casa continua de graca — o aluguel ja foi pago.
+        if c.moradia:
+            em_casa = (dn == m.casa).float()
+            fora_casa = oo[:,2]*(1. - em_casa)
+            gasto = gasto + c.HOTEL*fora_casa
+            m.n_hotel = m.n_hotel + fora_casa
+            m.e42_hotel = m.e42_hotel + c.HOTEL*fora_casa*fat
+            m.t_casa = m.t_casa + em_casa*(viva.float() if viva is not None else 1.)
         m.imp_gastar = m.imp_gastar + gasto*(fat-1.)
         # divida: piso em -LIMITE (nunca morre por dinheiro; o comercio e que nao fia —
         # os portoes `dinh>=preco` e `paga` do serv_need ja bloqueiam a compra no vermelho)

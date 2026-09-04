@@ -14,7 +14,8 @@ PT = {'d_alvo':'distância ao destino', 'custo_rua':'custo da rua', 'congestao':
       'd_oficina':'distância à oficina', 'd_loja':'distância à loja', 'e_fuel':'tanque', 'e_fome':'fome', 'e_fadiga':'fadiga',
       'e_pneu':'pneu', 'e_temp':'temperatura', 'e_oleo':'óleo', 'e_dinheiro':'dinheiro', 'e_tem_pax':'carregando passageiro',
       'e_reserva':'gordura', 'h_sin':'hora (seno)', 'h_cos':'hora (cosseno)', 'e_dano':'dano', 'e_divida':'dívida',
-      'e_preco_local':'preço local', 'h_gl0':'hormônio 0', 'h_gl1':'hormônio 1', 'bias':'constante'}
+      'e_preco_local':'preço local', 'h_gl0':'hormônio 0', 'h_gl1':'hormônio 1',
+      'e_em_casa':'está no distrito de casa', 'e_aliq_local':'imposto local', 'bias':'constante'}
 SERV = ['posto', 'comida', 'descanso', 'oficina', 'loja']
 
 def contribuicoes(W, cfg, cidades, T=600):
