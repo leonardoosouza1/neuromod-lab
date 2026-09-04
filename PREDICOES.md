@@ -1047,6 +1047,6 @@ Regras novas: 17 (gene novo nasce desligado), 18 (triagem só descarta), 19 (var
 | 65 | E43 fumaça 8 (calor sustentável a 70 % de rodagem, D_QUENTE 6): reflexo ≤ 0.6 mortos e ≥ 20 entregas; linear ≤ 0.8 | linear 0.63/26.7 ✓; reflexo 0.69/26.1 (≤0.6 ✗, ≥20 ✓); produto 0.77/23.9 — de 0.96 pra 0.63 |
 | 66 | E46 modos gaussianos: 3 centros se separam (≥ 1 σ) em ≥ 2/3; modo 'com passageiro' tem d_alvo mais forte | centros separam 3/3 ✓; pax-modo com d_alvo mais forte 2/3 ✓; mas ganho da mistura ≤ 0.5 — estrutura sem uso |
 | 67 | E46 modos ≥ linear por ≥ 5 pp de mortos na triagem L=200 | ✗ (0.63 vs 0.62) |
-| 68 | E47 serviços separados (sem loja no posto): mínimo-3 perde ≥ 10 pp pro produto/modos; mortalidade geral sobe | (na fila) |
+| 68 | E47 serviços separados (sem loja no posto): mínimo-3 perde ≥ 10 pp pro produto/modos; mortalidade geral sobe | mortalidade sobe ✓ (0.86–0.92); mínimo-3 NÃO perde (0.89 = produto 0.89, modos 0.92) ✗ — ninguém aprende a comer longe; reflexo melhor (0.86) |
 | 69 | E45 clonagem (professor = campeão mínimo-3): base sozinha ≈ campeão (±5 pp); semeado 25 ger. ≥ do-zero 40 ger.; professor v3 guloso ainda morre ≥ 0.6 | (na fila) |
 | 70 | E44 v2 (moeda cruzada): ganho do prefeito cai mas fica (−15 a −30 pp na triagem); ≥ 1 alavanca acima de 1.0 além da tarifa | (na fila) |

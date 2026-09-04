@@ -309,3 +309,15 @@ triagem; se os centros colapsarem num só, o mundo ainda não pede modos.
   prefeito na triagem), e ele para de baixar tudo (≥ 1 alavanca acima de
   1.0 além da tarifa); se o ganho sumir, o prefeito v1 era só a cidade
   grátis.
+- **14:06 E47 — serviços SEPARADOS (sem loja no posto), triagem L=200:**
+  linear 0.91 / 18.6 entregas · reflexo **0.86 / 20.4** · produto 0.89 /
+  18.8 · modos 0.92 / 17.4 · mínimo-3 0.89 / 19.8 — fome 80–82 no fim em
+  todos: o mundo fica mais duro pra TODOS e ninguém aprende "comer longe da
+  rota" em 40 gerações; mínimo-3 empata com produto/modos (predição 68 ✗).
+  Leitura: o mundo já pede mais que 3 termos, mas a evolução não MONTA a
+  capacidade (mesma lição do E30/E32/E35 no grafo: montagem é o gargalo).
+  É o problema de fronteira: base fechada/clonagem, evolução cumulativa
+  (120+ ger.), ou o prefeito aproximando a comida da rota.
+- **14:06 retratos (L=200 com loja):** mínimo-3 abastece ~10× com
+  EXATAMENTE 50 L e reserva 0–12; linear 5–10× com 50–90 L; modos 6–10×
+  com 50–75 L. Publicado: retrato do mínimo-3.
