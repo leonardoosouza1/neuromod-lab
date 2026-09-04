@@ -75,3 +75,11 @@ Voronoi por célula, pré-computado).
   população que funciona. Próximo: consertar o comer; depois prefeito com
   sentido de "morte por fome" ligado à obra de comida (já é sentido `m_fome`;
   falta gene selecionado) e mais gerações de prefeito.
+- **14:09 portão v2:** "prefeito genes 0 == sem prefeito" deu FALSE — `construir()`
+  sorteava posição mesmo sem construir e consumia o gerador do mundo (desvia
+  o fluxo dos passageiros). Corrigido com gerador próprio do prefeito
+  (`int(s.t)` é lido uma vez, fora do laço quente). Portão re-enfileirado.
+  Os resultados v2 que estão rodando valem como experimento (a mecânica é a
+  mesma; só o fluxo aleatório diferia), mas a comparação "com vs sem" só é
+  bit-limpa depois do portão passar. Caixa per capita inicial 10–22 (v1 era
+  milhares).
