@@ -599,3 +599,10 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
   sem-hipocampo, sem-reflexo) → retrato do completo → completo 300 ger.
   A pergunta certa é "a evolução LIGA alguma parte a partir de uma espinha
   que funciona?", não "monta tudo do zero em 40 gerações?".
+- **20:15 E54d semeado (120 ger., P512, R4, 3 sementes, do campeão linear):**
+  linear-controle 0.63 / 25.9 / 6.3 panes; **completo 0.64 / 26.1 / 5.4
+  panes** — empate (panes −14 %, dentro do ruído de n=3). A espinha
+  funciona e as partes, mesmo disponíveis, não mudaram o resultado em 120
+  gerações. Faltam as 5 partes desligadas (se alguma delas MELHORAR o
+  completo, a parte atrapalha; se piorar, ajuda), o retrato (quais genes
+  se moveram, ablação) e as 300 gerações.
