@@ -126,9 +126,10 @@ class SerCamadas(ReativoReacoes):
         return s.DLT.gather(1, dn[:, None, None].expand(-1, 1, len(IDX_CORTEX))).squeeze(1)
 
     # --------------------------------------------------------------- decisao (PURA)
-    def extra(s, m, W, viz):
+    usa_F = True                                         # [auditoria 4] um_passo passa F; nao recomputa obs()
+    def extra(s, m, W, viz, F=None):
         base = super().extra(m, W, viz)                      # reflexo do pai (B,G)
-        F, _ = m.obs()                                       # obs() e pura: recomputar da o MESMO F
+        F = m.obs()[0] if F is None else F                   # obs() e pura: com F do um_passo, mesma conta sem recomputar
         dn = s._dist(m)
         # 1) TALAMO: (F*gate - F) @ W = F @ (W*(gate-1))
         gf = s._gate(m).gather(1, s.IDXG.expand(m.B, -1))     # (B,NF) portao por feature

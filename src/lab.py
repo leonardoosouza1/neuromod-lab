@@ -1537,7 +1537,7 @@ ARQS = [Reativo, BancoEMA, Diadica, Corpo, Hibrido, MemCusto, MapaServico]
 def um_passo(m, a, Wb):
     """um tick completo: observar -> pontuar -> agir."""
     F, val = m.obs(); viz = m.A_().clamp(min=0)
-    sc = torch.einsum('bgf,bf->bg', F, Wb[:,:NF]) + a.extra(m, Wb, viz)
+    sc = torch.einsum('bgf,bf->bg', F, Wb[:,:NF]) + (a.extra(m, Wb, viz, F) if getattr(a, 'usa_F', False) else a.extra(m, Wb, viz))   # [auditoria 4] arq que reusa F nao recomputa obs()
     sc = sc.masked_fill(~val, -1e9)
     svn, sv = m.serv_need()
     ss = svn*Wb[:,NF:NF+5] + Wb[:,NF+5:NF+6]
@@ -1554,11 +1554,12 @@ def um_passo(m, a, Wb):
 # kernels elementwise por passo.
 _PASSO_C = None
 _COMPILE_OK = None
-def _passo_fn():
+_COMPILE_RUIM = set()      # [auditoria 5] nomes de arquitetura cujo compile falhou — fallback POR BRACO, nao global
+def _passo_fn(arq=None):
     global _PASSO_C, _COMPILE_OK
     if os.environ.get('NM_COMPILE', '1') == '0' or DEV != 'cuda':
         return um_passo
-    if _COMPILE_OK is False:
+    if _COMPILE_OK is False or (arq is not None and arq in _COMPILE_RUIM):
         return um_passo
     if _PASSO_C is None:
         try:
@@ -1570,11 +1571,11 @@ def _passo_fn():
             return um_passo
     return _PASSO_C
 
-def modo_execucao():
+def modo_execucao(arq=None):
     """'compile' ou 'eager' — gravar no JSON: compile e eager divergem por
     arredondamento (~1e-5 em fuel/temp), entao bateria com modo misto precisa
-    ficar auditavel."""
-    if os.environ.get('NM_COMPILE', '1') == '0' or DEV != 'cuda' or _COMPILE_OK is False:
+    ficar auditavel. arq: nome da arquitetura (fallback e por braco)."""
+    if os.environ.get('NM_COMPILE', '1') == '0' or DEV != 'cuda' or _COMPILE_OK is False or (arq is not None and arq in _COMPILE_RUIM):
         return 'eager'
     return 'compile'
 
@@ -1583,7 +1584,7 @@ def rodar(Arq, W, cidades, cfg, T, seed, R=1):
     P = W.shape[0]; m = Lote(cidades, P, cfg, seed=seed, R=R)
     Wb = W[m.gidx]
     a = Arq(); a.reset(m, Wb)
-    fn = _passo_fn()
+    fn = _passo_fn(Arq.__name__)
     for t in range(T):
         try:
             fn(m, a, Wb)
@@ -1593,9 +1594,9 @@ def rodar(Arq, W, cidades, cfg, T, seed, R=1):
             # anteriores ja mutaram m) — nunca re-executar por cima: reconstruir
             # a rodada inteira do zero em eager.
             if fn is not um_passo and t == 0:
-                print(f'  [compile falhou ({type(e).__name__}); refazendo esta '
-                      f'rodada em eager — modo gravado no JSON]', flush=True)
-                _COMPILE_OK = False
+                print(f'  [COMPILE FALHOU em {Arq.__name__} ({type(e).__name__}): SO esta arquitetura cai para eager; '
+                      f'os outros bracos seguem compilados — modo gravado no JSON; nao compare bracos em modos diferentes]', flush=True)
+                _COMPILE_RUIM.add(Arq.__name__)
                 return rodar(Arq, W, cidades, cfg, T, seed, R=R)
             raise RuntimeError(
                 f'passo falhou no meio da rodada (t={t}); estado possivelmente '
