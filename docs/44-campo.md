@@ -380,3 +380,9 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
   (B = 5 × 65 k = 327 k seres por passo, ~7 ms/passo) → ~35 min por braço.
   A regra "20 min sem log = kill" precisa de log por geração: runners
   passam a `verbose=True` (o lab imprime a cada 5 gerações). Não matei.
+- **15:22 honesto L=200 (5 sementes, 120 ger., 10 dias, régua B), braço
+  reflexo: 0.53 mortos [.52 .56 .51 .53 .52], 28.7 entregas, panes 5.3, 10
+  abastecimentos × 54 L, reserva 23, dinheiro 31** — 53 min de GPU (327 k
+  seres/passo). Espalhamento entre sementes ±0.02: a régua do campo é bem
+  mais apertada que a do grafo (±0.07). Predição 71 (reflexo ≤ 0.5): ✗ por
+  pouco (0.53); a comparação com mínimo-3 decide a cláusula dos 5 pp.
