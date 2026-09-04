@@ -1054,3 +1054,4 @@ Regras novas: 17 (gene novo nasce desligado), 18 (triagem só descarta), 19 (var
 | 72 | E48 comitê (4 campeões + inércia): ≥ melhor campeão por ≥ 3 pp SÓ se ganho > 1 e τ > 4 em ≥ 2/3 | (na fila) |
 | 73 | E49 olho multi-escala (need + a·micro + b·macro no produto): genes ≠ 0 em ≥ 2/3; panes −20 % vs produto; mortos −5 pp | (na fila) |
 | 74 | E44 v3 (orçamento fecha): mantém ≥ −30 pp; gasolina não fica abaixo de ×0.8 sem compensação | (na fila) |
+| 75 | E50 reflexo 2 raízes (histerese): largura > 0.15 em ≥ 2/3; panes −15 % vs reflexo | (na fila) |

@@ -449,3 +449,21 @@ class ProdutoTrend(Produto):
         n = s._need(m); s.e64 = s.e64 + (n - s.e64)/64.; s.e512 = s.e512 + (n - s.e512)/512.
     def ativacao(s, m):
         n = s._need(m); return torch.cat([n - s.e64, s.e64 - s.e512], 1)
+
+
+class ReflexoRaizes(Reflexo):
+    """E50 REFLEXO COM DUAS RAIZES (Leonardo: 'Bhaskara da dois resultados'): a parabola a(c - r1)(c - r2) e negativa ENTRE as
+    raizes. Liga quando a sede c passa de r2 (= portao theta), e so DESLIGA quando c cai abaixo de r1 = theta - largura
+    (histerese/termostato). Gene extra = largura (softplus(g - 4): nasce ~0 => r1 = r2 = theta == Reflexo bit a bit).
+    Estado 'ligado' atualizado em atualizar() (fora do grafo)."""
+    nome = 'reflexo-raizes'; NP = Reflexo.NP + 1
+    def reset(s, m, W):
+        Reflexo.reset(s, m, W); s.larg = torch.nn.functional.softplus(W[:, -1] - 4.)   # largura da banda entre as raizes
+        s.ligado = torch.zeros(m.B, device=DEV)
+    def _ativ(s):
+        # intensidade: quando ligado, a ativacao vale (c - r1) (continua positiva ate cruzar r1); quando desligado, (c - r2)+
+        return torch.where(s.ligado > 0, (s.c - (s.theta - s.larg)).clamp(min=0.), (s.c - s.theta).clamp(min=0.))
+    def atualizar(s, m):
+        Reflexo.atualizar(s, m)
+        r1 = s.theta - s.larg; r2 = s.theta
+        s.ligado = torch.where(s.c > r2, torch.ones_like(s.ligado), torch.where(s.c < r1, torch.zeros_like(s.ligado), s.ligado))

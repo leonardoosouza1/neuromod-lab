@@ -363,3 +363,15 @@ têm macro que valha — a escala de dias é do prefeito.
   os pesos crus → política de lixo. Corrigido (máscara), e clonagem do
   campeão LINEAR também na fila (não precisa de máscara). Predição 69
   segue valendo pra clonagem corrigida.
+
+## 13. E50 — Reflexo com duas raízes (Leonardo, 14:45: "Bhaskara dá dois resultados")
+A parábola `a(c − r₁)(c − r₂)` é negativa entre as raízes: dois limiares —
+liga em r₂ (= portão atual), só desliga em r₁ = r₂ − largura. Histerese /
+termostato: o "andar e manter" sem oscilar na fronteira (a doença do E32b).
+1 gene (largura, nasce ~0 == Reflexo). Leituras: Δ < 0 = deserto; Δ = 0 =
+mundo degenerado (todas as arquiteturas na mesma política — nosso caso com
+loja); Δ > 0 = duas estratégias (linhagem com e sem reflexo). Vértice
+−b/2a = a base fechada (mínimos quadrados). **Predição 75:** largura
+evoluída > 0.15 em ≥ 2/3 sementes e panes −15 % vs reflexo simples; se a
+largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
+(a histerese só paga quando o alvo se consome devagar).
