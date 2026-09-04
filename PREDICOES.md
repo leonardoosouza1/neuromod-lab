@@ -1044,4 +1044,6 @@ Regras novas: 17 (gene novo nasce desligado), 18 (triagem só descarta), 19 (var
 | 62 | E45 base fechada sozinha ≥ 0.6 vivos em 10 dias | v1 ✗ cláusula ✓ (professor morre 1.00 → base morta; semeado pior que do-zero); v2 do professor na fila |
 | 63 | E45 semeado da base (25 ger.) ≥ do-zero (25 ger.) por ≥ 20 pp de mortos | (na fila) |
 | 64 | E45 preço = diversidade (fingerprint entre sementes < 0.3) | (na fila) |
-| 65 | E43 fumaça 8 (calor sustentável a 70 % de rodagem, D_QUENTE 6): reflexo ≤ 0.6 mortos e ≥ 20 entregas; linear ≤ 0.8 | (na fila atrás do E45) |
+| 65 | E43 fumaça 8 (calor sustentável a 70 % de rodagem, D_QUENTE 6): reflexo ≤ 0.6 mortos e ≥ 20 entregas; linear ≤ 0.8 | linear 0.63/26.7 ✓; reflexo 0.69/26.1 (≤0.6 ✗, ≥20 ✓); produto 0.77/23.9 — de 0.96 pra 0.63 |
+| 66 | E46 modos gaussianos: 3 centros se separam (≥ 1 σ) em ≥ 2/3; modo 'com passageiro' tem d_alvo mais forte | (triagem na fila) |
+| 67 | E46 modos ≥ linear por ≥ 5 pp de mortos na triagem L=200 | (na fila) |

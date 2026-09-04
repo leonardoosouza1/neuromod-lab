@@ -362,3 +362,32 @@ def rodar_com_prefeito(Arq, W, mapas, cfg, T, seed, R=1, Wp=None, prefeito_cls=N
             pref.receita(m.imp); pref.agir(t//cfg.dia)
         fn(m, a, Wb); a.atualizar(m)
     return m, pref
+
+
+class Modos(Linear):
+    """E46 MODOS GAUSSIANOS (ideia do Leonardo: 'gaussiana com 3 direcoes; depende de onde voce observa'): K gaussianas no espaco
+    das necessidades (tanque, agua, fome, dinheiro, tem_pax) com centro mu_k, largura por eixo (3 eixos principais: log-sigma) e um
+    VETOR DE PESOS DE MOVIMENTO proprio dW_k. nota(g) = F.W + sum_k r_k(x) * F.dW_k, r = softmax das log-densidades * ganho.
+    Nasce == Linear: dW=0 (regra 17). Genes: K*(5 centro + 3 sigma + NF pesos) + 1 ganho."""
+    nome = 'modos-campo'; K = 3; NEED = 5
+    NP = Linear.NP + K*(NEED + 3 + NF) + 1
+    def reset(s, m, W):
+        s.W = W; o = Linear.NP; K = s.K; n = s.NEED
+        s.mu = W[:, o:o+K*n].view(-1, K, n)*.5 + .5                          # centros ~ [0,1] (genes 0 -> centro 0.5)
+        o += K*n; s.ls = W[:, o:o+K*3].view(-1, K, 3)                          # log-sigma dos 3 eixos (0 -> sigma 1)
+        o += K*3; s.dW = W[:, o:o+K*NF].view(-1, K, NF)                        # pesos de movimento por modo (0 -> identico ao linear)
+        o += K*NF; s.ganho = torch.nn.functional.softplus(W[:, o] + 1.)         # ganho da mistura
+    def _x(s, m):
+        return torch.stack([m.fuel/100., m.agua/100., m.fome/100., (m.dinh/100.).clamp(0., 1.), (m.pd_ >= 0).float()], 1)   # (B,5)
+    def extra(s, m, W, F):
+        x = s._x(m)                                                            # (B,5)
+        d = x[:, None, :] - s.mu                                                # (B,K,5)
+        # 3 eixos: (fuel,agua) / (fome,dinh) / (pax) — cada eixo com sua largura
+        q = (d[..., 0]**2 + d[..., 1]**2)*torch.exp(-2*s.ls[..., 0]) + (d[..., 2]**2 + d[..., 3]**2)*torch.exp(-2*s.ls[..., 1]) + d[..., 4]**2*torch.exp(-2*s.ls[..., 2])
+        r = torch.softmax(-.5*q, 1)*s.ganho[:, None]                           # (B,K) responsabilidade de cada modo
+        Wm = torch.einsum('bk,bkf->bf', r, s.dW)                                # (B,NF) pesos extras "vistos de onde o ser esta"
+        return torch.einsum('bgf,bf->bg', F, Wm)
+    def ativacao(s, m):
+        x = s._x(m); d = x[:, None, :] - s.mu
+        q = (d[..., 0]**2 + d[..., 1]**2)*torch.exp(-2*s.ls[..., 0]) + (d[..., 2]**2 + d[..., 3]**2)*torch.exp(-2*s.ls[..., 1]) + d[..., 4]**2*torch.exp(-2*s.ls[..., 2])
+        return torch.softmax(-.5*q, 1)

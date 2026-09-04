@@ -227,3 +227,27 @@ ideia — corrigir o professor antes de julgar.
   ponderada pela necessidade vs ficar (±1/passo), ruído 0.15, ficar sem
   necessidade custa; o script aborta se o professor morrer ≥ 0.8. Na fila
   atrás da fumaça 8.
+- **12:16 fumaça 8 (calor sustentável, pobre, 10 dias) — a virada:** linear
+  **0.63 mortos / 26.7 entregas / 10 abastecimentos de 50 L / reserva 26**;
+  reflexo 0.69 / 26.1 / 47 L; produto 0.77 / 23.9 / 74 L. De 0.96 pra 0.63
+  com um ajuste de física; o ser trabalha, come, bebe, abastece e POUPA.
+  Predição 65: entregas ≥ 20 ✓; reflexo ≤ 0.6 ✗ (0.69); linear ≤ 0.8 ✓.
+  Agora baterias de verdade, em série na fila: portão dos modos gaussianos
+  (E46) → triagem L=200 (5 braços: linear, reflexo, produto, modos,
+  mínimo-3) → triagem L=400 → prefeito (fumaça) neste mundo → E45 v2 já
+  estava antes. **Violação da regra 21 registrada:** rodei o teste dos
+  modos com a fumaça na GPU → memory access fault no meu teste; a fumaça
+  sobreviveu. Sem exceção: todo teste pela fila.
+
+## 10. E46 — Modos gaussianos (ideia do Leonardo, 12:20)
+"Gaussiana com 3 direções; depende de onde se observa." K=3 gaussianas no
+espaço das necessidades (tanque, água, fome, dinheiro, passageiro), cada
+uma com centro, largura por 3 eixos (tanque+água / fome+dinheiro /
+passageiro) e um vetor de pesos de movimento próprio; a mistura (softmax
+das densidades × ganho) decide "de onde o ser olha". Nasce == linear
+(pesos por modo = 0). É a generalização principiada do "necessidade ×
+distância com portão" que salvou o campo. **Predições 66–67:** 66. na
+triagem L=200 os 3 centros se separam (distância ≥ 1 σ entre pares em ≥
+2/3 sementes) e o modo que ganha responsabilidade quando `tem_pax`=1 tem
+o peso de `d_alvo` mais forte; 67. modos ≥ linear em mortos por ≥ 5 pp na
+triagem; se os centros colapsarem num só, o mundo ainda não pede modos.
