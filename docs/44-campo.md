@@ -419,3 +419,8 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
   — nada (ruído, levemente pior). Predição 73 ✗. Cláusula: em 10 dias não
   há macro que valha — a escala de dias é do prefeito. Genes de tendência
   (abaixo) dizem se a evolução os moveu.
+  Genes de tendência: a e b saíram de zero com força (b_fome −4.3, a_fuel
+  +4.1) SEM ganho — deriva neutra, não seleção; e o próprio produto está
+  incoerente (w da sede negativo em 2/3 = empurra PRA LONGE do posto, θ
+  0.01–0.36): na triagem com loja, tudo além dos 3 termos é ruído que a
+  evolução carrega. Confirma o Δ = 0 do mundo com loja.
