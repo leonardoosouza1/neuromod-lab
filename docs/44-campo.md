@@ -81,3 +81,23 @@ Profissões, prefeito, vários seres no mesmo mapa (fase 2), furo/óleo, loja.
   córtex 66–89, hipocampo 90–91), nasce bit-igual ao reflexo; portões ok.
   Ainda é do grafo (usa m.e15_dist/obs de 26 features) — a versão de campo
   precisa de adaptação de índices (fase seguinte).
+- **22:50** v3: distância EXATA por opção ao ponto mais perto (a grade de
+  1.5 u empatava o argmax perto do alvo: o ser parava a 4 u da água e nunca
+  entrava no raio 3); raio 4; 10 ms/passo @ 49 k. Perito à mão ainda morria:
+  água drenava 0.75/passo com motor quente (100 u = 2 h) e o calor subia
+  1.5/passo (desligava a cada 45 passos) → recalibrado (água 2 dias, calor
+  135 passos de estrada contínua, gasolina 0.15/u).
+- **23:00 — achado de fundo:** no contínuo, política LINEAR sobre distâncias
+  é um CAMPO DE POTENCIAL: a soma das atrações tem ponto de equilíbrio no
+  meio; o perito −1/−1/−1/−1 vive 949 passos com ZERO entregas, parado entre
+  passageiro, comida e água. O grafo escondia isso (nós discretos). O campo
+  EXIGE escolher um alvo por vez: `Produto` (necessidade × distância com
+  portão) — a família do E17/E29b vira o mínimo do campo.
+- **23:05** economia matava: 1–2 entregas não pagam aluguel + gasolina (~200
+  por vida). Calibração: passageiros nascem a ≤ 45 u (12), tarifa 3 + 0.25/u,
+  gasolina 0.3/L e consumo 0.15/u, água 0.05/L, comida 2, aluguel 4·distrito,
+  dinheiro inicial 100. Perito bilinear: 16 % vivos, 4 entregas, 15
+  refeições (come demais — mal calibrado à mão; a evolução ajusta). Gradiente
+  existe. Fumaça de evolução lançada (linear / reflexo / produto, régua B).
+  **Predição 56:** linear ≥ 0.9 mortos (preso no potencial); produto ≤ 0.6;
+  reflexo entre os dois (portão só na gasolina).
