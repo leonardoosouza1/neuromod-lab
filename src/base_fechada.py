@@ -15,7 +15,9 @@ def utilidade_professor(m, F):
     need = torch.stack([1. - m.fuel/100., 1. - m.agua/100., m.fome/100., torch.ones(B, device=DEV)*.35], 1)   # tanque, agua, fome, alvo(sempre)
     need = need.clamp(min=0.)**2                                                                            # concavo: o que falta MUITO manda
     D = F.index_select(2, torch.tensor([1, 3, 2, 0], device=DEV))                                            # d_posto, d_agua, d_comida, d_alvo (B,G,4)
-    u_mov = -(D*need[:, None, :]).sum(-1) - .3*F[:, :, 6]                                                   # custo a frente pesa
+    dD = D - D[:, G-1:G, :]                                                                                  # variacao da distancia vs FICAR (opcao 8): ~ -1..+1 por passo
+    u_mov = -(dD*need[:, None, :]).sum(-1)/need.sum(1, keepdim=True).clamp(min=1e-3) - .1*(F[:, :, 6] - F[:, G-1:G, 6])   # media ponderada pela necessidade; custo a frente
+    u_mov = u_mov - .2*(torch.arange(G, device=DEV) == G-1).float()[None, :]*(need[:, :3].sum(1, keepdim=True) < .3).float()   # ficar parado sem necessidade e ruim (marcha lenta)
     svn, sv = m.serv_need(); pm = m.serv_ab()[1]; cs = m.custos(pm)
     cabe = (100. - m.fuel); res_ok = (c.RES_MAX - m.res).clamp(min=0.)
     ganho = torch.stack([torch.minimum(torch.full_like(cabe, q), cabe)/100. + .3*torch.minimum((q - cabe).clamp(min=0.), res_ok)/100. for q in (25., 50., 75., 100., 150.)] +
@@ -23,7 +25,8 @@ def utilidade_professor(m, F):
                         [torch.minimum(torch.full_like(cabe, c.REFEICAO), m.fome)/100., (m.fad/100.)**2, ((100. - m.vida)/100.)**2], 1)   # (B,S)
     peso = torch.tensor([3., 3., 3., 3., 3., 3., 3., 4., 1., 2.], device=DEV)                                     # tanque, agua, comida, fadiga, oficina
     u_srv = ganho*peso[None, :]*need_srv(m) - .02*cs - 8.*(sv <= 0).float()                                   # caro pesa; indisponivel e proibido
-    return torch.cat([u_mov, u_srv], 1)
+    U = torch.cat([u_mov, u_srv], 1)
+    return U
 
 def need_srv(m):
     """multiplica o ganho do servico pela necessidade AO QUADRADO (so vale a pena quando falta)"""
@@ -45,7 +48,7 @@ def coletar(mapas, cfg, n_est=200_000, T=1200, seed=11, W_pro=None):
         Phi_srv = torch.cat([svn, torch.ones(B, 1, device=DEV)], 1)                       # (B,S+1)
         if t % 4 == 0:
             Phis.append((Phi_mov.detach(), Phi_srv.detach())); Ys.append(U.detach())
-        esc = (U + .5*torch.randn(B, G + S, generator=g, device=DEV)).argmax(1)         # professor com ruido: cobre estados variados
+        esc = (U + .15*torch.randn(B, G + S, generator=g, device=DEV)).argmax(1)        # professor com ruido pequeno (as diferencas por opcao sao ~0.1-1)
         m.passo(esc)
     return Phis, Ys, m
 
@@ -72,6 +75,8 @@ def main():
     cfg = CfgCampo(L=a.L, fitness=a.fitness); treino = [gerar_mapa(s, L=a.L) for s in range(4)]; teste = [gerar_mapa(1000 + s, L=a.L) for s in range(3)]
     t0 = time.time(); Phis, Ys, m_pro = coletar(treino, cfg, T=T)
     print(f'== E45 base fechada | L={a.L} dias={a.dias} | professor: {sum(p[0].shape[0] for p in Phis)} estados em {time.time()-t0:.0f}s | professor puro: mortos {float((m_pro.vida<=0).float().mean()):.2f} ent {float(m_pro.ent.mean()):.1f} come {float(m_pro.n_come.mean()):.1f} abast {float(m_pro.n_posto.mean()):.1f}', flush=True)
+    if float((m_pro.vida <= 0).float().mean()) >= .8:
+        print('PROFESSOR MORRE (>= 0.8): base nao ajustada — corrigir o professor antes de julgar a ideia (clausula da predicao 62)', flush=True); return
     t0 = time.time(); W = resolver(Phis, Ys); print(f'ridge: {time.time()-t0:.1f}s | |W| {float(W.abs().mean()):.2f}', flush=True)
     med = medidas(Linear, W, teste, cfg, T=T, seed=7777, R=1, copias=128)
     print(f"  base fechada sozinha (linear)         fit {med['fit']:6.2f} mortos {med['mortos']:.2f} ent {med['ent']:5.1f} panes {med['panes']:4.1f} fome {med['fome_fim']:3.0f} agua {med['agua_fim']:3.0f} dinh {med['dinh']:4.0f} L/abast {med['litros_por_abast']:4.0f} abast {med['n_posto']:4.1f}", flush=True)

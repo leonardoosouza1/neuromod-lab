@@ -218,3 +218,12 @@ ideia — corrigir o professor antes de julgar.
   "reflexo menos panes" ✗ (4.6 vs 3.4) mas reflexo vive mais. Fumaça 8 (calor
   calibrado) na fila atrás do E45. **Predição 65:** com o calor sustentável,
   reflexo ≤ 0.6 de mortos e ≥ 20 entregas em 10 dias; linear ≤ 0.8.
+- **12:11 E45 v1:** professor guloso sozinho morre 1.00 com 0.2 entregas →
+  base ajustada nele nasce morta (1.00, 0 entregas) e **semear dela PIORA**
+  (1.00 / 4.9 entregas vs do-zero 0.96 / 16.3): prior errado custa.
+  Cláusula da predição 62 ✓: o professor está errado, não a ideia. Causa:
+  utilidade de movimento em distância ABSOLUTA (diferença entre direções
+  ~0.1) afogada por ruído 0.5. v2: utilidade = variação da distância
+  ponderada pela necessidade vs ficar (±1/passo), ruído 0.15, ficar sem
+  necessidade custa; o script aborta se o professor morrer ≥ 0.8. Na fila
+  atrás da fumaça 8.
