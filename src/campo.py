@@ -24,7 +24,7 @@ NOMES_F = NOMES_OP + NOMES_CORPO + [f'sv_{a[0]}{int(a[1]) if a[1] else ""}' for 
 class CfgCampo:
     def __init__(s, L=400., **kw):
         s.L = float(L); s.dia = 240; s.noite = True; s.vel = 1.0; s.vel_noite = .7
-        s.NPX = 12; s.K = max(3, round(6*s.L/200.)); s.tex = 64; s.raio = 6.; s.raio_px = 45.; s.dinh0 = 100.; s.loja_no_posto = True
+        s.NPX = 12; s.K = max(3, round(6*s.L/200.)); s.tex = 64; s.raio = 6.; s.raio_px = 45.; s.dinh0 = 20.; s.loja_no_posto = True   # nasce POBRE: com 100 vivia de poupanca 10 dias sem trabalhar
         s.fuel_passo = .15; s.agua_passo = .08; s.agua_calor = .12; s.fome_passo = .32; s.fad_passo = .15   # agua ~2 dias; gasolina ~250 passos
         s.calor_sobe = .25; s.calor_desce = .6      # dirigindo direto: 30 -> 92 em ~135 passos; parado esfria .6/passo
         s.CALOR_MAX = 92.; s.D_QUENTE = 10.; s.D_PANE = 6.; s.D_RODAR = .15

@@ -173,3 +173,10 @@ Profissões, prefeito, vários seres no mesmo mapa (fase 2), furo/óleo, loja.
   reflexo entra). Fumaça 6 (10 dias, 3 braços) e prefeito no mundo novo
   lançados em fila. Predição 60: na fumaça 6, produto e reflexo ≤ 0.7 de
   mortos (era 1.00) e o reflexo tem menos panes que o produto.
+- **00:07 fumaça 6 (loja no posto, 10 dias):** 1–5 % mortos nos 3 braços com
+  0.1 entregas e 0 abastecimentos — **vive de poupança 10 dias inteiros**
+  (100 → 11 de dinheiro). A poupança inicial dura mais que a vida. Predição
+  60 ✗ (não pelo motivo previsto). Correção: **nasce pobre** (dinheiro
+  inicial 100 → 20; aluguel 4–8/noite quebra no dia 3 sem trabalhar).
+  Predição 61: com 20, linear/produto/reflexo entregam ≥ 8 por vida ou
+  morrem; mortos entre 0.3 e 0.8; o reflexo tem menos panes que o produto.
