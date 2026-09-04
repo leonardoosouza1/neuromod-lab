@@ -444,3 +444,14 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
   serviço disponível. Semeado do clone contaminado ainda deu 0.60 (linear)
   vs 0.77 do-zero em 25 ger. — número suspeito, refazer. Re-enfileirado
   (e45h) atrás do E51; o honesto v3 passa pra trás dele (5 min a mais).
+- **17:20 E50 reflexo com duas raízes (histerese) — triagem L=200:** 0.59 /
+  27.3 vs reflexo 0.58 / 27.4; panes 5.9 vs 5.5; largura da banda ficou em
+  0.004 / 0.076 / 0.012 (gene nasce em 0 e fica lá). Predição 75 ✗. Leitura:
+  não há oscilação a resolver — o reflexo do campo age pelo GANHO DE SERVIÇO
+  (v = 2.4–4.8 em 5/6 sementes: "abasteça quando estiver no posto e a sede
+  passar de θ"), quase nada pelo empurrão de movimento (w entre −0.2 e +0.3
+  no reflexo puro) — sem empurrão não há vaivém, e sem vaivém a histerese
+  não tem o que consertar. Bhaskara fica anotado pra onde houver oscilação.
+- **17:20 E51 oráculo caiu em 15 s** (vetor de genes de tamanho 1: `um_passo`
+  fatia `Wb[:, NF:NF+S]` e dá (B,0)); corrigido (NP = Linear.NP), re-enfileirado
+  (e51b) atrás da clonagem, honesto v3 atrás dele.

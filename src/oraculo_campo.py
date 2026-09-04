@@ -19,7 +19,7 @@ def fabrica_oraculo(liga=(.5, .6, .5, .5), critico=(.8, .85, .75, .7), caixa_min
     caixa_min: abaixo disso so necessidade critica tranca (o resto do tempo trabalha). noite_posto: tranca posto a noite (fechado) ou nao."""
     liga_t = torch.tensor(liga, device=DEV); crit_t = torch.tensor(critico, device=DEV)
     class Oraculo:
-        NP = 1
+        NP = Linear.NP
         def reset(s, m, W):
             s.W = W; s.alvo = torch.full((m.B,), -1, dtype=torch.long, device=DEV); s.F = None; s.cool = torch.zeros(m.B, device=DEV)
             s.acao_tipo = ACAO_TIPO.to(DEV)
@@ -84,7 +84,7 @@ def main(a):
         cfg = CfgCampo(L=a.L, fitness=a.fitness, loja_no_posto=loja); res['mundos'][mundo] = {}
         for nome, kw in VARIANTES.items():
             if a.so and nome not in a.so: continue
-            t1 = time.time(); A = fabrica_oraculo(nome=nome, **kw); W = torch.zeros(1, device=DEV)
+            t1 = time.time(); A = fabrica_oraculo(nome=nome, **kw); W = torch.zeros(Linear.NP, device=DEV)   # W nunca e lido, mas um_passo fatia Wb[:, NF:NF+S]: precisa ter o tamanho do Linear
             med = medidas(A, W, teste, cfg, T=T, seed=7777, R=1, copias=a.copias); med['segundos'] = round(time.time() - t1)
             res['mundos'][mundo][nome] = med
             print(f'  {mundo:<8} {nome:<16} fit {med["fit"]:6.2f} ent {med["ent"]:5.1f} mortos {med["mortos"]:.2f} panes {med["panes"]:4.1f} fome {med["fome_fim"]:3.0f} '
