@@ -24,7 +24,7 @@ NOMES_F = NOMES_OP + NOMES_CORPO + [f'sv_{a[0]}{int(a[1]) if a[1] else ""}' for 
 class CfgCampo:
     def __init__(s, L=400., **kw):
         s.L = float(L); s.dia = 240; s.noite = True; s.vel = 1.0; s.vel_noite = .7
-        s.NPX = 12; s.K = max(3, round(6*s.L/200.)); s.tex = 64; s.raio = 4.; s.raio_px = 45.; s.dinh0 = 100.
+        s.NPX = 12; s.K = max(3, round(6*s.L/200.)); s.tex = 64; s.raio = 6.; s.raio_px = 45.; s.dinh0 = 100.; s.loja_no_posto = True
         s.fuel_passo = .15; s.agua_passo = .08; s.agua_calor = .12; s.fome_passo = .32; s.fad_passo = .15   # agua ~2 dias; gasolina ~250 passos
         s.calor_sobe = .25; s.calor_desce = .6      # dirigindo direto: 30 -> 92 em ~135 passos; parado esfria .6/passo
         s.CALOR_MAX = 92.; s.D_QUENTE = 10.; s.D_PANE = 6.; s.D_RODAR = .15
@@ -151,6 +151,8 @@ class Campo:
         return Fo, val
     def serv_ab(s):
         c = s.cfg; nv = s.noite_(); perto = {t: s._dist[:, j] <= c.raio for j, t in enumerate(TIPOS)}   # [G7] reusa a varredura do obs()
+        if c.loja_no_posto:   # posto tem loja: vende comida e agua (o ser passa no posto 5x/vida e quase nunca num ponto de comida) — licao do grafo (comida_no_posto)
+            perto['comida'] = perto['comida'] | perto['posto']; perto['agua'] = perto['agua'] | perto['posto'] | perto['comida']
         ci = s.cidx; d = s.distrito(s.pos); pm = s.pmul[ci, d]
         cols = []
         for t, q in ACOES:

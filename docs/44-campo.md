@@ -161,3 +161,15 @@ Profissões, prefeito, vários seres no mesmo mapa (fase 2), furo/óleo, loja.
   sobrevive" ✗; entregas ≥ 6 ✓; reserva > 10 ✓. O que falha agora é COMER
   (comida custa 2–3, eles têm 60–73). Diagnóstico enfileirado (refeições
   por vida, estado na morte, comer forçado).
+- **00:00 diagnóstico (diag_campo.py):** campeões da fumaça 5 morrem no DIA 3
+  (733/2400) com 10 entregas: sprint de entregas, comem 1–5×, bebem 1×, e
+  "comer forçado" não muda NADA — nunca chegam a 4 u de um ponto de comida
+  (16 pontos em 200×200; o táxi vive na rota). Acesso, não decisão.
+- **00:05 mundo: loja no posto (comida e água vendidas no posto; água também
+  no ponto de comida) e raio 6.** Mesmo campeão: come 9.6×, bebe 7.8×, vive
+  até o dia 5.3, entrega 17.7; fome ≥ 90 na morte cai de 84 % pra 9 %. Agora
+  morre de AVARIA (14.8 eventos: 6.2 panes + calor/exaustão) e 29 % quebram
+  — o que a evolução tem de aprender (abastecer antes, descansar; é onde o
+  reflexo entra). Fumaça 6 (10 dias, 3 braços) e prefeito no mundo novo
+  lançados em fila. Predição 60: na fumaça 6, produto e reflexo ≤ 0.7 de
+  mortos (era 1.00) e o reflexo tem menos panes que o produto.
