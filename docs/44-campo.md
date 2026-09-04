@@ -140,3 +140,9 @@ Profissões, prefeito, vários seres no mesmo mapa (fase 2), furo/óleo, loja.
   dias o linear "vive de renda" colapsa (mortos ≥ 0.5) e o produto só
   sobrevive entregando ≥ 6 por vida; a reserva (gordura) aparece como
   poupança de quem trabalha (res médio dos vivos > 10).
+- **23:50** fumaça 4 (eager) TRAVOU no braço reflexo: 1h06 de processo, log
+  parado desde 22:41, GPU 99 % sem progresso — stream travada depois das
+  falhas de memória (regra 21). Morto pelo PID; fila segue (portões do
+  campo → fumaça 5 de 10 dias compilada → prefeito → portões do grafo). O
+  resultado do linear na fumaça 4 (0.01 mortos, 0 entregas, viver de
+  poupança) fica registrado; reflexo/produto da 4 não existem.
