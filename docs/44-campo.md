@@ -412,3 +412,6 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
   têm o que combinar, e compromisso por trechos não paga. Reavaliar no
   mundo sem loja (onde o problema pede sequência) quando alguma
   arquitetura sobreviver lá.
+- **16:43 E49 portão passou** (trend genes 0 == produto em eager e compile;
+  sem sync; NP 48). Triagem: produto 0.62 / 26.2 (replica a triagem de
+  ontem: 0.63 / 26.6 — régua estável); braço produto-trend rodando.
