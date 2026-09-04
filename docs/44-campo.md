@@ -572,3 +572,10 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
   (completo vs linear) → retrato do cérebro (EEG das unidades, gates,
   memória, reflexo tick a tick; ablação por parte; pesos por bloco).
   Predição 80. GPU: só isto, do início ao fim.
+- **19:40 E54 portão:** completo transparente == linear bit a bit ✓ (460
+  genes); sem-tálamo / sem-córtex / sem-hipocampo / sem-reflexo desligados
+  == genes zerados ✓; "sem-livre" deu ✗ por erro do TESTE (zerava também os
+  genes das camadas ao cortar até NP; corrigido, re-teste na fila); partes
+  vivas com genes aleatórios: gates 0.99–1.09, memória de espera 0.04,
+  reflexo ativo 51 % dos ticks, z das lentas 0.75–1.9; sem sync. Triagem
+  (linear, reflexo, completo + 5 partes) rodando.
