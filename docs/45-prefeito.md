@@ -117,3 +117,8 @@ Voronoi por célula, pré-computado).
   gasolina era barata. É a co-adaptação da ablação (Universe): tirar o
   prefeito mede contribuição + DESARRANJO. **Honesto v3 na fila** (atrás do
   E51): 5 sementes, 120 ger., R=16 — ~3 h.
+- **18:44 honesto v3, 1º braço (produto sem prefeito, 5 sementes × 120
+  ger., R=16):** 0.59 mortos [0.62 0.63 0.57 0.60 0.56] / 27.3 entregas /
+  5.9 panes (54 min). Pior que o teto honesto do reflexo/mínimo-3 (0.53):
+  os 7 genes de need×dist do produto custam, não ajudam. Braço com prefeito
+  (co-evolução) rodando, ~2,3 h.
