@@ -48,12 +48,12 @@ def gerar_mapa(seed, L=400., K=None, tex=64):
     alug = .5 + 1.5*torch.rand(K, generator=g, device=DEV)
     # campos pre-computados (grade GR x GR): distancia ao servico mais perto por tipo, e distrito da celula
     ax = (torch.arange(GR, device=DEV).float() + .5)*(L/GR); gy, gx = torch.meshgrid(ax, ax, indexing='ij'); cel = torch.stack([gx, gy], -1).view(-1, 2)   # (GR*GR,2) (x,y)
-    campo_d = torch.stack([(cel[:, None, :] - serv[t][None]).norm(dim=-1).min(1).values.view(GR, GR) for t in TIPOS])       # (5,GR,GR)
     campo_dist = (cel[:, None, :] - centros[None]).norm(dim=-1).argmin(1).view(GR, GR)                                        # (GR,GR) long
-    return dict(L=L, custo=custo, serv=serv, centros=centros, aliq=aliq, pmul=pmul, alug=alug, seed=int(seed), campo_d=campo_d, campo_dist=campo_dist)
+    return dict(L=L, custo=custo, serv=serv, centros=centros, aliq=aliq, pmul=pmul, alug=alug, seed=int(seed), campo_dist=campo_dist)
 
+OBRAS_MAX = 16                          # slots livres por tipo e por mapa para o prefeito construir
 def _empilha(mapas, chave):
-    xs = [m[chave] for m in mapas]; n = max(x.shape[0] for x in xs)
+    xs = [m[chave] for m in mapas]; n = max(x.shape[0] for x in xs) + OBRAS_MAX
     out = torch.zeros(len(xs), n, 2, device=DEV); msk = torch.zeros(len(xs), n, dtype=torch.bool, device=DEV)
     for i, x in enumerate(xs): out[i, :x.shape[0]] = x; msk[i, :x.shape[0]] = True
     return out, msk
@@ -65,7 +65,6 @@ class Campo:
         s.gidx = torch.arange(P, device=DEV).repeat_interleave(s.NC*R)
         g = torch.Generator(device=DEV); g.manual_seed(int(seed)); s.g = g
         s.custo_tex = torch.stack([m['custo'] for m in mapas])                              # (NC,tex,tex)
-        s.campo_d = torch.stack([m['campo_d'] for m in mapas])                              # (NC,5,GR,GR)
         s.campo_dist = torch.stack([m['campo_dist'] for m in mapas])                        # (NC,GR,GR)
         s.serv = {}; s.serv_msk = {}
         for t in TIPOS: s.serv[t], s.serv_msk[t] = _empilha([{'p': m['serv'][t]} for m in mapas], 'p')
@@ -86,6 +85,8 @@ class Campo:
         s.pd_ = torch.full((B,), -1., device=DEV); s.dest = torch.zeros(B, 2, device=DEV); s.orig_d = torch.zeros(B, dtype=torch.long, device=DEV); s.emb = torch.zeros(B, 2, device=DEV)
         s.t = torch.zeros((), dtype=torch.long, device=DEV)
         s.recusa = torch.zeros(B, dtype=torch.bool, device=DEV)
+        s.n_agua = torch.zeros(B, device=DEV); s.parado_dia = torch.zeros(B, device=DEV); s.imp = torch.zeros(B, device=DEV)   # [E44] sentidos do prefeito
+        s.pref_mult = torch.ones(s.NC, 6, device=DEV)     # [E44] alavancas do prefeito por mapa: aliq, p_fuel, p_agua, p_comida, aluguel, tarifa (1 = mapa)
     # --- geometria
     def custo_em(s, p):                       # p (B,...,2) -> custo (B,...)
         ix = (p[..., 0]/s.L*(s.cfg.tex - 1)).round().long().clamp(0, s.cfg.tex - 1); iy = (p[..., 1]/s.L*(s.cfg.tex - 1)).round().long().clamp(0, s.cfg.tex - 1)
@@ -96,15 +97,16 @@ class Campo:
         ci = s.cidx.view(-1, *([1]*(p.dim()-2))).expand(p.shape[:-1]); return ci, iy, ix
     def distrito(s, p):                        # (B,...,2) -> (B,...) long  [campo pre-computado]
         ci, iy, ix = s._cel(p); return s.campo_dist[ci, iy, ix]
-    def d_serv_campo(s, p):                    # (B,...,2) -> (B,...,5) distancias aproximadas (grade) a todos os tipos
-        ci, iy, ix = s._cel(p); return s.campo_d[ci, :, iy, ix]
     def d_serv(s, t, p):                        # EXATA (so na posicao atual, p (B,2)): raio de uso do servico
         ci = s.cidx; pts = s.serv[t][ci]; msk = s.serv_msk[t][ci]
         d = (p[:, None, :] - pts).norm(dim=-1).masked_fill(~msk, 1e9); return d.min(-1).values
-    def perto_serv(s, t, p):                     # ponto de servico tipo t mais perto de p (B,2) -> (B,2) exato
-        ci = s.cidx; pts = s.serv[t][ci]; msk = s.serv_msk[t][ci]
-        d = (p[:, None, :] - pts).norm(dim=-1).masked_fill(~msk, 1e9); k = d.argmin(-1)
-        return pts[torch.arange(p.shape[0], device=DEV), k]
+    def _perto_todos(s, p):                      # ponto mais perto e distancia, por tipo (ordem TIPOS): (B,5,2), (B,5) — 5 varreduras por passo, nao 15
+        ci = s.cidx; ar = torch.arange(p.shape[0], device=DEV); P = []; D = []
+        for t in TIPOS:
+            pts = s.serv[t][ci]; msk = s.serv_msk[t][ci]
+            d = (p[:, None, :] - pts).norm(dim=-1).masked_fill(~msk, 1e9); k = d.argmin(-1)
+            P.append(pts[ar, k]); D.append(d[ar, k])
+        return torch.stack(P, 1), torch.stack(D, 1)
     def _perto(s, p, n):                        # n pontos por ser num anel [8, raio_px] em volta de p (B,2) -> (B,n,2)
         B = p.shape[0]; ang = torch.rand(B, n, generator=s.g, device=DEV)*2*math.pi; r = 8. + (s.cfg.raio_px - 8.)*torch.rand(B, n, generator=s.g, device=DEV)
         return (p[:, None, :] + torch.stack([r*torch.cos(ang), r*torch.sin(ang)], -1)).clamp(0., s.L)
@@ -114,6 +116,11 @@ class Campo:
         r = s.L*(.05 + .45*torch.rand(B, N, generator=s.g, device=DEV)**2)                  # concentra perto, cauda longa
         d = po + torch.stack([r*torch.cos(ang), r*torch.sin(ang)], -1)
         return d.clamp(0., s.L)
+    def construir(s, t, quer):                  # [E44] abre 1 ponto do tipo t (posicao aleatoria) nos mapas com quer=True, no proximo slot livre
+        NC = s.NC; msk = s.serv_msk[t]; livre = (~msk).float(); tem = livre.sum(1) > 0
+        k = livre.argmax(1); faz = quer & tem; ar = torch.arange(NC, device=DEV)
+        novo = torch.rand(NC, 2, generator=s.g, device=DEV)*s.L
+        s.serv[t][ar, k] = torch.where(faz[:, None], novo, s.serv[t][ar, k]); s.serv_msk[t][ar, k] = msk[ar, k] | faz
     def hora(s):  return ((s.t.float() + s.fase) % s.cfg.dia)/s.cfg.dia*24.
     def noite_(s):
         h = s.hora(); return (h >= 22.) | (h < 6.)
@@ -126,11 +133,12 @@ class Campo:
     def obs(s):
         c = s.cfg; nv = s.noite_(); v = torch.where(nv, c.vel_noite, c.vel)
         pn = (s.pos[:, None, :] + v[:, None, None]*s.dirs[None, :, :]).clamp(0., s.L)          # (B,G,2)
-        alvo = s.alvo(); esc = 10./s.L
+        alvo = s.alvo(); esc = 1./c.vel                                                        # [G3] distancias em unidades andadas (o terreno nao sequestra o volante)
         F = [ (pn - alvo[:, None, :]).norm(dim=-1)*esc ]
-        # distancia EXATA de cada opcao ao ponto mais perto (achado na posicao atual): sem empate perto do alvo (a grade de 1.5 u empatava e o ser nunca entrava no raio)
-        for t in ('posto', 'comida', 'agua', 'oficina', 'descanso'):
-            F.append((pn - s.perto_serv(t, s.pos)[:, None, :]).norm(dim=-1)*esc)
+        # distancia EXATA de cada opcao ao ponto mais perto (achado na posicao atual, UMA vez por passo; serv_ab/passo reusam) [G7]
+        s._ptos, s._dist = s._perto_todos(s.pos)                                                # (B,5,2), (B,5) na ordem TIPOS
+        for j in (0, 1, 2, 4, 3):
+            F.append((pn - s._ptos[:, j][:, None, :]).norm(dim=-1)*esc)
         F.append(s.custo_em(pn)); dn = s.distrito(pn); ci = s.cidx[:, None].expand(-1, G)
         F.append(s.pmul[ci, dn]); F.append(s.aliq[ci, dn]); F.append((dn == s.casa[:, None]).float())
         Fop = torch.stack(F, -1)                                                                 # (B,G,10)
@@ -141,7 +149,7 @@ class Campo:
         val = torch.ones(s.B, G, dtype=torch.bool, device=DEV)
         return Fo, val
     def serv_ab(s):
-        c = s.cfg; nv = s.noite_(); perto = {t: s.d_serv(t, s.pos) <= c.raio for t in TIPOS}
+        c = s.cfg; nv = s.noite_(); perto = {t: s._dist[:, j] <= c.raio for j, t in enumerate(TIPOS)}   # [G7] reusa a varredura do obs()
         ci = s.cidx; d = s.distrito(s.pos); pm = s.pmul[ci, d]
         cols = []
         for t, q in ACOES:
@@ -150,18 +158,20 @@ class Campo:
             cols.append(ok.float())
         return torch.stack(cols, 1), pm
     def custos(s, pm):                            # custo em dinheiro de cada acao (B,S)
-        c = s.cfg; casa = (s.distrito(s.pos) == s.casa).float()
+        c = s.cfg; casa = (s.distrito(s.pos) == s.casa).float(); pf = s.pref_mult[s.cidx]   # (B,6)
         cs = []
         for t, q in ACOES:
-            if t == 'posto': cs.append(c.preco_L*q*pm)
-            elif t == 'agua': cs.append(c.preco_agua*q*pm)
-            elif t == 'comida': cs.append(c.preco_comida*pm)
+            if t == 'posto': cs.append(c.preco_L*q*pm*pf[:, 1])
+            elif t == 'agua': cs.append(c.preco_agua*q*pm*pf[:, 2])
+            elif t == 'comida': cs.append(c.preco_comida*pm*pf[:, 3])
             elif t == 'descanso': cs.append((1. - casa)*c.HOTEL*pm)
             else: cs.append(c.preco_oficina*pm)
         return torch.stack(cs, 1)
     def serv_need(s):
         sv, pm = s.serv_ab(); cs = s.custos(pm); paga = (s.dinh[:, None] >= cs).float()
-        nec = torch.stack([1 - s.fuel/100.]*5 + [1 - s.agua/100.]*2 + [s.fome/100., s.fad/100., (1 - s.vida/100.)], 1)
+        cabe = (100. - s.fuel); sobra_res = (s.cfg.RES_MAX - s.res).clamp(min=0.)
+        nec_posto = [torch.minimum(torch.full_like(cabe, q), cabe)/100. + (torch.minimum(torch.full_like(cabe, q) - cabe, sobra_res).clamp(min=0.)/100.)*.5 for q in (25., 50., 75., 100., 150.)]
+        nec = torch.stack(nec_posto + [torch.minimum(torch.full_like(cabe, q), 100. - s.agua)/100. for q in (50., 100.)] + [s.fome/100., s.fad/100., (1 - s.vida/100.)], 1)   # [G4]
         return sv*nec*paga, sv*paga
     # --- fisica
     def passo(s, esc):
@@ -175,10 +185,12 @@ class Campo:
         pane = falta
         mov = mov & ~falta
         s.pos = (s.pos + mov[:, None].float()*v[:, None]*d).clamp(0., s.L)
-        s.fuel = (s.fuel - c.fuel_passo*cu*peso*mov.float()).clamp(min=0.)
+        marcha = livre & ~mov                                                    # [G2] parado com motor ligado: marcha lenta gasta 1/3
+        s.fuel = (s.fuel - c.fuel_passo*cu*peso*mov.float() - c.fuel_passo*.33*marcha.float()).clamp(min=0.)
         s.calor = (s.calor + c.calor_sobe*cu*mov.float() - c.calor_desce*(~mov).float()).clamp(25., 120.)
         s.agua = (s.agua - c.agua_passo*vivo.float() - c.agua_calor*(s.calor > 60.).float()*vivo.float()).clamp(min=0.)
         s.fome = (s.fome + c.fome_passo*vivo.float()).clamp(max=100.); s.fad = (s.fad + c.fad_passo*mov.float() - .1*(~mov).float()).clamp(0., 100.)
+        exausto = livre & (s.fad >= 95.); s.tpar = torch.where(exausto, torch.full_like(s.tpar, 12.), s.tpar); s.fad = torch.where(exausto, torch.full_like(s.fad, 40.), s.fad); s.avar += exausto.float()   # [G6] fadiga para o taxi
         s.res = (s.res*(1. - c.perda_res)).clamp(min=0.)
         # pane: reboque ate o posto mais perto, cobra calorias da reserva -> vida
         s.avar += pane.float(); s.av_fuel += pane.float(); s.tpar = torch.where(pane, torch.full_like(s.tpar, 18.), s.tpar)
@@ -199,9 +211,9 @@ class Campo:
         abast = litros > 0; s.n_posto += abast.float(); s.litros += litros
         novo = s.fuel + litros; sobra = (novo - 100.).clamp(min=0.); s.fuel = novo.clamp(max=100.)
         s.res = (s.res + sobra*(1. - c.PERDA_ARMAZ)).clamp(max=c.RES_MAX)
-        s.agua = (s.agua + usa[:, 5]*50. + usa[:, 6]*100.).clamp(max=100.)
+        s.agua = (s.agua + usa[:, 5]*50. + usa[:, 6]*100.).clamp(max=100.); s.n_agua += ((usa[:, 5] + usa[:, 6]) > 0).float()
         come = usa[:, 7] > 0; s.fome = torch.where(come, (s.fome - c.REFEICAO).clamp(min=0.), s.fome); s.n_come += come.float()
-        desc = usa[:, 8] > 0; s.fad = torch.where(desc, torch.full_like(s.fad, 40.), s.fad); s.tpar = torch.where(desc, torch.full_like(s.tpar, 12.), s.tpar)
+        desc = usa[:, 8] > 0; s.fad = torch.where(desc, torch.minimum(s.fad, torch.full_like(s.fad, 40.)), s.fad); s.tpar = torch.where(desc, torch.full_like(s.tpar, 12.), s.tpar)   # [G6] descanso nunca aumenta fadiga
         ofi = usa[:, 9] > 0; s.vida = torch.where(ofi, (s.vida + c.REPARO).clamp(max=100.), s.vida); s.calor = torch.where(ofi, torch.full_like(s.calor, 25.), s.calor); s.n_oficina += ofi.float()
         # passageiros: embarque (raio) e entrega
         dpx = (s.px - s.pos[:, None, :]).norm(dim=-1); kx = dpx.argmin(1); ar = torch.arange(B, device=DEV)
@@ -211,13 +223,15 @@ class Campo:
         novo_px = s._perto(s.pos, 1)[:, 0]; novo_d = s._destino(novo_px[:, None, :])[:, 0]
         s.px[ar, kx] = torch.where(pega[:, None], novo_px, s.px[ar, kx]); s.pxd[ar, kx] = torch.where(pega[:, None], novo_d, s.pxd[ar, kx])
         cheg = livre & (s.pd_ >= 0) & ((s.pos - s.dest).norm(dim=-1) <= c.raio)
-        dist = (s.dest - s.emb).norm(dim=-1); tarifa = (c.tarifa_base + c.tarifa_km*dist)*s.pmul[ci, s.orig_d]*(1. - s.aliq[ci, s.orig_d])
-        s.dinh = s.dinh + tarifa*cheg.float(); s.rec += tarifa*cheg.float(); s.ent += cheg.float(); s.pd_ = torch.where(cheg, -torch.ones_like(s.pd_), s.pd_)
+        pf = s.pref_mult[ci]; aliq = (s.aliq[ci, s.orig_d]*pf[:, 0]).clamp(0., .6)
+        dist = (s.dest - s.emb).norm(dim=-1); bruta = (c.tarifa_base + c.tarifa_km*dist)*s.pmul[ci, s.orig_d]*pf[:, 5]; tarifa = bruta*(1. - aliq)
+        s.dinh = s.dinh + tarifa*cheg.float(); s.rec += tarifa*cheg.float(); s.imp += bruta*aliq*cheg.float(); s.ent += cheg.float(); s.pd_ = torch.where(cheg, -torch.ones_like(s.pd_), s.pd_)
         # aluguel a meia-noite (distrito-casa)
-        meia = ((s.t.float() + s.fase) % c.dia) < 1.; s.dinh = s.dinh - c.aluguel*s.alug[ci, s.casa]*meia.float()*vivo.float()
+        meia = ((s.t.float() + s.fase) % c.dia) < 1.; s.dinh = s.dinh - c.aluguel*s.alug[ci, s.casa]*s.pref_mult[ci, 4]*meia.float()*vivo.float()
+        s.parado_dia = (s.parado_dia + (~mov & livre).float())*(1. - meia.float())
         # dano por fome / sede / divida
         dn = dn + c.fome_mata*((s.fome - c.FOME_CRIT)/(100. - c.FOME_CRIT)).clamp(0., 1.) + c.agua_mata*((c.AGUA_CRIT - s.agua)/c.AGUA_CRIT).clamp(0., 1.)
-        dn = dn + 1000.*(s.dinh <= -c.LIMITE_DIVIDA).float()
+        s.dinh = s.dinh.clamp(min=-c.LIMITE_DIVIDA); dn = dn + 2.0*((-s.dinh)/c.LIMITE_DIVIDA).clamp(0., 1.)**2   # [G5] divida fere gradualmente; no limite 2/passo
         s.vida = (s.vida - dn*vivo.float()).clamp(min=0.); s.dano_soma += dn*vivo.float(); s.t_vida += vivo.float()
         if c.fitness == 'bemestar':
             s.bem_soma += vivo.float()*(s.vida/100. + (1. - s.fome/100.) + s.fuel/100. + s.agua/100. + (s.dinh/100.).clamp(0., 1.))/5.
@@ -225,6 +239,7 @@ class Campo:
 def um_passo(m, a, Wb):
     F, val = m.obs()
     sc = torch.einsum('bgf,bf->bg', F, Wb[:, :NF]) + a.extra(m, Wb, F)
+    sc = sc - sc.mean(1, keepdim=True)                                              # [G1] sem modo comum: o vies de servico e o unico arbitro mover-vs-servir
     svn, sv = m.serv_need(); ss = svn*Wb[:, NF:NF+S] + Wb[:, NF+S:NF+S+1]
     if hasattr(a, 'extra_serv'): ss = ss + a.extra_serv(m)
     ss = ss.masked_fill(sv <= 0, -1e9)
@@ -271,23 +286,27 @@ def rodar(Arq, W, mapas, cfg, T, seed, R=1):
         um_passo(m, a, Wb); a.atualizar(m)
     return m
 
-def avaliar(Arq, W, mapas, cfg, T, seed=0, R=1):
-    m = rodar(Arq, W, mapas, cfg, T, seed, R=R); morto = (m.vida <= 0).float(); vivo = 1. - morto
-    tarde = morto*m.t_vida/float(T)            # entre os mortos, morrer mais tarde e melhor (sem isto, deserto: todos -pena e zero gradiente)
+def _fit(m, cfg, T):
+    morto = (m.vida <= 0).float(); vivo = 1. - morto
+    tarde = morto*(0.5*m.t_vida/float(T) + 0.05*m.ent + 0.02*(m.n_come + m.n_agua + m.n_posto).clamp(max=10.))   # [G2] gradiente entre mortos que a PEDRA nao maximiza
     if cfg.fitness == 'sobrevive':
         fit = vivo*(1. + m.vida/100. + (m.dinh/100.).clamp(0., 1.) + 0.05*m.ent + 0.5*m.res/cfg.RES_MAX) - cfg.pena_morte*morto + tarde
     elif cfg.fitness == 'bemestar':
         fit = m.bem_soma/float(T) + 0.05*m.ent - cfg.pena_morte*morto + tarde
     else:   # padrao (entregas)
         fit = m.ent - 0.3*m.avar - cfg.pena_morte*morto + tarde
-    return fit.view(W.shape[0], m.NC*m.R).mean(1)
+    return fit
+
+def avaliar(Arq, W, mapas, cfg, T, seed=0, R=1):
+    m = rodar(Arq, W, mapas, cfg, T, seed, R=R)
+    return _fit(m, cfg, T).view(W.shape[0], m.NC*m.R).mean(1)
 
 def evoluir(Arq, mapas, cfg, **kw):
     return evoluir_sementes(Arq, mapas, cfg, avaliar_fn=avaliar, **kw)
 
 def medidas(Arq, W, mapas, cfg, T=1200, seed=7777, R=1, copias=128):
     m = rodar(Arq, W[None, :].repeat(copias, 1), mapas, cfg, T, seed, R=R); morto = (m.vida <= 0).float()
-    med = dict(fit=float(avaliar(Arq, W[None, :].repeat(copias, 1), mapas, cfg, T, seed, R).mean()), mortos=float(morto.mean()), ent=float(m.ent.mean()),
+    med = dict(fit=float(_fit(m, cfg, T).mean()), mortos=float(morto.mean()), ent=float(m.ent.mean()),
                panes=float(m.av_fuel.mean()), fome_fim=float(m.fome.mean()), agua_fim=float(m.agua.mean()), dinh=float(m.dinh.mean()), res=float(m.res.mean()),
                litros_por_abast=float((m.litros/m.n_posto.clamp(min=1)).mean()), n_posto=float(m.n_posto.mean()), n_come=float(m.n_come.mean()), oficina=float(m.n_oficina.mean()),
                vida_vivos=float(m.vida[m.vida > 0].mean()) if bool((m.vida > 0).any()) else 0.)
@@ -298,12 +317,23 @@ class Produto(Linear):
     """politica bilinear (E17/E29b no campo): nota da opcao g = linear + sum_k -w_k * relu(need_k - theta_k) * d_k(g).
     needs: fuel, agua, fome (deficits) e 'alvo' (sempre 1). Genes: w (4) e theta (3, sigmoid) -> 7. Genes 0 == Linear (w=0)."""
     nome = 'produto-campo'; NP = Linear.NP + 7
-    IDX_D = [1, 3, 2, 0]          # d_posto, d_agua, d_comida, d_alvo
+    IDX_D = torch.tensor([1, 3, 2, 0], device=DEV)          # d_posto, d_agua, d_comida, d_alvo (tensor: sem sync) [G8]
     def reset(s, m, W):
         s.W = W; o = Linear.NP; s.w = W[:, o:o+4]; s.theta = torch.sigmoid(W[:, o+4:o+7])
     def extra(s, m, W, F):
         need = torch.stack([1. - m.fuel/100., 1. - m.agua/100., m.fome/100.], 1)            # (B,3)
         a = (need - s.theta).clamp(min=0.)                                                 # portao por necessidade
         g = torch.cat([a, torch.ones(m.B, 1, device=DEV)], 1)*s.w                          # (B,4)
-        D = F[:, :, s.IDX_D]                                                               # (B,G,4)
+        D = F.index_select(2, s.IDX_D)                                                     # (B,G,4)
         return -(D*g[:, None, :]).sum(-1)
+
+
+def rodar_com_prefeito(Arq, W, mapas, cfg, T, seed, R=1, Wp=None, prefeito_cls=None):
+    """como rodar(), mas com um prefeito por mapa agindo a cada dia (t % dia == 0). Wp=None -> identico a rodar()."""
+    m = Campo(mapas, W.shape[0], cfg, seed=seed, R=R); Wb = W[m.gidx]; a = Arq(); a.reset(m, Wb)
+    pref = prefeito_cls(m, Wp) if Wp is not None else None
+    for t in range(T):
+        if pref is not None and t > 0 and t % cfg.dia == 0:
+            pref.receita(m.imp); pref.agir(t//cfg.dia)
+        um_passo(m, a, Wb); a.atualizar(m)
+    return m, pref

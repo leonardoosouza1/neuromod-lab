@@ -108,3 +108,15 @@ Profissões, prefeito, vários seres no mesmo mapa (fase 2), furo/óleo, loja.
   driver sob contenção, não de identidade; registrada.
 - **23:25** Leonardo: "era para o prefeito pegar isso e resolver" — a
   calibração à mão do doc 44 §8 é chute; vira E44 (docs/45-prefeito.md).
+- **23:40** auditoria do campo (agente) aplicada: G1 notas de movimento
+  centradas (mover-vs-servir decidido pela necessidade, não pelo nível das
+  distâncias); G2 "ficar" custa marcha lenta e o gradiente entre mortos paga
+  comer/beber/abastecer, não só morrer tarde (a pedra era o p90 da população
+  inicial); G3 escala direcional 1/vel; G4 litros dependem do que CABE no
+  tanque (+ sobra pra reserva); G5 dívida com piso e dano gradual; G6 fadiga
+  para o táxi, descanso nunca aumenta fadiga; G7 uma varredura de serviços
+  por passo (15 → 5); G8 `Produto` sem lista Python (sync); G9 código morto.
+  Resultado: perito bilinear 0 % → **40 % vivos, 6.6 entregas, 3.6
+  refeições, 3 abastecimentos de ~100 L, panes 0.4**; linear −1s segue
+  paralisado (0.1 entregas, 80 % mortos) — o mundo discrimina arquitetura.
+  9.8 ms/passo @ 49 k, sem sync. Fumaça relançada com o código auditado.
