@@ -1030,3 +1030,8 @@ Régua do dia (E28b, 15 sementes da mesma função): honesto n=5 só detecta ≥
 | 44 | E38 recusa por fome: θ_p ≤ 0.8 em 3/5, mortos ≤ 0.12 | ✗ (θ_p 92–99 %, = controle) → cláusula 'fome é preço aceito' ✓ |
 
 Regras novas: 17 (gene novo nasce desligado), 18 (triagem só descarta), 19 (variante só semeada do melhor pai + controle semeado). Estado da arte: 9.40 / 0.14 / 2.8 panes (1000+, 5 postos, 120 ger.).
+
+| 49 | E42 mundo: mínimo-3 perde ≥ 1.0 fit pro completo na cidade grande | (agente MUNDO; rodando) |
+| 50 | E42 cérebro: hipocampo de distrito ≥ 5 pp mortos ou +10 % renda | (SerCamadas merged; estimativa do agente ~30 %) |
+| 51 | E42 cérebro: tálamo usado em ≥ 3/5 (gate < 0.8) | (versão estrita com --init-from; ~50 %) |
+| 52–55 | E43 campo: 3 termos perdem ≥ 1.0; litros ≥ 75 em L=800 / ≤ 50 em L=200; campo ≥ 5× grafo-500; joelho reaparece 3/5 | (campo.py pronto: 26 ms/passo @65k; fumaça rodando) |
