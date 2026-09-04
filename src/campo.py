@@ -121,7 +121,7 @@ class Campo:
     def construir(s, t, quer):                  # [E44] abre 1 ponto do tipo t (posicao aleatoria) nos mapas com quer=True, no proximo slot livre
         NC = s.NC; msk = s.serv_msk[t]; livre = (~msk).float(); tem = livre.sum(1) > 0
         k = livre.argmax(1); faz = quer & tem; ar = torch.arange(NC, device=DEV)
-        if not hasattr(s, 'g_pref'): s.g_pref = torch.Generator(device=DEV); s.g_pref.manual_seed(int(s.t) + 99991)   # gerador PROPRIO: nao consome o fluxo do mundo (identidade com genes 0)
+        if not hasattr(s, 'g_pref'): s.g_pref = torch.Generator(device=DEV); s.g_pref.manual_seed(99991 + s.NC)   # gerador PROPRIO (semente fixa, sem ler tensor): nao consome o fluxo do mundo
         novo = torch.rand(NC, 2, generator=s.g_pref, device=DEV)*s.L
         s.serv[t][ar, k] = torch.where(faz[:, None], novo, s.serv[t][ar, k]); s.serv_msk[t][ar, k] = msk[ar, k] | faz
     def hora(s):  return ((s.t.float() + s.fase) % s.cfg.dia)/s.cfg.dia*24.
