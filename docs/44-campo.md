@@ -534,3 +534,7 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
   passageiro a bordo fazendo só 8 entregas: pega o passageiro (automático no
   raio) e abandona o destino pra ir ao posto. v3 = entrega primeiro + não
   fura o esfriamento (predição 78), na fila atrás do honesto (E52 antes).
+- **18:00 painel visual da autópsia (E51c/e):** série diária (vivos,
+  caixa, tanque, fome), dano por causa e orçamento de tempo — campeão vs
+  oráculos. `docs/painel-51-autopsia.html` ·
+  https://claude.ai/code/artifact/042b657f-9bd5-48a0-bc03-a409233cce5f
