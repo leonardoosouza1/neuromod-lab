@@ -120,3 +120,14 @@ Profissões, prefeito, vários seres no mesmo mapa (fase 2), furo/óleo, loja.
   refeições, 3 abastecimentos de ~100 L, panes 0.4**; linear −1s segue
   paralisado (0.1 entregas, 80 % mortos) — o mundo discrimina arquitetura.
   9.8 ms/passo @ 49 k, sem sync. Fumaça relançada com o código auditado.
+- **00:05 — REGRA 21: um processo na GPU por vez.** "Memory access fault by
+  GPU node-1" apareceu 3× hoje, sempre com um processo `torch.compile`
+  rodando junto com outro processo na GPU (perito + fumaça; teste de
+  identidade + fumaça; o auditor viu sob troca de arquitetura com o job do
+  outro agente a 99 %). Nunca reproduziu sozinho. Tudo passa pela fila
+  (`fila2.sh --depois-de`); testes de identidade viram script
+  (`src/testes_campo.py`) enfileirado. Compile no campo: 1.51 ms/passo @ 49 k
+  (honesto G=120 ≈ 4 min/braço); identidade eager×compile: o auditor achou
+  bit a bit no Linear/60 passos; meu teste (Produto/200) deu diferença —
+  quantificar no script (mesma regra do grafo: todos os braços de uma
+  bateria no mesmo modo, gravado no JSON).
