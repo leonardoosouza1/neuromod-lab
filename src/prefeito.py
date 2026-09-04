@@ -62,3 +62,24 @@ def evoluir_prefeitos(Wp, fit, g, elite=.5, sigma=.3):
     Wb = Wp[o]; idx = torch.randint(0, ne, (NC - ne,), generator=g, device=DEV)
     fil = (Wb[idx] + torch.randn(NC - ne, Wp.shape[1], generator=g, device=DEV)*sigma).clamp(-5, 5)
     return torch.cat([Wb[:ne], fil])
+
+
+def coevoluir(Arq, mapas, cfg, P=512, ger=25, T=1200, seeds=(0,), R=4, Wp0=None, cada=5, elite_p=.5, sigma_p=.3, verbose=False, W0=None):
+    """2 populacoes: seres (evoluir_sementes do lab, avaliados com o prefeito de cada mapa agindo) e prefeitos (um por mapa,
+    selecionados entre mapas a cada `cada` geracoes pelo bem-estar da propria cidade). Devolve (campeoes dos seres, Wp final, historico)."""
+    from lab import evoluir_sementes
+    NC = len(mapas); g = torch.Generator(device=DEV); g.manual_seed(4242)
+    est = {'Wp': Wp0 if Wp0 is not None else torch.zeros(NC, Prefeito.NP, device=DEV), 'fit_pref': torch.zeros(NC, device=DEV), 'n': 0, 'hist': []}
+    def avaliar_fn(A, W, cid, c, T_, seed=0, R_=1, R=None):
+        R_ = R if R is not None else R_
+        m, pref = C.rodar_com_prefeito(A, W, cid, c, T_, seed, R=R_, Wp=est['Wp'], prefeito_cls=Prefeito)
+        est['fit_pref'] = est['fit_pref'] + pref.fitness(); est['n'] += 1
+        est['ultimo'] = pref
+        return C._fit(m, c, T_).view(W.shape[0], m.NC*m.R).mean(1)
+    def cfg_gen(it, ger_):
+        if it > 0 and it % cada == 0 and est['n'] > 0:
+            f = est['fit_pref']/est['n']; est['hist'].append((it, f.tolist(), est['ultimo'].mult.tolist(), est['ultimo'].obras.tolist()))
+            est['Wp'] = evoluir_prefeitos(est['Wp'], f, g, elite=elite_p, sigma=sigma_p); est['fit_pref'] = torch.zeros(NC, device=DEV); est['n'] = 0
+        return cfg
+    champs = evoluir_sementes(Arq, mapas, cfg, P=P, ger=ger, T=T, seeds=seeds, R=R, verbose=verbose, cfg_gen=cfg_gen, avaliar_fn=avaliar_fn, W0=W0)
+    return champs, est['Wp'], est['hist']
