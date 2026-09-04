@@ -428,3 +428,24 @@ def W0_comite(campeoes):
     o = Linear.NP + K*Comite.NEED + K*3
     W[o:o+K*NF] = (Wk[:, :NF] - med[:NF]).reshape(-1)                        # so os pesos de MOVIMENTO diferem por modo (servicos ficam na media)
     return W
+
+
+class ProdutoTrend(Produto):
+    """E49 OLHO MULTI-ESCALA (Leonardo: saci-trader M1/M5/M15/M30 = banco de tau): cada necessidade e vista em 3 escalas
+    (agora, media de 64 passos, media de 512) e entra no produto como need_ef = need + a*(need - e64) + b*(e64 - e512).
+    a,b = genes por necessidade (3 needs -> 6 genes), nascem em 0 == Produto. EMAs atualizadas in-place em atualizar()."""
+    nome = 'produto-trend'; NP = Produto.NP + 6
+    def reset(s, m, W):
+        Produto.reset(s, m, W); o = Produto.NP; s.a = W[:, o:o+3]; s.b = W[:, o+3:o+6]
+        s.e64 = s._need(m).clone(); s.e512 = s.e64.clone()
+    def _need(s, m): return torch.stack([1. - m.fuel/100., 1. - m.agua/100., m.fome/100.], 1)
+    def extra(s, m, W, F):
+        need = s._need(m); need_ef = need + s.a*(need - s.e64) + s.b*(s.e64 - s.e512)
+        a = (need_ef - s.theta).clamp(min=0.)
+        g = torch.cat([a, torch.ones(m.B, 1, device=DEV)], 1)*s.w
+        D = F.index_select(2, s.IDX_D)
+        return -(D*g[:, None, :]).sum(-1)
+    def atualizar(s, m):
+        n = s._need(m); s.e64 = s.e64 + (n - s.e64)/64.; s.e512 = s.e512 + (n - s.e512)/512.
+    def ativacao(s, m):
+        n = s._need(m); return torch.cat([n - s.e64, s.e64 - s.e512], 1)

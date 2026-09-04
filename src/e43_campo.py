@@ -7,7 +7,7 @@ from campo import *
 PRESETS = {'triagem': dict(P=1024, G=40, T_evo=1200, T_aval=1200, R=8, seeds=(0, 1, 2)),
            'honesto': dict(P=1024, G=120, T_evo=1200, T_aval=1200, R=16, seeds=(0, 1, 2, 3, 4)),
            'fumaca': dict(P=512, G=25, T_evo=1200, T_aval=1200, R=4, seeds=(0,))}
-BRACOS = [('linear', Linear), ('reflexo', Reflexo), ('produto (need x dist, portao)', Produto), ('modos gaussianos K=3', Modos), ('minimo 3 (d_alvo, d_posto, e_fuel)', fabrica_minimo(['d_alvo', 'd_posto', 'e_fuel']))]
+BRACOS = [('linear', Linear), ('reflexo', Reflexo), ('produto (need x dist, portao)', Produto), ('modos gaussianos K=3', Modos), ('produto trend (olho multi-escala)', ProdutoTrend), ('minimo 3 (d_alvo, d_posto, e_fuel)', fabrica_minimo(['d_alvo', 'd_posto', 'e_fuel']))]
 
 def main(a):
     p = dict(PRESETS[a.preset]); os.makedirs(a.out, exist_ok=True)

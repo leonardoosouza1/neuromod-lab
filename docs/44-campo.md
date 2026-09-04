@@ -342,3 +342,16 @@ média nos pesos de movimento). **Predição 72:** comitê ≥ melhor campeão
 por ≥ 3 pp na triagem SÓ se o portão ficar desigual (ganho > 1) e τ > 4
 ticks em ≥ 2/3 sementes; se uniforme, cérebros diferentes não têm o que
 combinar neste mundo. Controle: Modos K=3 do zero.
+
+## 12. E49 — Olho multi-escala (Leonardo, 14:30: saci-trader M1/M5/M15/M30)
+No saci o que pagou foi o banco de τ (evolução achou [1, 17, 120, 2000,
+20000]), não a célula líquida (teste justo: LTC ≈ GRU ≈ leaky). Aqui:
+necessidades vistas em 3 escalas (agora, EMA 64, EMA 512) e entrando no
+produto como `need + a·(need − e64) + b·(e64 − e512)` — micro e macro por
+sentido, 6 genes nascendo em 0 (== Produto). Cuidado provado pela
+auditoria: sentido de ESTADO não muda a direção numa política linear
+(centrada); tendência só vale multiplicando — por isso entra nas
+necessidades do produto (e, depois, nas coordenadas dos modos/comitê).
+**Predição 73:** genes de tendência ≠ 0 em ≥ 2/3 sementes; panes −20 % vs
+produto (antecipa o tanque); mortos −5 pp. Se ficarem em zero: 10 dias não
+têm macro que valha — a escala de dias é do prefeito.

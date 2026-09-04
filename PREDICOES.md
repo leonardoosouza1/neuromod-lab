@@ -1052,3 +1052,4 @@ Regras novas: 17 (gene novo nasce desligado), 18 (triagem só descarta), 19 (var
 | 70 | E44 v2 (moeda cruzada): ganho do prefeito cai mas fica (−15 a −30 pp na triagem); ≥ 1 alavanca acima de 1.0 além da tarifa | (na fila) |
 | 71 | Honesto campo L=200 (5 sem., 120 ger.): reflexo < mínimo-3 em mortos por ≥ 5 pp (o joelho evita o tanque vazio que mata 69 % dos mortos do mínimo-3); ambos ≤ 0.5 | (na fila) |
 | 72 | E48 comitê (4 campeões + inércia): ≥ melhor campeão por ≥ 3 pp SÓ se ganho > 1 e τ > 4 em ≥ 2/3 | (na fila) |
+| 73 | E49 olho multi-escala (need + a·micro + b·macro no produto): genes ≠ 0 em ≥ 2/3; panes −20 % vs produto; mortos −5 pp | (na fila) |
