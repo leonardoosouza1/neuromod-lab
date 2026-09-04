@@ -406,3 +406,9 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
   média de políticas diferentes não é política — o comitê só volta a viver
   quando o portão separa os modos. Predição 72 (≥ melhor campeão por 3 pp):
   ✗ na régua; genes abaixo dizem se os modos foram usados.
+  Genes do comitê: ganho da mistura 0.38 / 0.19 / 0.62 (baixo — os modos
+  pesam pouco), τ de inércia 5.6 / 1.2 / 1.5 ticks (> 4 só em 1/3). A
+  cláusula da predição 72 vale: com loja no posto, cérebros diferentes não
+  têm o que combinar, e compromisso por trechos não paga. Reavaliar no
+  mundo sem loja (onde o problema pede sequência) quando alguma
+  arquitetura sobreviver lá.
