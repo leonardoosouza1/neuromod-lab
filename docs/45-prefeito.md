@@ -101,3 +101,19 @@ Voronoi por célula, pré-computado).
   sync; caixa per capita 3–4 no fim de 500 passos; prefeito aleatório pode
   levar o caixa a −2.8 em 10 dias → a v3 (sem caixa, sem subsídio) cobre.
   Comparações "com vs sem" ficam bit-limpas daqui em diante.
+- **17:02 E44 v3 (orçamento fecha) — triagem L=200, 10 dias, régua B:**
+  produto sem prefeito 0.62 / 26.2 entregas; produto co-evoluído + prefeito
+  campeão no teste **0.22 / 30.9** (−40 pp; v2 com caixa aberto dava −46).
+  Alavancas finais: alíquota ×0.72, gasolina ×0.62, água ×1.25, comida ×0.65,
+  aluguel ×1.93, tarifa ×2.0; obras 0 água / 16 comida / 8 postos; caixa por
+  mapa +5 / +142 / −75 (o piso só entra depois de cair abaixo de zero: o
+  subsídio de um dia pode furar o caixa — vazamento pequeno, anotado).
+  O prefeito PAGA o subsídio de gasolina e comida com aluguel e água mais
+  caros (moeda cruzada funcionando: o subsídio custa em outra moeda) e ainda
+  constrói. Predição 74 ✓.
+  Achado novo: os seres co-evoluídos com o prefeito ficam DEPENDENTES —
+  testados sem ele morrem 0.76 (vs 0.62 dos evoluídos sozinhos): enchem mais
+  o tanque (93 L/abast vs 66) e abastecem menos (4.4× vs 7.6×) porque a
+  gasolina era barata. É a co-adaptação da ablação (Universe): tirar o
+  prefeito mede contribuição + DESARRANJO. **Honesto v3 na fila** (atrás do
+  E51): 5 sementes, 120 ger., R=16 — ~3 h.
