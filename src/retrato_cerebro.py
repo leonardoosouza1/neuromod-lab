@@ -8,10 +8,12 @@ sys.path.insert(0, os.path.dirname(__file__))
 import torch
 from campo import *
 from campo import _fit
+from e43_campo import BRACOS
+import completo as CP
 
-def rastro(W, mapas, cfg, T, R=64, seed=1000):
-    m = Campo(mapas, 1, cfg, seed=seed, R=R); Wb = W[None, :][m.gidx]; a = Cerebro(); a.reset(m, Wb); B = m.B
-    rec = {k: [] for k in ('z', 'h', 'lin', 'rap', 'len', 'fuel', 'fome', 'agua', 'dinh', 'pax', 'vivo', 'esc')}
+def rastro(W, mapas, cfg, T, R=64, seed=1000, A=Cerebro):
+    m = Campo(mapas, 1, cfg, seed=seed, R=R); Wb = W[None, :][m.gidx]; a = A(); a.reset(m, Wb); B = m.B
+    rec = {k: [] for k in ('z', 'h', 'lin', 'rap', 'len', 'fuel', 'fome', 'agua', 'dinh', 'pax', 'vivo', 'esc', 'gate', 'mem', 'ref')}
     for t in range(T):
         F, val = m.obs()
         sc_lin = torch.einsum('bgf,bf->bg', F, Wb[:, :NF]); ex = a.extra(m, Wb, F)
@@ -20,15 +22,19 @@ def rastro(W, mapas, cfg, T, R=64, seed=1000):
         svn, sv = m.serv_need(); ss = svn*Wb[:, NF:NF+S] + Wb[:, NF+S:NF+S+1] + a.extra_serv(m); ss = ss.masked_fill(sv <= 0, -1e9)
         esc = torch.cat([sc, ss], 1).argmax(1); g = esc.clamp(max=G - 1)
         rec['z'].append(a.z.clone()); rec['h'].append(a.h[torch.arange(B, device=DEV), g]); rec['esc'].append(esc.clone())
+        if hasattr(a, '_gate'): rec['gate'].append(a._gate(m)); rec['mem'].append(a._mem(m)); rec['ref'].append(a._ativ().clone())
         rec['lin'].append(sc_lin.gather(1, g[:, None]).squeeze(1)); rec['rap'].append(rap.gather(1, g[:, None]).squeeze(1)); rec['len'].append(lent.gather(1, g[:, None]).squeeze(1))
         rec['fuel'].append(m.fuel.clone()); rec['fome'].append(m.fome.clone()); rec['agua'].append(m.agua.clone()); rec['dinh'].append(m.dinh.clone()); rec['pax'].append((m.pd_ >= 0).float()); rec['vivo'].append((m.vida > 0).float())
         m.passo(esc); a.atualizar(m)
-    out = {k: torch.stack(v).cpu() for k, v in rec.items()}          # (T,B,...)
+    out = {k: torch.stack(v).cpu() for k, v in rec.items() if v}          # (T,B,...)
     return out, a, m
 
-def blocos(W):
-    A = Cerebro; b = {'linear (24 mov + 10 serv + bias)': W[:A.O_U], 'U rapida (entrada)': W[A.O_U:A.O_BU], 'V rapida (saida)': W[A.O_V:A.O_U2],
-                      'U2 lenta (entrada)': W[A.O_U2:A.O_B2], 'tau lenta': W[A.O_TAU:A.O_M], 'M lenta (modula mov)': W[A.O_M:A.O_P], 'P lenta (servicos)': W[A.O_P:A.NP]}
+def blocos(W, A=Cerebro):
+    b = {'linear (24 mov + 10 serv + bias)': W[:A.O_U], 'U rapida (entrada)': W[A.O_U:A.O_BU], 'V rapida (saida)': W[A.O_V:A.O_U2],
+                      'U2 lenta (entrada)': W[A.O_U2:A.O_B2], 'tau lenta': W[A.O_TAU:A.O_M], 'M lenta (modula mov)': W[A.O_M:A.O_P], 'P lenta (servicos)': W[A.O_P:Cerebro.NP]}
+    if hasattr(A, 'O_REF'):
+        b.update({'reflexo (tau,w,v,theta)': W[A.O_REF:A.O_REF+4], 'talamo (5 grupos x a,b,c)': W[A.O_TAL:A.O_TAL+A.N_TAL], 'cortex (12 distritos x 4)': W[A.O_COR:A.O_COR+A.N_COR],
+                  'hipocampo tau+ganho': W[A.O_HIP:A.O_HIP+2], 'hipocampo M_h (mem x sentido)': W[A.O_HIP+2:A.O_HIP+2+3*NF], 'hipocampo P_h (servicos)': W[A.O_HIP+2+3*NF:A.NP]})
     return {k: dict(n=int(v.numel()), abs_med=float(v.abs().mean()), abs_max=float(v.abs().max()), frac_grande=float((v.abs() > .5).float().mean()), q=[float(x) for x in v.float().quantile(torch.tensor([.1, .5, .9], device=v.device))]) for k, v in b.items()}
 
 def corr(x, y):
@@ -37,13 +43,14 @@ def corr(x, y):
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument('json'); ap.add_argument('braco'); ap.add_argument('tag'); ap.add_argument('--L', type=float, default=200.); ap.add_argument('--dias', type=float, default=10.)
     ap.add_argument('--out', default='/media/llm-data/universe-runs/neuromod-lab-taxi/e53'); a = ap.parse_args(); os.makedirs(a.out, exist_ok=True)
-    J = json.load(open(a.json))['bracos'][a.braco]; T = int(240*a.dias); cfg = CfgCampo(L=a.L, fitness='bemestar')
+    J = json.load(open(a.json))['bracos'][a.braco]; T = int(240*a.dias); cfg = CfgCampo(L=a.L, fitness='bemestar'); A = dict(BRACOS)[a.braco]
     teste = [gerar_mapa(1000 + s, L=a.L) for s in range(3)]; R = {}
     for sd in sorted(J['W']):
-        W = torch.tensor(J['W'][sd], device=DEV); rec, ag, m = rastro(W, teste[:1], cfg, T)
+        W = torch.tensor(J['W'][sd], device=DEV); rec, ag, m = rastro(W, teste[:1], cfg, T, A=A)
         vivo = rec['vivo'].bool(); tv = vivo.sum(0); b0 = int(tv.argmax())         # o ser que viveu mais
         eeg = {k: rec[k][:, b0].tolist() for k in ('lin', 'rap', 'len', 'fuel', 'fome', 'agua', 'dinh', 'pax', 'vivo')}
         eeg['z'] = rec['z'][:, b0].tolist(); eeg['h'] = rec['h'][:, b0].tolist(); eeg['esc'] = rec['esc'][:, b0].tolist()
+        if 'gate' in rec: eeg['gate'] = rec['gate'][:, b0].tolist(); eeg['mem'] = rec['mem'][:, b0].tolist(); eeg['ref'] = rec['ref'][:, b0].tolist()
         # o que cada unidade lenta le: correlacao (ticks vivos, todos os seres)
         msk = vivo.flatten(); le = {}
         for k in range(Cerebro.K):
@@ -54,11 +61,16 @@ def main():
         parte = {k: float(rec[k].flatten()[msk].std()) for k in ('lin', 'rap', 'len')}
         # ablacao
         abl = {}
-        for nome, zera in (('completo', ()), ('sem rapida (V=0)', (('V', Cerebro.O_V, Cerebro.O_U2),)), ('sem lenta (M=P=0)', (('M', Cerebro.O_M, Cerebro.NP),)), ('so linear', (('V', Cerebro.O_V, Cerebro.O_U2), ('M', Cerebro.O_M, Cerebro.NP)))):
+        cortes = [('completo', ()), ('sem rapida (V=0)', ((Cerebro.O_V, Cerebro.O_U2),)), ('sem lenta (M=P=0)', ((Cerebro.O_M, Cerebro.NP),))]
+        if hasattr(A, 'O_REF'):
+            cortes += [('sem reflexo', ((A.O_REF+1, A.O_REF+3),)), ('sem talamo', ((A.O_TAL, A.O_TAL+A.N_TAL),)), ('sem cortex', ((A.O_COR, A.O_COR+A.N_COR),)), ('sem hipocampo', ((A.O_HIP+1, A.O_HIP+2),)),
+                       ('so linear', ((Cerebro.O_V, Cerebro.O_U2), (Cerebro.O_M, Cerebro.NP), (A.O_REF+1, A.O_REF+3), (A.O_TAL, A.O_TAL+A.N_TAL), (A.O_COR, A.O_COR+A.N_COR), (A.O_HIP+1, A.O_HIP+2)))]
+        else: cortes += [('so linear', ((Cerebro.O_V, Cerebro.O_U2), (Cerebro.O_M, Cerebro.NP)))]
+        for nome, zera in cortes:
             Wa = W.clone()
-            for _, i0, i1 in zera: Wa[i0:i1] = 0.
-            med = medidas(Cerebro, Wa, teste, cfg, T=T, seed=7777, R=1, copias=128); abl[nome] = dict(mortos=med['mortos'], ent=med['ent'], panes=med['panes'])
-        R[sd] = dict(eeg=eeg, le=le, parte=parte, blocos=blocos(W), tau=[float(x) for x in ag.tau[0]], ablacao=abl, ser=b0, t_vida=int(tv[b0]))
+            for i0, i1 in zera: Wa[i0:i1] = 0.
+            med = medidas(A, Wa, teste, cfg, T=T, seed=7777, R=1, copias=128); abl[nome] = dict(mortos=med['mortos'], ent=med['ent'], panes=med['panes'])
+        R[sd] = dict(eeg=eeg, le=le, parte=parte, blocos=blocos(W, A), tau=[float(x) for x in ag.tau[0]], ablacao=abl, ser=b0, t_vida=int(tv[b0]))
         print(f'seed {sd}: tau {[round(x,1) for x in R[sd]["tau"]]} | desvio das partes lin {parte["lin"]:.3f} rap {parte["rap"]:.3f} len {parte["len"]:.3f} | ablacao ' +
               ' · '.join(f'{k}: {v["mortos"]:.2f}/{v["panes"]:.1f}' for k, v in abl.items()), flush=True)
         for u, c in le.items(): print(f'   {u} le: ' + ' '.join(f'{v} {r:+.2f}' for v, r in c.items()), flush=True)
@@ -83,7 +95,7 @@ table{border-collapse:collapse;font-family:"IBM Plex Mono",monospace;font-size:1
 <main><div class="eyebrow">neuromod-lab · E53 cérebro livre · campeão semente ''' + str(sd) + ''' · o ser que viveu mais (''' + str(r['t_vida']) + ''' ticks)</div>
 <h1>O cérebro do ser, tick a tick</h1>
 <p>Camada lenta: três unidades com o próprio tempo (τ ≈ ''' + ', '.join(f'{x:.0f}' for x in r['tau']) + ''' ticks). Camada rápida: quatro unidades que leem os sentidos da opção escolhida. Embaixo, quanto cada parte pesou na decisão e o corpo. Faixas escuras = noite.</p>
-<div class="card wrap"><canvas id="eeg" width="1060" height="720"></canvas></div>
+<div class="card wrap"><canvas id="eeg" width="1060" height="1000"></canvas></div>
 <h2>O que cada unidade lê</h2><p>Correlação da ativação com o corpo, sobre todos os seres e ticks vivos. Perto de zero = não lê aquilo.</p><div class="card wrap" id="le"></div>
 <h2>Quanto cada parte vale</h2><p>Ablação no teste (3 mapas × 128 cópias): zerar a saída da camada e medir mortos e panes.</p><div class="card wrap" id="abl"></div>
 <h2>Distribuição dos pesos por bloco</h2><div class="card wrap" id="blocos"></div></main>
@@ -91,6 +103,7 @@ table{border-collapse:collapse;font-family:"IBM Plex Mono",monospace;font-size:1
 (function(){const c=document.getElementById('eeg'),g=c.getContext('2d'),W=c.width,H=c.height,L=70,R=10; const e=D.e,T=e.fuel.length; const x=t=>L+t/(T-1)*(W-L-R);
 const rows=[]; for(let k=0;k<e.z[0].length;k++) rows.push({n:'lenta z'+k+' τ'+Math.round(D.tau[k]),v:e.z.map(a=>a[k]),c:'--vio'});
 for(let k=0;k<e.h[0].length;k++) rows.push({n:'rápida h'+k,v:e.h.map(a=>a[k]),c:'--slate'});
+if(e.gate){const gn=['rota','servicos','corpo','economia','tempo']; for(let k=0;k<e.gate[0].length;k++) rows.push({n:'tálamo '+gn[k],v:e.gate.map(a=>a[k]),c:'--hun'}); const mn=['renda','espera','gasto']; for(let k=0;k<e.mem[0].length;k++) rows.push({n:'hipocampo '+mn[k],v:e.mem.map(a=>a[k]),c:'--thi'}); rows.push({n:'reflexo',v:e.ref,c:'--red'});}
 rows.push({n:'parte linear',v:e.lin,c:'--ink'},{n:'parte rápida',v:e.rap,c:'--slate'},{n:'parte lenta',v:e.len,c:'--vio'},{n:'tanque',v:e.fuel,c:'--amb'},{n:'fome',v:e.fome,c:'--hun'},{n:'dinheiro',v:e.dinh,c:'--thi'},{n:'passageiro',v:e.pax,c:'--mute'});
 const rh=(H-30)/rows.length; g.fillStyle=css('--grid'); for(let d=0;d<10;d++){const t0=d*240+22*10, t1=Math.min(T,d*240+240+6*10); if(t0<T) g.fillRect(x(t0),0,x(Math.min(t1,T-1))-x(t0),H-30);}
 g.fillStyle=css('--mute'); g.font='11px IBM Plex Mono'; g.textAlign='center'; for(let d=0;d<10;d++) g.fillText('dia '+(d+1),x(d*240+120),H-10);

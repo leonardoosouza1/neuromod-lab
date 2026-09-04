@@ -554,3 +554,21 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
   cada unidade lê, contribuição de cada parte, ablação, pesos por bloco).
   Predição 79 (aposta honesta: a evolução NÃO monta o alcance em 300 ger.;
   o ganho é ver o cérebro).
+- **19:15 Leonardo: "refatorou o projeto e não pôs o modelo completo no
+  mundo aberto; ele precisa de tudo o que tinha antes: tálamo, córtex,
+  hipocampo; pare a GPU e teste o cérebro completo, em parte e completo".**
+  Certo. Parei o honesto do prefeito (braço 2, 1 h perdida) e as filas E52/
+  E53. **E54 `completo.py`**: porta o SerCamadas do grafo (E42) pro campo e
+  junta com o campo: linear (espinha) + reflexo (τ, w, v, θ) + tálamo (5
+  grupos de sentidos: rota/serviços/corpo/economia/tempo, gate = 2·σ(a +
+  b·need + c·pax)) + córtex (δ por distrito em d_alvo, d_posto,
+  custo_frente, preço_frente, |δ| ≤ .5, 12 distritos) + hipocampo (memória
+  por distrito: renda da última corrida com origem ali, tempo sem
+  passageiro, gasto; EMA com τ; entra BILINEAR memória×sentido no movimento
+  e nos serviços, ganho tanh) + rápida (4 relu) + lenta (3 EMA, banco de τ).
+  460 genes, tudo nasce transparente; partes desligáveis (sem tálamo / sem
+  córtex / sem hipocampo / sem reflexo / sem livre = só camadas). Fila:
+  portões → triagem (linear, reflexo, completo, 5 partes) → 300 gerações
+  (completo vs linear) → retrato do cérebro (EEG das unidades, gates,
+  memória, reflexo tick a tick; ablação por parte; pesos por bloco).
+  Predição 80. GPU: só isto, do início ao fim.
