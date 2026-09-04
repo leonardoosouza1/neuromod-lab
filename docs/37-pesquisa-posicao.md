@@ -1204,3 +1204,24 @@ sementes (17–34 % do tempo ativo); **s0 vive sem reflexo (0 disparos) com
 a mesma mortalidade (0.15) e mais entregas (13.9)** — duas soluções na
 mesma população; "comer vence" varia 24–70 % entre sementes (estilos);
 tempo com passageiro 69–70 % em todas.
+
+### E41 — a régua muda o que emerge (pedido do Leonardo: "o objetivo não é entregar mais")
+Três fitness alternativas em `avaliar` (`cfg.fitness`; 'padrao' intocado —
+perito bit a bit ✓, testes ✓): **A sobrevive-primeiro** = vivo·(1 +
+vida/100 + dinheiro/100 + 0.05·entregas) − pena·morto; **B bem-estar
+integral** = média ao longo da vida de (vida + saciedade + tanque +
+dinheiro)/4 + 0.05·entregas − pena·morto; **C Pareto** = −posto de
+não-dominância em 4 objetivos por genoma (vivo·vida, dinheiro, entregas,
+−avarias) + desempate por soma normalizada. Semeadas do campeão do E37 (5
+postos, 120 ger.), 60 ger. cada, 5 sementes; controle = E37b (régua padrão):
+0.15 mortos / 13.2 entregas / 3.7 panes / fome fim 50 / tempo com
+passageiro 70 %. O "fit" no log é na régua nova (não comparável); comparar
+mortos, entregas, panes, fome, e o RETRATO de cada uma.
+
+**Predições (antes de rodar):** 46. A: mortos ≤ 0.08, entregas ≤ 11,
+tempo com passageiro ≤ 60 % — o ser "escolhe menos" e vive mais. 47. B:
+fome-no-fim ≤ 35 e panes ≤ 2.5 (ser calmo), entregas ≤ 10, mortos ≤ 0.12.
+48. C: as 5 sementes divergem (fingerprint médio ≥ 0.6 vs ~0.45 no
+controle) — cinco estilos, com pelo menos uma semente ≤ 0.10 de mortos e
+uma ≥ 13 de entregas; se todas convergirem pro mesmo ponto, a frente de
+Pareto deste mundo é estreita e "estilo" não existe aqui.

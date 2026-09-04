@@ -299,6 +299,7 @@ class Lote:
         # E13: corpo — vida (HP) e censo
         s.vida = torch.full((B,), 100., device=DEV)
         s.recusa = torch.zeros(B, dtype=torch.bool, device=DEV)   # [E38] recusa de passageiro (a arq escreve em atualizar)
+        s.bem_soma = torch.zeros(B, device=DEV)                    # [E41 B] integral do bem-estar
         s.t_vida = torch.zeros(B, device=DEV); s.n_oficina = torch.zeros(B, device=DEV)
         s.sono_soma = torch.zeros(B, device=DEV); s.dano_soma = torch.zeros(B, device=DEV)
         s.n_bloco = torch.zeros(B, device=DEV)   # E13l: noites dormidas em bloco
@@ -870,6 +871,8 @@ def passo(m, esc):
         if c.divida_mata and c.economia:   # E19: divida alem do limite = perde o carro
             dn = dn + 1000.*(m.dinh <= -c.LIMITE_DIVIDA).float()
         m.vida = (m.vida - dn).clamp(min=0); m.dano_soma += dn
+    if getattr(c, 'fitness', 'padrao') == 'bemestar':   # [E41 B] bem-estar do passo: corpo inteiro, sem fome, com tanque, com dinheiro
+        m.bem_soma += (m.vida > 0).float()*(m.vida/100. + (1. - m.fome/100.) + m.fuel/m.capf() + (m.dinh/100.).clamp(0., 1.))/4.
         m.t_vida += viva.float()
     if c.com_agua:
         # radiador: sem agua o motor esquenta MAIS — pela lei OCULTA k_agua
@@ -1476,14 +1479,43 @@ def rodar(Arq, W, cidades, cfg, T, seed, R=1):
 def avaliar(Arq, W, cidades, cfg, T, seed=0, R=1):
     m = rodar(Arq, W, cidades, cfg, T, seed, R=R)
     # custo_neural: arq que paga por orgao ativo (SerVital) deposita aqui; 0 p/ demais
-    fit = m.ent - 0.3*m.avar - getattr(m, 'custo_neural', 0.)
-    if cfg.pena_morte:
-        morto = (m.vida <= 0).float()
-        if cfg.pena_prop:   # E27: quem morre no dia 1 perdeu quase a vida toda; no dia 4.9, quase nada
-            fit = fit - cfg.pena_morte*morto*2.*(1. - m.t_vida/float(T)).clamp(0., 1.)
-        else:
-            fit = fit - cfg.pena_morte*morto
-    return fit.view(W.shape[0], m.NC*m.R).mean(1)
+    modo = getattr(cfg, 'fitness', 'padrao')   # [E41] reguas alternativas (pedido do Leonardo 2026-09-03); 'padrao' = caminho original intocado
+    morto = (m.vida <= 0).float()
+    if modo == 'padrao':
+        fit = m.ent - 0.3*m.avar - getattr(m, 'custo_neural', 0.)
+        if cfg.pena_morte:
+            if cfg.pena_prop:   # E27: quem morre no dia 1 perdeu quase a vida toda; no dia 4.9, quase nada
+                fit = fit - cfg.pena_morte*morto*2.*(1. - m.t_vida/float(T)).clamp(0., 1.)
+            else:
+                fit = fit - cfg.pena_morte*morto
+        return fit.view(W.shape[0], m.NC*m.R).mean(1)
+    vivo = 1. - morto
+    if modo == 'sobrevive':      # A: sobreviver primeiro; entre vivos, corpo inteiro + dinheiro; entregas so desempatam
+        fit = vivo*(1. + m.vida/100. + (m.dinh/100.).clamp(0., 1.) + 0.05*m.ent) - cfg.pena_morte*morto
+        return fit.view(W.shape[0], m.NC*m.R).mean(1)
+    if modo == 'bemestar':       # B: bem-estar INTEGRAL ao longo da vida (acumulado em passo) + entregas como meio
+        fit = m.bem_soma/float(T) + 0.05*m.ent - cfg.pena_morte*morto
+        return fit.view(W.shape[0], m.NC*m.R).mean(1)
+    if modo == 'pareto':         # C: 4 objetivos por genoma (media das vidas): vivo*vida, dinheiro, entregas, -avarias -> posto de nao-dominancia
+        P = W.shape[0]; V = lambda x: x.view(P, m.NC*m.R).mean(1)
+        ob = torch.stack([V(vivo*m.vida), V(m.dinh.clamp(min=0.)), V(m.ent), V(-m.avar)], 1)          # (P,4) maior = melhor
+        return -pareto_posto(ob) + 1e-3*((ob - ob.min(0).values)/(ob.max(0).values - ob.min(0).values + 1e-9)).sum(1)
+    raise ValueError(f'cfg.fitness desconhecido: {modo}')
+
+def pareto_posto(ob):
+    """posto de nao-dominancia (0 = frente de Pareto) por varredura O(P^2) na GPU. ob (P,k), maior = melhor."""
+    P = ob.shape[0]
+    ge = (ob[None, :, :] >= ob[:, None, :]).all(-1)          # ge[i,j]: j >= i em tudo
+    gt = (ob[None, :, :] > ob[:, None, :]).any(-1)           # e estritamente melhor em algum
+    dom = ge & gt                                              # dom[i,j]: j domina i
+    posto = torch.zeros(P, device=ob.device); resta = torch.ones(P, dtype=torch.bool, device=ob.device)
+    for r in range(64):
+        nd = resta & ~(dom & resta[None, :]).any(1)           # nao dominado por ninguem que ainda resta
+        if not bool(nd.any()): break
+        posto[nd] = float(r); resta = resta & ~nd
+        if not bool(resta.any()): break
+    posto[resta] = 64.
+    return posto
 
 def evoluir(Arq, cidades, cfg, P=512, ger=25, T=1500, seed=0, elite=.15,
             verbose=True, R=1, ckpt=None, ckpt_cada=10):
