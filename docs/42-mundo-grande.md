@@ -313,8 +313,13 @@ Mesmos 600 passos (2,5 dias), mesmo orçamento, braço direto:
 |---|---|---|---|---|---|
 | 26 (E20) | 3 | 12,2 | **3,3** | 0,28 | +0,63 |
 | 104 | 6 | 21,5 | **1,7** | 0,49 | −1,11 |
-| 250 | 9 | 31,2 | (não rodado) | | |
+| 250 | 9 | 31,2 | (sem evolução — ver nota) | | |
 | 500 | 13 | 44,0 | **0,02** | 0,31 | −2,63 |
+
+> **n=250 não teve fumaça de evolução** (só as duas pontas, como pedido), mas o
+> mundo está montado e roda: perito em 300 passos, D=9, distritos de 23–34 nós,
+> `hop_posto_max` 6, `cruza_frac` 0,63, `casa_frac` 0,39, `n_rua` 14,8,
+> mortos 0,00 — nenhum NaN, nenhuma cidade degenerada.
 
 **Sim: em n=500 as entregas por vida caem praticamente a zero** (0,02 no
 direto, 0,01 em reações; só o mínimo-3 segurou 1,2). Como pedido, não mudei T —
