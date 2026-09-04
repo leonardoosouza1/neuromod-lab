@@ -479,3 +479,21 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
   passageiro), série diária e causa de morte. Hipótese: o oráculo perde o
   dia trancado (ida ao posto cedo, espera no posto fechado) e entrega
   metade; o campeão evoluído entrega primeiro e abastece 50 L quando passa.
+- **17:40 E45 clonagem v5 — a base fechada FUNCIONA como transplante, não
+  como atalho:** com Phi centrado o clone por ridge decide igual ao professor
+  em 99,5 % (mínimo-3) e 97,3 % (linear) dos estados, e sozinho vive tanto
+  quanto ele (0.60 vs 0.58; 0.59 vs 0.55). Ou seja: a fórmula fechada
+  W* = (ΦᵀΦ+λI)⁻¹ΦᵀY transporta uma política inteira pra outra arquitetura
+  em 0,1 s — inclusive o mínimo-3 (3 sentidos) pro linear cheio (24), com
+  os 21 pesos extras ≈ 0 (o clone "sabe" que não precisa deles).
+  Mas semear a evolução do clone NÃO rende: 25 ger. a partir dele dão 0.63
+  e 0.68 — igual ou PIOR que o próprio clone. Evolução com P=512, R=4 é
+  ruído em cima de um campeão (seleciona no treino ruidoso, regride no
+  teste); confirma o platô dos 120 ger. e a régua (R=16). Predição 69:
+  clone ≈ professor ✓; semeado ≥ do-zero-40 ✗; professor guloso morre ✓.
+  O que a base compra depende inteiramente do professor: clone de campeão
+  = campeão; professor à mão = morre (E45 v2/v3, E51). Mesma lição da ponte
+  de sabedoria (gargalo = qualidade do professor). Uso legítimo que sobra:
+  TRANSPLANTE entre arquiteturas (mínimo-3 → linear → produto/modos como
+  ponto de partida exato) e diagnóstico (fidelidade < 95 % = a arquitetura
+  destino não representa a política).
