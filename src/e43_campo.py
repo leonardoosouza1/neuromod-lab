@@ -24,7 +24,7 @@ def main(a):
         t1 = time.time(); W0 = None
         if a.init_from:
             J = json.load(open(a.init_from[0]))['bracos'][a.init_from[1]]['W']; W0 = {sd: J[str(sd)] for sd in p['seeds']}
-        champs = evoluir(A, treino, cfg, P=p['P'], ger=p['G'], T=p['T_evo'], seeds=p['seeds'], R=p['R'], verbose=False, W0=W0)
+        champs = evoluir(A, treino, cfg, P=p['P'], ger=p['G'], T=p['T_evo'], seeds=p['seeds'], R=p['R'], verbose=True, W0=W0)
         med = {}; por = {}
         for sd in p['seeds']:
             por[sd] = medidas(A, champs[sd][0], teste, cfg, T=p['T_aval'], seed=7777, R=1, copias=128)

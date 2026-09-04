@@ -375,3 +375,8 @@ loja); Δ > 0 = duas estratégias (linhagem com e sem reflexo). Vértice
 evoluída > 0.15 em ≥ 2/3 sementes e panes −15 % vs reflexo simples; se a
 largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
 (a histerese só paga quando o alvo se consome devagar).
+- **15:11** honesto reflexo vs mínimo-3 há 42 min sem linha no log — NÃO
+  é travamento: `evoluir_sementes` empilha as 5 sementes num lote só
+  (B = 5 × 65 k = 327 k seres por passo, ~7 ms/passo) → ~35 min por braço.
+  A regra "20 min sem log = kill" precisa de log por geração: runners
+  passam a `verbose=True` (o lab imprime a cada 5 gerações). Não matei.

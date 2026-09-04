@@ -21,7 +21,7 @@ def main(a):
         if com_pref:
             champs, Wp, hist = coevoluir(Produto, treino, cfg, P=p['P'], ger=p['G'], T=p['T_evo'], seeds=p['seeds'], R=p['R'], cada=a.cada)
         else:
-            champs = evoluir(Produto, treino, cfg, P=p['P'], ger=p['G'], T=p['T_evo'], seeds=p['seeds'], R=p['R'], verbose=False); Wp = None; hist = []
+            champs = evoluir(Produto, treino, cfg, P=p['P'], ger=p['G'], T=p['T_evo'], seeds=p['seeds'], R=p['R'], verbose=True); Wp = None; hist = []
         por = {}
         for sd in p['seeds']:
             # avaliacao nos mapas de teste: SEM prefeito (o ser sozinho, mundo padrao) e, se houver, COM o prefeito campeao do treino (mapa 0) aplicado ao teste
