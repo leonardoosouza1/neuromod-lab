@@ -497,3 +497,25 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
   TRANSPLANTE entre arquiteturas (mínimo-3 → linear → produto/modos como
   ponto de partida exato) e diagnóstico (fidelidade < 95 % = a arquitetura
   destino não representa a política).
+- **17:41 E51d diagnóstico de tempo (campeão mínimo-3 vs oráculo, L=200
+  com loja, 128 cópias × 3 mapas) — o MECANISMO do teto 0.53–0.58:**
+  · **Campeão:** anda 87 % dos ticks, 64 % com passageiro, 4,7 entregas no
+    dia 1; dinheiro sobe a 44 no dia 1 e estabiliza em ~32; come UMA vez por
+    dia exatamente quando abastece (come 9,6 = abast 9,5 — a loja no posto
+    é o truque); água 80, fome 37 o tempo todo. Morre de **dano**: só 12 %
+    com fome ≥ 90 e 11 % em dívida; 77 % "outro" = **5,7 panes por vida**
+    (D_PANE 6 + até 20 kcal da reserva) + calor. A mortalidade do melhor
+    ser não é economia nem fome: é ficar sem gasolina no meio do caminho
+    (abastece tarde, 50 L, tanque médio 33) e andar quente. Alvo claro pra
+    qualquer arquitetura: pane = alcance (gasolina × distância ao posto).
+  · **Oráculo:** anda 65 %, 30 % dos ticks TRANCADO no posto (só 4
+    abastecimentos: chega e não paga), 12 % em comida — duas viagens onde
+    o campeão faz uma. Gasta 15 dos 20 de caixa em 50 L no dia 1 → "pobre"
+    no dia 2 → só necessidade crítica → tanque em 15–18 (nível pós-pane) →
+    fome 36 → 45 → 60 → 76 → 86 → morre de fome endividado (fome 100 %,
+    dívida 91 %). Entregas caem 3,8 → 2,5 → 2,0 → 1,2 por dia. Diagnóstico:
+    política à mão míope pra DINHEIRO e sem oportunismo.
+  · v2 (e51e, na fila antes do honesto): oportunista (compra tudo que
+    precisa quando está num ponto) + piso de caixa (gasolina só com o que
+    sobra acima de 8–12: a gordura é o dinheiro, não o tanque) + diagnóstico
+    com dano por causa (pane / calor / fome / sede) no campeão.
