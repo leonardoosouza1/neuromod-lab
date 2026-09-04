@@ -60,3 +60,18 @@ Voronoi por célula, pré-computado).
 2. E44 v1 na GPU: sentir + 3 alavancas (alíquota, preço da gasolina,
    construir água/comida) com régua B agregada; co-evolução a cada 5 ger.
 3. Retrato do prefeito: o que ele mexeu dia a dia, e a curva da cidade.
+
+## 5. Diário
+- **23:54 fumaça E44 (10 dias, L=200, régua B, P=512, G=25, 1 semente,
+  prefeito selecionado a cada 5 ger.):** sem prefeito 1.00 mortos / 10.0
+  entregas; com prefeito (co-evolução) 0.99 / 9.7; prefeito campeão
+  aplicado no teste: **0.96 / 10.6**. Alavancas que ele escolheu: alíquota
+  ×0.5, gasolina ×2.0, água ×0.5, comida ×0.65, aluguel ×0.5, tarifa ×2.0 —
+  direções sensatas (barateia o que mata, encarece o que não mata, sobe a
+  renda). Obras: **27 postos, 1 comida, 0 água** (3 mapas) — gastou o caixa
+  no serviço errado: a fitness dele (bem-estar agregado) ainda não "vê" que
+  a morte é por fome. Predição 57 ✗ na fumaça (−4 pp, não −15). O gargalo
+  é dos seres (não comem, ver docs/44 23:51) — o prefeito só amplifica uma
+  população que funciona. Próximo: consertar o comer; depois prefeito com
+  sentido de "morte por fome" ligado à obra de comida (já é sentido `m_fome`;
+  falta gene selecionado) e mais gerações de prefeito.
