@@ -467,3 +467,17 @@ class ReflexoRaizes(Reflexo):
         Reflexo.atualizar(s, m)
         r1 = s.theta - s.larg; r2 = s.theta
         s.ligado = torch.where(s.c > r2, torch.ones_like(s.ligado), torch.where(s.c < r1, torch.zeros_like(s.ligado), s.ligado))
+
+
+class ReflexoAlcance(Reflexo):
+    """E52 REFLEXO DE ALCANCE (diagnostico E51e: o campeao morre de PANE, 5.7 por vida = 34-147 de dano; fome so 14).
+    Pane = falha de alcance: o tanque baixo NAO e o problema, e o tanque baixo LONGE do posto. O portao passa a ler
+    c + k*d_posto/100 - theta (deficit de gasolina + distancia ao posto mais perto): a mesma sede, mas que cresce com a
+    distancia — o 'km ate esvaziar' do painel do carro. Gene extra k = softplus(g - 4): nasce ~0.02 (== Reflexo, regra 17)."""
+    nome = 'reflexo-alcance'; NP = Reflexo.NP + 1
+    def reset(s, m, W):
+        Reflexo.reset(s, m, W); s.k = torch.nn.functional.softplus(W[:, -1] - 4.); s.d_posto = torch.zeros(m.B, device=DEV)
+    def _ativ(s): return (s.c + s.k*s.d_posto/100. - s.theta).clamp(min=0.)
+    def extra(s, m, W, F):
+        s.d_posto = m._dist[:, 0]                                             # distancia atual ao posto mais perto (obs() acabou de calcular)
+        return Reflexo.extra(s, m, W, F)

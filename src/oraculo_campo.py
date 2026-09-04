@@ -14,7 +14,7 @@ from campo import _fit
 COL = {0: 1, 1: 2, 2: 3, 3: 4}                       # alvo -> coluna de F: posto d_posto(1), comida d_comida(2), agua d_agua(3), oficina d_oficina(4)
 ACAO_TIPO = torch.tensor([0, 0, 0, 0, 0, 2, 2, 1, -1, 3])   # acao de servico -> tipo de alvo (descanso -1: o oraculo nao descansa)
 
-def fabrica_oraculo(liga=(.5, .6, .5, .5), critico=(.8, .85, .75, .7), caixa_min=15., noite_posto=False, nome='oraculo', oportunista=False, piso=0., baixo=.25):
+def fabrica_oraculo(liga=(.5, .6, .5, .5), critico=(.8, .85, .75, .7), caixa_min=15., noite_posto=False, nome='oraculo', oportunista=False, piso=0., baixo=.25, entrega_primeiro=False, fura_esfria=True):
     """liga/critico: limiar da urgencia (u_fuel=1-fuel/100, u_fome=fome/100, u_agua=1-agua/100, u_vida=1-vida/100) por alvo.
     caixa_min: abaixo disso so necessidade critica tranca (o resto do tempo trabalha). noite_posto: tranca posto a noite (fechado) ou nao."""
     liga_t = torch.tensor(liga, device=DEV); crit_t = torch.tensor(critico, device=DEV)
@@ -68,7 +68,9 @@ def fabrica_oraculo(liga=(.5, .6, .5, .5), critico=(.8, .85, .75, .7), caixa_min
             # tranca: sem alvo, esfriado, e alguma necessidade ligada -> a mais urgente (relativa ao limiar); critica ignora o esfriamento
             pri = torch.where(on, u - lim, torch.full_like(u, -9.)); novo = pri.argmax(1)
             critico = (u > crit_t[None, :]).any(1)
-            s.alvo = torch.where((alvo < 0) & on.any(1) & ((s.cool <= 0) | critico), novo, alvo)
+            livre = (s.cool <= 0) | (critico if fura_esfria else torch.zeros_like(critico))       # [v3] sem furar: quebrado + critico NAO volta ao posto onde nao paga — trabalha (o guincho leva)
+            if entrega_primeiro: livre = livre & ((m.pd_ < 0) | critico)                             # [v3] com passageiro a bordo: entrega antes (o campeao faz 27 entregas com 64% dos ticks ocupado; o oraculo 8 com 70%)
+            s.alvo = torch.where((alvo < 0) & on.any(1) & livre, novo, alvo)
     Oraculo.nome = nome
     return Oraculo
 
@@ -87,6 +89,12 @@ VARIANTES = {
     'poup_oport_tarde': dict(oportunista=True, piso=8., liga=(.65, .6, .5, .5)),
     'poup_oport_caixa0': dict(oportunista=True, piso=8., caixa_min=0.),
     'poup12_oport_tarde': dict(oportunista=True, piso=12., liga=(.65, .6, .5, .5), caixa_min=0.),
+    'v3_entrega':      dict(oportunista=True, piso=8., entrega_primeiro=True),
+    'v3_sem_fura':     dict(oportunista=True, piso=8., fura_esfria=False),
+    'v3_ambos':        dict(oportunista=True, piso=8., entrega_primeiro=True, fura_esfria=False),
+    'v3_ambos_tarde':  dict(oportunista=True, piso=8., entrega_primeiro=True, fura_esfria=False, liga=(.65, .6, .5, .5), caixa_min=0.),
+    'v3_ambos_cedo':   dict(oportunista=True, piso=8., entrega_primeiro=True, fura_esfria=False, liga=(.4, .5, .4, .5), caixa_min=0.),
+    'v3_ambos_piso0':  dict(oportunista=True, piso=0., entrega_primeiro=True, fura_esfria=False, caixa_min=0.),
 }
 
 def main(a):

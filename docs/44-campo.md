@@ -519,3 +519,18 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
     precisa quando está num ponto) + piso de caixa (gasolina só com o que
     sobra acima de 8–12: a gordura é o dinheiro, não o tanque) + diagnóstico
     com dano por causa (pane / calor / fome / sede) no campeão.
+- **17:46 E51e diagnóstico v2 — dano por causa no campeão (vida = 100):**
+  total 176 por ser; **pane 34–147 (5,7 panes)**, calor 40 (265 ticks
+  andando quente, 0 desligamentos), fome 14, sede 0, 28 ticks em dívida. A
+  reserva (gordura) é o que decide se a pane custa 6 ou 26: é literalmente o
+  amortecedor de pane. **O teto do ser sozinho é ALCANCE**: tanque baixo
+  LONGE do posto. Nenhuma arquitetura atual gateia isso (reflexo lê só a
+  sede; produto lê need×dist mas sem limiar de distância). → **E52 reflexo
+  de alcance**: portão a = relu(c + k·d_posto/100 − θ), o "km até esvaziar"
+  do painel; k nasce ~0 (= reflexo). Predição 77.
+  Oráculo v2 (oportunista, piso de caixa): ainda 0.95–1.00 — agora 40–52 %
+  dos ticks trancado no posto sem pagar (quebrado + crítico fura o
+  esfriamento e volta pro posto onde não paga) e 70 % dos ticks COM
+  passageiro a bordo fazendo só 8 entregas: pega o passageiro (automático no
+  raio) e abandona o destino pra ir ao posto. v3 = entrega primeiro + não
+  fura o esfriamento (predição 78), na fila atrás do honesto (E52 antes).
