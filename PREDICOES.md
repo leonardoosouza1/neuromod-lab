@@ -1035,3 +1035,7 @@ Regras novas: 17 (gene novo nasce desligado), 18 (triagem só descarta), 19 (var
 | 50 | E42 cérebro: hipocampo de distrito ≥ 5 pp mortos ou +10 % renda | (SerCamadas merged; estimativa do agente ~30 %) |
 | 51 | E42 cérebro: tálamo usado em ≥ 3/5 (gate < 0.8) | (versão estrita com --init-from; ~50 %) |
 | 52–55 | E43 campo: 3 termos perdem ≥ 1.0; litros ≥ 75 em L=800 / ≤ 50 em L=200; campo ≥ 5× grafo-500; joelho reaparece 3/5 | (campo.py pronto: 26 ms/passo @65k; fumaça rodando) |
+| 56 | E43 fumaça: linear ≥ 0.9 mortos (preso no potencial), produto ≤ 0.6 | (parcial: linear 0.01 mortos com ZERO entregas — vive de poupança em 5 dias; produto/reflexo rodando) |
+| 57 | E44: com prefeito, mortos −15 pp vs preços fixos em L=200; ≥ 2 obras de água/comida por mandato | (fumaça 10 dias na fila) |
+| 58 | E44: prefeito pago pelo caixa sobe imposto até quebrar a cidade (mortos ≥ 0.6) | (variante; não rodada) |
+| 59 | E43 10 dias: linear "vive de renda" colapsa (≥ 0.5 mortos); produto sobrevive entregando ≥ 6; reserva dos vivos > 10 | (fumaça 5 na fila) |
