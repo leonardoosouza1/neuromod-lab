@@ -251,3 +251,8 @@ triagem L=200 os 3 centros se separam (distância ≥ 1 σ entre pares em ≥
 2/3 sementes) e o modo que ganha responsabilidade quando `tem_pax`=1 tem
 o peso de `d_alvo` mais forte; 67. modos ≥ linear em mortos por ≥ 5 pp na
 triagem; se os centros colapsarem num só, o mundo ainda não pede modos.
+- **12:38** E45 v2 ficou 18 min sem escrever nada no log (regra 21: morto
+  pelo PID); relançado com progresso no log e `timeout 1500`, atrás da
+  bateria 1. **Portão do E46 (modos gaussianos) passou:** genes 0 == linear
+  (eager e compile), sem sync, NP 132, responsabilidades iniciais
+  0.35/0.33/0.32. Triagem L=200 (5 braços) rodando.
