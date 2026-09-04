@@ -79,7 +79,7 @@ def genes(Ws, nomes):
                 dist_fingerprint=dist, top=[nomes[i] for i in absw.mean(0).argsort(descending=True)[:8].tolist()])
 
 def nomes_genes(A):
-    base = list(NOMES_F) + [f'serv_{n}' for n in NOMES_S] + ['vies_serv']
+    base = list(NOMES_F)                         # 44 nomes do Reativo (features + servicos + vies + mem + corpo)
     extra = {'ReativoReacoes': ['tau_sede', 'tau_fome', 'w_sede', 'w_fome', 'v_sede', 'v_fome', 'portao'],
              'ReativoReacoesTopUp': ['tau_sede', 'tau_fome', 'w_sede', 'w_fome', 'v_sede', 'v_fome', 'portao', 'portao_abastecer'],
              'ReativoReacoesRecusa': ['tau_sede', 'tau_fome', 'w_sede', 'w_fome', 'v_sede', 'v_fome', 'portao', 'recusa_fome']}.get(A.__name__, [])
