@@ -455,3 +455,14 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
 - **17:20 E51 oráculo caiu em 15 s** (vetor de genes de tamanho 1: `um_passo`
   fatia `Wb[:, NF:NF+S]` e dá (B,0)); corrigido (NP = Linear.NP), re-enfileirado
   (e51b) atrás da clonagem, honesto v3 atrás dele.
+- **17:24 E45 clonagem (v4, bias consertado):** |W| 0.65 (normal) mas o
+  clone AINDA morre 1.00 com 0.1 entregas — nem vai ao passageiro. Segundo
+  bug, de álgebra: a nota-alvo é centrada por linha (G1), mas o Phi não era.
+  Os 14 sentidos do corpo são IGUAIS nas 9 opções (constante por linha) e não
+  podem explicar um alvo de média zero: o mínimo quadrado distorce todos os
+  pesos pra compensar. Conserto v5: centrar Phi por linha (aí o clone de um
+  professor linear é EXATO por construção) + medida de fidelidade (fração
+  dos estados em que o clone decide igual ao professor — tem de dar ~100 %
+  pro linear e pro mínimo-3). Lição registrada: fórmula fechada exige que o
+  ajuste use a MESMA transformação que a política aplica (centragem,
+  máscara). Re-enfileirado (e45j) atrás do oráculo; honesto v3 depois.
