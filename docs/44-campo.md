@@ -206,3 +206,15 @@ dias (o professor guloso resolve o básico); 63. semeado da base em 25 ger.
 (fingerprint entre sementes < 0.3). Cláusula: se a base sozinha morrer
 (≥ 0.8), o professor está errado (escalas entre movimento e serviço), não a
 ideia — corrigir o professor antes de julgar.
+- **12:08 fumaça 7b (pobre):** reflexo **0.88 / 18.4 entregas** / 4.7
+  abastecimentos; produto 0.98 / 13.9. Diagnóstico do linear pobre: morre
+  no dia 4.4 com 15 entregas; fome ≥ 90 só 8 %, sede 1 %, quebrado 15 %;
+  **dano 176 = 12 avarias/vida (4.7 panes + ~7 desligamentos por calor)**.
+  Comer forçado não muda nada (já come). A conta do calor não fecha: a 70 %
+  de rodagem o motor esquenta +0.14/passo líquido → desliga a cada ~7 h
+  com 10 de dano → morto no dia 4. Física do corpo (não é alavanca do
+  prefeito): `calor_sobe` .25 → .15 (sustentável a ~70 % de rodagem),
+  `D_QUENTE` 10 → 6. Predição 61: entregas ≥ 8 ✓ (14–18), mortos 0.3–0.8 ✗,
+  "reflexo menos panes" ✗ (4.6 vs 3.4) mas reflexo vive mais. Fumaça 8 (calor
+  calibrado) na fila atrás do E45. **Predição 65:** com o calor sustentável,
+  reflexo ≤ 0.6 de mortos e ≥ 20 entregas em 10 dias; linear ≤ 0.8.
