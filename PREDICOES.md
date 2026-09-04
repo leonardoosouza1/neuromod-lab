@@ -1041,3 +1041,6 @@ Regras novas: 17 (gene novo nasce desligado), 18 (triagem só descarta), 19 (var
 | 59 | E43 10 dias: linear "vive de renda" colapsa (≥ 0.5 mortos); produto sobrevive entregando ≥ 6; reserva dos vivos > 10 | colapsa ✓ (1.00); produto sobrevive ✗ (1.00, morre de fome com dinheiro); entregas 10–11 ✓; reserva 55–64 ✓ |
 | 60 | E43 fumaça 6 (loja no posto, raio 6, 10 dias): produto e reflexo ≤ 0.7 mortos; reflexo com menos panes que produto | ✗ pelo motivo errado: 0.01–0.05 mortos com 0.1 entregas — vive de poupança (100 → 11) |
 | 61 | E43 fumaça 7 (nasce com 20): entregas ≥ 8 ou morre; mortos 0.3–0.8; reflexo menos panes que produto | linear: entregas 16.3 ✓, mortos 0.96 ✗ (G=25); reflexo/produto relançados após o desligamento |
+| 62 | E45 base fechada sozinha ≥ 0.6 vivos em 10 dias | (na fila) |
+| 63 | E45 semeado da base (25 ger.) ≥ do-zero (25 ger.) por ≥ 20 pp de mortos | (na fila) |
+| 64 | E45 preço = diversidade (fingerprint entre sementes < 0.3) | (na fila) |
