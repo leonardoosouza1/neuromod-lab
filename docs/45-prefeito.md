@@ -83,3 +83,17 @@ Voronoi por célula, pré-computado).
   mesma; só o fluxo aleatório diferia), mas a comparação "com vs sem" só é
   bit-limpa depois do portão passar. Caixa per capita inicial 10–22 (v1 era
   milhares).
+- **14:28 E44 v2 (moeda cruzada) — fumaça:** com prefeito no teste 0.74 →
+  0.21 mortos, 24.6 → 31.5 entregas; obras 7 comida + 5 postos (caixa real,
+  não milhares); alavancas: imposto ×0.53, gasolina ×0.5, água ×1.61, comida
+  ×0.5, aluguel ×2.0, tarifa ×2.0. **Triagem (3 sementes):** sem 0.62 / 26.2;
+  com prefeito no teste **0.16 / 31.5**; obras 4 comida + 3 postos;
+  alavancas: imposto ×0.5, gasolina ×0.5, água ×0.5, comida ×1.76, aluguel
+  ×0.9, tarifa ×2.0. Predição 70 ✓ (ganho cai de −58 pra −46 pp e FICA; ≥ 1
+  alavanca acima de 1.0 além da tarifa). Nota: os seres co-evoluídos COM
+  prefeito ficam piores SEM ele (0.78 vs 0.62) — co-adaptação: viraram
+  especialistas na cidade dele. Brecha que sobrou: o caixa pode ficar
+  negativo (subsídio de gasolina ×0.5 sem limite). **v3: orçamento fecha —
+  com caixa ≤ 0 nenhum preço fica abaixo de 1.0** (imposto e tarifa livres).
+  Triagem v3 na fila. Predição 74: v3 mantém ≥ −30 pp e o prefeito para de
+  subsidiar gasolina abaixo de ×0.8 (ou compensa com tarifa/imposto).

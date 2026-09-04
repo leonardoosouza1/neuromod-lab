@@ -38,6 +38,10 @@ class Prefeito:
         s.ontem = X
         passo = torch.exp(torch.tanh(u[:, :6])*math.log(2.)/4.)          # ate x1.19 por dia (acumula ate x0.5..x2 em ~4 dias)
         s.mult = (s.mult*passo).clamp(.5, 2.)
+        # [v3] orcamento fecha: sem caixa, sem subsidio — precos (fuel, agua, comida, aluguel) nao podem ficar abaixo de 1.0 com caixa <= 0
+        falido = (s.caixa <= 0.)[:, None]
+        piso = torch.where(falido, torch.ones_like(s.mult), torch.full_like(s.mult, .5)); piso[:, 0] = .5; piso[:, 5] = .5   # aliquota e tarifa sem piso
+        s.mult = torch.maximum(s.mult, piso)
         m.pref_mult = s.mult                                             # o campo le: aliq, p_fuel, p_agua, p_comida, aluguel, tarifa
         # construir: sigmoid(u) > .5 e caixa >= custo -> abre 1 ponto do tipo, num distrito sorteado ponderado pela pior carencia (v1: uniforme)
         for k, t in enumerate(('agua', 'comida', 'posto')):
