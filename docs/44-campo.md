@@ -587,3 +587,15 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
   desligadas; 300 ger.) com o **linear semeado** como controle, + retrato.
   Ordem na GPU: triagem (8 braços) → 300 ger. do zero (completo vs linear)
   → retrato → re-teste → 300 ger. semeado (completo vs linear) → retrato.
+- **20:05 E54 do zero: completo 0.98 / 14.6 em 40 ger. (vs linear 0.65,
+  reflexo 0.58) e 5× mais lento (1445 s vs 287 s):** 460 genes aleatórios
+  não montam nada em 40 gerações — o problema de montagem, de novo. Custo
+  medido: 2.6 vs 1.4 ms/passo em lote de 8k, mas 15 vs 3 ms em 98k — as
+  matmuls minúsculas por ser (rápida: 98k × (9×24)·(24×4), 4 ms sozinha)
+  saturam a GPU. Parei os braços do zero das partes (2 h de 0.98). Novo
+  protocolo (regra 19): **SEMEADO do campeão linear** (genes novos em zero =
+  espinha pronta, partes desligadas), P=512, R=4, 120 ger., 3 sementes, 7
+  braços (linear-controle, completo, só-camadas, sem-tálamo, sem-córtex,
+  sem-hipocampo, sem-reflexo) → retrato do completo → completo 300 ger.
+  A pergunta certa é "a evolução LIGA alguma parte a partir de uma espinha
+  que funciona?", não "monta tudo do zero em 40 gerações?".
