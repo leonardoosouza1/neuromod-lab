@@ -101,3 +101,10 @@ Profissões, prefeito, vários seres no mesmo mapa (fase 2), furo/óleo, loja.
   existe. Fumaça de evolução lançada (linear / reflexo / produto, régua B).
   **Predição 56:** linear ≥ 0.9 mortos (preso no potencial); produto ≤ 0.6;
   reflexo entre os dois (portão só na gasolina).
+- **23:20** merge do agente MUNDO (grafo 104/500, moradia, hotel) no main;
+  portões: testes ok, testes_e42 ok, campo identidade ok; `--perito` deu
+  "Memory access fault by GPU node-1" UMA vez (GPU disputada por 3
+  processos) e PASSOU na repetição (spread 0.000) — falha transitória do
+  driver sob contenção, não de identidade; registrada.
+- **23:25** Leonardo: "era para o prefeito pegar isso e resolver" — a
+  calibração à mão do doc 44 §8 é chute; vira E44 (docs/45-prefeito.md).
