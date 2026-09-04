@@ -97,3 +97,7 @@ Voronoi por célula, pré-computado).
   com caixa ≤ 0 nenhum preço fica abaixo de 1.0** (imposto e tarifa livres).
   Triagem v3 na fila. Predição 74: v3 mantém ≥ −30 pp e o prefeito para de
   subsidiar gasolina abaixo de ×0.8 (ou compensa com tarifa/imposto).
+- **16:19 portão v2b PASSOU:** genes 0 == sem prefeito (bit a bit), sem
+  sync; caixa per capita 3–4 no fim de 500 passos; prefeito aleatório pode
+  levar o caixa a −2.8 em 10 dias → a v3 (sem caixa, sem subsídio) cobre.
+  Comparações "com vs sem" ficam bit-limpas daqui em diante.
