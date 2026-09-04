@@ -180,3 +180,12 @@ Profissões, prefeito, vários seres no mesmo mapa (fase 2), furo/óleo, loja.
   inicial 100 → 20; aluguel 4–8/noite quebra no dia 3 sem trabalhar).
   Predição 61: com 20, linear/produto/reflexo entregam ≥ 8 por vida ou
   morrem; mortos entre 0.3 e 0.8; o reflexo tem menos panes que o produto.
+- **2026-09-04 00:10–08:21** máquina desligada (Leonardo); a fila morreu no
+  meio da fumaça 7. **E44b (prefeito no mundo "vive de poupança")**: sem
+  0.05 / com 0.01 mortos, 0.1 entregas nos dois — prefeito irrelevante onde
+  ninguém trabalha (esperado). **Fumaça 7, braço linear (nasce com 20):**
+  0.96 mortos, **16.3 entregas**, fome 43 (come), água 73, 2.7
+  abastecimentos de 94 L, reserva 17, dinheiro 29, panes 4.7 — trabalham,
+  comem, poupam e morrem. Predição 61: entregas ≥ 8 ✓; mortos 0.3–0.8 ✗
+  (0.96 em G=25). Braços reflexo/produto relançados + diagnóstico do linear
+  na fila (12:05).

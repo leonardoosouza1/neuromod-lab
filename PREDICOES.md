@@ -1040,4 +1040,4 @@ Regras novas: 17 (gene novo nasce desligado), 18 (triagem só descarta), 19 (var
 | 58 | E44: prefeito pago pelo caixa sobe imposto até quebrar a cidade (mortos ≥ 0.6) | (variante; não rodada) |
 | 59 | E43 10 dias: linear "vive de renda" colapsa (≥ 0.5 mortos); produto sobrevive entregando ≥ 6; reserva dos vivos > 10 | colapsa ✓ (1.00); produto sobrevive ✗ (1.00, morre de fome com dinheiro); entregas 10–11 ✓; reserva 55–64 ✓ |
 | 60 | E43 fumaça 6 (loja no posto, raio 6, 10 dias): produto e reflexo ≤ 0.7 mortos; reflexo com menos panes que produto | ✗ pelo motivo errado: 0.01–0.05 mortos com 0.1 entregas — vive de poupança (100 → 11) |
-| 61 | E43 fumaça 7 (nasce com 20): entregas ≥ 8 ou morre; mortos 0.3–0.8; reflexo menos panes que produto | (na fila) |
+| 61 | E43 fumaça 7 (nasce com 20): entregas ≥ 8 ou morre; mortos 0.3–0.8; reflexo menos panes que produto | linear: entregas 16.3 ✓, mortos 0.96 ✗ (G=25); reflexo/produto relançados após o desligamento |
