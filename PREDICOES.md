@@ -1050,3 +1050,4 @@ Regras novas: 17 (gene novo nasce desligado), 18 (triagem só descarta), 19 (var
 | 68 | E47 serviços separados (sem loja no posto): mínimo-3 perde ≥ 10 pp pro produto/modos; mortalidade geral sobe | mortalidade sobe ✓ (0.86–0.92); mínimo-3 NÃO perde (0.89 = produto 0.89, modos 0.92) ✗ — ninguém aprende a comer longe; reflexo melhor (0.86) |
 | 69 | E45 clonagem (professor = campeão mínimo-3): base sozinha ≈ campeão (±5 pp); semeado 25 ger. ≥ do-zero 40 ger.; professor v3 guloso ainda morre ≥ 0.6 | (na fila) |
 | 70 | E44 v2 (moeda cruzada): ganho do prefeito cai mas fica (−15 a −30 pp na triagem); ≥ 1 alavanca acima de 1.0 além da tarifa | (na fila) |
+| 71 | Honesto campo L=200 (5 sem., 120 ger.): reflexo < mínimo-3 em mortos por ≥ 5 pp (o joelho evita o tanque vazio que mata 69 % dos mortos do mínimo-3); ambos ≤ 0.5 | (na fila) |

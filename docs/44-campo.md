@@ -321,3 +321,11 @@ triagem; se os centros colapsarem num só, o mundo ainda não pede modos.
 - **14:06 retratos (L=200 com loja):** mínimo-3 abastece ~10× com
   EXATAMENTE 50 L e reserva 0–12; linear 5–10× com 50–90 L; modos 6–10×
   com 50–75 L. Publicado: retrato do mínimo-3.
+  Leitura do retrato (mínimo-3, s0): **69 % dos mortos morrem de TANQUE
+  VAZIO** (fome 10 %, sede 0, dívida 0); orçamento de tempo: andando 74 %,
+  com passageiro 63 %; abastece SEMPRE 50 L (5/5 paradas na mediana) — 10
+  paradas × 50 L = 500 L, exatamente o que queima em 10 dias: poupa dinheiro
+  e morre de pane quando erra a conta. Genes fortes: oficina +4.7, posto50
+  +3.6, água50 +3.2, comida +3.1, dinheiro −1.7, destino −1.7. É o joelho do
+  E29b de novo: onde o reflexo deve entrar (honesto 120 ger. na fila:
+  reflexo vs mínimo-3, 5 sementes).
