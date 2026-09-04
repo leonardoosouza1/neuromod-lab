@@ -579,3 +579,11 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
   vivas com genes aleatórios: gates 0.99–1.09, memória de espera 0.04,
   reflexo ativo 51 % dos ticks, z das lentas 0.75–1.9; sem sync. Triagem
   (linear, reflexo, completo + 5 partes) rodando.
+- **19:30 E54 triagem em andamento:** linear 0.65 / 25.4; reflexo 0.58 /
+  27.4; completo na ger. 30 com fitness −2.5 (linear tinha +1 nessa altura):
+  do zero, 460 genes aleatórios são um terreno muito mais duro — é a
+  montagem. Por isso enfileirei também (regra 19) o **completo SEMEADO do
+  campeão linear** (genes novos nascem em zero = espinha pronta, partes
+  desligadas; 300 ger.) com o **linear semeado** como controle, + retrato.
+  Ordem na GPU: triagem (8 braços) → 300 ger. do zero (completo vs linear)
+  → retrato → re-teste → 300 ger. semeado (completo vs linear) → retrato.
