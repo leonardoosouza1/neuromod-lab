@@ -8,7 +8,9 @@ from lab import Reativo, Lote, um_passo, gerar_cidade, DEV, NF, GMAX
 from rodar import NOMES_F
 from e19_pacote import cfg_pacote
 from reacoes import ReativoReacoes, ReativoReacoesTopUp, ReativoReacoesRecusa
-ARQS = {'Reativo': Reativo, 'ReativoReacoes': ReativoReacoes, 'ReativoReacoesTopUp': ReativoReacoesTopUp, 'ReativoReacoesRecusa': ReativoReacoesRecusa}
+from camadas import SerCamadas, SemTalamo, SemCortex, SemHipocampo, SoHipocampo, nomes_genes as _nomes_camadas   # [E42 cerebro]
+ARQS = {'Reativo': Reativo, 'ReativoReacoes': ReativoReacoes, 'ReativoReacoesTopUp': ReativoReacoesTopUp, 'ReativoReacoesRecusa': ReativoReacoesRecusa,
+        'SerCamadas': SerCamadas, 'SemTalamo': SemTalamo, 'SemCortex': SemCortex, 'SemHipocampo': SemHipocampo, 'SoHipocampo': SoHipocampo}   # [E42 cerebro]
 NOMES_S = ['posto', 'comida', 'descanso', 'oficina', 'loja']
 
 def cidades_teste(seed0=1000):
@@ -41,6 +43,8 @@ def rastro(A, W, teste, c, T=1200, R=64, seed=1000):
         nv = m.noite_(); tr['noite'][t] = nv.float() if nv is not None else 0.
         um_passo(m, a, Wb); a.atualizar(m)   # como em rodar()
     fim = dict(ent=m.ent.clone(), vida=m.vida.clone(), dinh=m.dinh.clone(), res=m.res.clone(), panes=m.av_fuel.clone(), oficina=m.n_oficina.clone(), cidx=m.cidx.clone())
+    if hasattr(a, 'ativacao'):   # [E42 cerebro] telemetria por camada (talamo/cortex/hipocampo)
+        fim.update({f'at_{k}': v.detach() for k, v in a.ativacao().items()})
     return {k: v.cpu() for k, v in tr.items()}, {k: v.cpu() for k, v in fim.items()}, G
 
 def resumo_semente(tr, fim, G, T):
@@ -65,6 +69,7 @@ def resumo_semente(tr, fim, G, T):
         reflexo_ativo_frac=float((tr['reflexo']*vivo).sum(0).div(passos_vivos).mean()), reflexo_disparos=float(((tr['reflexo'][1:] > tr['reflexo'][:-1]).float().sum(0)).mean()),
         come_vence_quando_faminto=float(come.sum()/fam.sum().clamp(min=1)), oportunidades_comer=float(fam.mean()),
         embarques=float(embarques.mean()), passos_por_viagem=float(viagem.mean()), frac_tempo_com_passageiro=float((pax*vivo).sum(0).div(passos_vivos).mean()),
+        camadas={k[3:]: float(v.mean()) for k, v in fim.items() if k.startswith('at_')},   # [E42 cerebro]
         quase_mortes=float(quase), andando_noite=float(((tr['noite'] > 0) & (par >= 0) & (par < G)).float().sum(0).div(passos_vivos).mean()),
         mortos_por_cidade=[float(morto[fim['cidx'] == ci].float().mean()) for ci in range(3)], traj=traj, grade=grade)
 
@@ -83,6 +88,8 @@ def nomes_genes(A):
     extra = {'ReativoReacoes': ['tau_sede', 'tau_fome', 'w_sede', 'w_fome', 'v_sede', 'v_fome', 'portao'],
              'ReativoReacoesTopUp': ['tau_sede', 'tau_fome', 'w_sede', 'w_fome', 'v_sede', 'v_fome', 'portao', 'portao_abastecer'],
              'ReativoReacoesRecusa': ['tau_sede', 'tau_fome', 'w_sede', 'w_fome', 'v_sede', 'v_fome', 'portao', 'recusa_fome']}.get(A.__name__, [])
+    if issubclass(A, SerCamadas):   # [E42 cerebro] 7 do reflexo + 41 das camadas
+        extra = ['tau_sede', 'tau_fome', 'w_sede', 'w_fome', 'v_sede', 'v_fome', 'portao'] + _nomes_camadas()
     n = (base + extra)[:A.NP]
     return n + [f'g{i}' for i in range(len(n), A.NP)]
 
