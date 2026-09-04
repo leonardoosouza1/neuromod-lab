@@ -58,7 +58,7 @@ for t in range(T):
         for k, sel in enumerate((aqui & ~pax, aqui & pax)):
             if bool(sel.any()):
                 (gap_solo if k == 0 else gap_pax).append(gap[sel]); venceu[k] += (gap[sel] > 0).float().sum(); conta[k] += sel.float().sum()
-    um_passo(m, a, Wb)
+    um_passo(m, a, Wb); a.atualizar(m)   # como em rodar(): estado da arq (especies do reflexo) FORA do grafo
     queda = (vida0 - m.vida).clamp(min=0)                       # dreno total do passo (reparo na oficina fica de fora)
     f_part = c.fome_mata*((m.fome - c.FOME_CRIT)/(100. - c.FOME_CRIT)).clamp(0., 1.)
     f_part = torch.minimum(f_part, queda); dr_fome += f_part; dr_avaria += queda - f_part

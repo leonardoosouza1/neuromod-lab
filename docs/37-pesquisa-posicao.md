@@ -1145,3 +1145,37 @@ reflexo, são orçamento — o ser paga o que a fitness manda pagar.**
 morte encarece (tese do orçamento). Se mortos ficarem 0.15 ± 0.03 com
 pena 15: os 15 % não são evitáveis por decisão — piso de geometria/azar
 — e o programa "menos mortes" encerra neste mundo.
+
+### CORREÇÃO (2026-09-03 21:05) — autópsias rodaram com o reflexo DESLIGADO
+`rodar()` chama `a.atualizar(m)` depois de cada passo; meus laços manuais
+em `autopsia.py` e `retrato.py` chamavam só `um_passo` → a espécie `c` do
+reflexo ficou em 0 e o portão nunca abriu. **Não afeta nenhum resultado de
+evolução** (E29b–E39 usam `rodar`/`avaliar`). Afeta TODAS as autópsias do
+campeão das reações acima ("autópsia por fonte", "por cidade", "passa no
+posto e não enche", intervenções comer/oficina/veto) — os números ali são
+de um campeão SEM reflexo. Corrigido (o retrato acusou: "reflexo ativo
+0 %"). Refeito com o reflexo ligado:
+
+| campeão (reflexo ligado) | mortos | panes | dreno mortos: fome / avaria | pane / calor / rodar-ferido (dano) |
+|---|---|---|---|---|
+| 5 postos, 120 ger., s3 | 0.17 (era 0.19 desligado) | **3.2** (era 5.3) | 15 % / 85 % | 49 / 58 / 47 |
+| 3 postos, E29b s0 | 0.24 (era 0.33) | 8.9 (era 10.4) | 26 % / 74 % | 72 / 40 / 27 |
+
+O que fica de pé: avaria domina o dreno; a fome é a última gota; cidades
+de ruas curtas matam menos. O que muda: com reflexo, a pane deixa de ser
+a fonte dominante sozinha no campeão atual — **calor e rodar ferido pesam
+igual** (58 e 47 vs 49). A frase "pane é orçamento" precisa ser refeita
+com as intervenções corrigidas (abaixo). Consistência agora fecha: panes
+3.2 na autópsia vs 2.8–3.7 no runner.
+
+### E39 resultado (honesto semeado, 5 postos): o preço da morte
+| | mortos | entregas | panes | fome fim |
+|---|---|---|---|---|
+| pena 5 (E37b) | 0.15 [.23 .19 .09 .12 .13] | 13.2 | 3.7 | 50 |
+| **pena 15** | **0.11** [.11 .07 .12 .14 .09] | **13.7** | 2.8 | 48 |
+
+Fit não comparável (a pena entra na conta). Mortos −4 pp (3/5 pareado,
+abaixo da régua) E entregas +0.5: não houve troca. Predição 45 ✗ nas duas
+cláusulas (nem ≤ 0.10, nem entregas caindo). Leitura honesta: subir o
+preço da morte melhora a BUSCA (gradiente de seleção 3× mais íngreme),
+não compra vida com entregas — tendência, precisa de n=10.
