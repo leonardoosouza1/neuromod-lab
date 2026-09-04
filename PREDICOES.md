@@ -1055,3 +1055,4 @@ Regras novas: 17 (gene novo nasce desligado), 18 (triagem só descarta), 19 (var
 | 73 | E49 olho multi-escala (need + a·micro + b·macro no produto): genes ≠ 0 em ≥ 2/3; panes −20 % vs produto; mortos −5 pp | ✗ 0.66/25.2 vs 0.62/26.2 (ruído, pior) — em 10 dias não há macro que valha |
 | 74 | E44 v3 (orçamento fecha): mantém ≥ −30 pp; gasolina não fica abaixo de ×0.8 sem compensação | (na fila) |
 | 75 | E50 reflexo 2 raízes (histerese): largura > 0.15 em ≥ 2/3; panes −15 % vs reflexo | (na fila) |
+| 76 | E51 oráculo (política à mão com alvo TRANCADO, sem genes) = teto físico do mundo: com loja ≤ 0.30 mortos (evolução em 0.53 está longe do teto = "não acha", não "não dá"); sem loja ≤ 0.50 (mundo viável; a falha do E47 é MONTAGEM); se o oráculo morrer ≥ 0.8 sem loja, o mundo é duro demais e se recalibra ANTES de qualquer arquitetura | (na fila, atrás do E50) |

@@ -424,3 +424,15 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
   incoerente (w da sede negativo em 2/3 = empurra PRA LONGE do posto, θ
   0.01–0.36): na triagem com loja, tudo além dos 3 termos é ruído que a
   evolução carrega. Confirma o Δ = 0 do mundo com loja.
+- **16:55 E51 oráculo (na fila atrás do E50):** regra da métrica de degrau —
+  o E47 (0.86–0.92 mortos, fome 80 em todos) foi lido como "a evolução não
+  monta", mas o TETO FÍSICO nunca foi medido. `src/oraculo_campo.py`: política
+  escrita à mão, sem genes — urgência por necessidade, TRANCA um alvo
+  (compromisso: "andar N ticks pra comida e depois voltar pra água"), anda
+  reto pro ponto mais perto, compra o que cabe, solta e volta ao passageiro;
+  pobre (< caixa_min) só atende necessidade crítica; solta e esfria 60 ticks
+  se chega sem dinheiro ou se o posto fechou (noite). 8 variantes (limiar
+  cedo/tarde, caixa 0/15/40, posto à noite) × 2 mundos (com/sem loja) × 3
+  mapas × 128 cópias, L=200 e L=400. Lê-se: oráculo vive onde a evolução
+  morre → gargalo é montagem (e o alvo trancado vira arquitetura evoluível,
+  E52); oráculo também morre → recalibrar o mundo primeiro. Predição 76.
