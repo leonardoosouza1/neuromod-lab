@@ -61,9 +61,17 @@ def coletar(mapas, cfg, n_est=200_000, T=1200, seed=11, W_pro=None):
         m.passo(esc)
     return Phis, Ys, m
 
+def fidelidade(Phis, Ys, W):
+    """fracao dos estados coletados em que o clone linear (W) escolhe a mesma opcao que o professor (Y): 1.0 = clone perfeito."""
+    F = torch.cat([p[0] for p in Phis]); Fs = torch.cat([p[1] for p in Phis]); Y = torch.cat(Ys)
+    sc = torch.einsum('bgf,f->bg', F, W[:NF]); sc = sc - sc.mean(1, keepdim=True)
+    ss = Fs[:, :S]*W[NF:NF+S] + W[NF+S]; ss = ss.masked_fill(Y[:, G:] <= -1e8, -1e9)     # mesma mascara de disponibilidade do professor
+    return float((torch.cat([sc, ss], 1).argmax(1) == Y.argmax(1)).float().mean())
+
 def resolver(Phis, Ys, lam=1e-2):
     """ridge separado: movimento (NF genes: Y_mov centrado por linha ~ F.W) e servicos (S+1 genes: Y_srv ~ [svn,1].W)."""
-    Fm = torch.cat([p[0] for p in Phis]).reshape(-1, NF); Ym = torch.cat([y[:, :G] for y in Ys])
+    Fm = torch.cat([p[0] for p in Phis]); Ym = torch.cat([y[:, :G] for y in Ys])
+    Fm = (Fm - Fm.mean(1, keepdim=True)).reshape(-1, NF)                       # [E45 v5] centra Phi por linha como um_passo centra a nota (G1): os sentidos do corpo sao iguais nas 9 opcoes e nao podem explicar um alvo de media zero — sem isto o ajuste distorcia todos os pesos
     Ym = (Ym - Ym.mean(1, keepdim=True)).reshape(-1)
     A = Fm.T @ Fm + lam*torch.eye(NF, device=DEV); Wm = torch.linalg.solve(A, Fm.T @ Ym)
     Fs = torch.cat([p[1] for p in Phis]); Ys_ = torch.cat([y[:, G:] for y in Ys])
@@ -95,6 +103,7 @@ def main():
     if float((m_pro.vida <= 0).float().mean()) >= .8:
         print('PROFESSOR MORRE (>= 0.8): base nao ajustada — corrigir o professor antes de julgar a ideia (clausula da predicao 62)', flush=True); return
     t0 = time.time(); W = resolver(Phis, Ys); print(f'ridge: {time.time()-t0:.1f}s | |W| {float(W.abs().mean()):.2f}', flush=True)
+    conc = fidelidade(Phis, Ys, W); print(f'fidelidade do clone: decide igual ao professor em {100*conc:.1f}% dos estados coletados (movimento+servico)', flush=True)
     med = medidas(Linear, W, teste, cfg, T=T, seed=7777, R=1, copias=128)
     print(f"  base fechada sozinha (linear)         fit {med['fit']:6.2f} mortos {med['mortos']:.2f} ent {med['ent']:5.1f} panes {med['panes']:4.1f} fome {med['fome_fim']:3.0f} agua {med['agua_fim']:3.0f} dinh {med['dinh']:4.0f} L/abast {med['litros_por_abast']:4.0f} abast {med['n_posto']:4.1f}", flush=True)
     res = dict(L=a.L, dias=a.dias, fitness=a.fitness, W_base=[round(float(x), 5) for x in W], base=med, bracos={})
