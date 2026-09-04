@@ -1179,3 +1179,28 @@ abaixo da régua) E entregas +0.5: não houve troca. Predição 45 ✗ nas duas
 cláusulas (nem ≤ 0.10, nem entregas caindo). Leitura honesta: subir o
 preço da morte melhora a BUSCA (gradiente de seleção 3× mais íngreme),
 não compra vida com entregas — tendência, precisa de n=10.
+
+**Intervenções refeitas com o reflexo ligado** (campeão 5 postos s3, 192
+vidas; base 0.17): comer forçado ≥ 50 → 0.16; oficina forçada ≤ 50 →
+**0.13**; veto de rua K=2 → 0.15 (panes 2.9). Todas pequenas (1 campeão,
+±0.03 de ruído) e todas na direção de ajudar — o oposto do que as versões
+sem reflexo diziam. Leitura corrigida: **os 15 % que sobram são
+multi-causa** (calor + rodar ferido + pane + fome se somam num pool de
+vida), e cada alavanca de decisão isolada compra 1–4 pp. "Pane é
+orçamento" fica como hipótese, não afirmação: o E33 (preço) continua
+válido (evolução), mas as intervenções por decisão precisavam do reflexo
+ligado pra ser lidas.
+
+### E40 — Retrato do ser (avaliação expansiva; pedido do Leonardo 20:58)
+`src/retrato.py` + `src/retrato_painel.py`: rastro passo a passo de 192
+vidas por semente → genes (média, sinal consistente entre sementes,
+esparsidade, entropia, fingerprint por posto), sobrevivência por dia,
+trajetórias de tanque/fome/vida/dinheiro (mediana + faixa), ativação do
+reflexo (disparos/vida, fração do tempo), "comer vence" quando faminto,
+tempo com passageiro, passos por viagem, orçamento de tempo, quase-mortes,
+mortos por cidade. Painel HTML por campeão (SVG inline). Primeiro
+retrato: campeão 5 postos 120 ger. — reflexo dispara 3–5×/vida em 4/5
+sementes (17–34 % do tempo ativo); **s0 vive sem reflexo (0 disparos) com
+a mesma mortalidade (0.15) e mais entregas (13.9)** — duas soluções na
+mesma população; "comer vence" varia 24–70 % entre sementes (estilos);
+tempo com passageiro 69–70 % em todas.

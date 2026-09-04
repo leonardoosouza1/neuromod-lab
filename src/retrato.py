@@ -83,7 +83,7 @@ def nomes_genes(A):
     extra = {'ReativoReacoes': ['tau_sede', 'tau_fome', 'w_sede', 'w_fome', 'v_sede', 'v_fome', 'portao'],
              'ReativoReacoesTopUp': ['tau_sede', 'tau_fome', 'w_sede', 'w_fome', 'v_sede', 'v_fome', 'portao', 'portao_abastecer'],
              'ReativoReacoesRecusa': ['tau_sede', 'tau_fome', 'w_sede', 'w_fome', 'v_sede', 'v_fome', 'portao', 'recusa_fome']}.get(A.__name__, [])
-    n = base + extra
+    n = (base + extra)[:A.NP]
     return n + [f'g{i}' for i in range(len(n), A.NP)]
 
 def main():
