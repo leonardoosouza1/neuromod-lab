@@ -466,3 +466,16 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
   pro linear e pro mínimo-3). Lição registrada: fórmula fechada exige que o
   ajuste use a MESMA transformação que a política aplica (centragem,
   máscara). Re-enfileirado (e45j) atrás do oráculo; honesto v3 depois.
+- **17:32 E51b oráculo — morre 1.00 em 22/22 braços** (com/sem loja, L=200 e
+  400; limiar cedo/tarde, caixa 0/15/40, posto à noite): 7–12 entregas em 10
+  dias (campeão: 27), 3 refeições, 3–4 abastecimentos de 60–95 L, dinheiro
+  −5, fome 100 no fim. É o mesmo destino do professor guloso do E45 (morre
+  1.00): a política à mão "atende necessidade, senão trabalha" NÃO fecha a
+  economia — gasta em gasolina o que não ganha em corrida e morre de fome
+  endividado. Predição 76 ✗ nas duas cláusulas, MAS o teto físico não ficou
+  medido: o oráculo é pior que a evolução, logo não é teto. Antes de julgar o
+  mundo, `diag_oraculo.py` (e51c) mede onde vai o tempo do oráculo e do
+  campeão (anda / trancado em cada alvo / parado por pane / noite / com
+  passageiro), série diária e causa de morte. Hipótese: o oráculo perde o
+  dia trancado (ida ao posto cedo, espera no posto fechado) e entrega
+  metade; o campeão evoluído entrega primeiro e abastece 50 L quando passa.
