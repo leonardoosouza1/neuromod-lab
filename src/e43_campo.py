@@ -16,7 +16,7 @@ def main(a):
     if a.seeds: p['seeds'] = tuple(a.seeds)
     if a.R: p['R'] = a.R
     if a.G: p['G'] = a.G
-    cfg = CfgCampo(L=a.L, pena_morte=a.pena, fitness=a.fitness, loja_no_posto=not a.sem_loja)
+    cfg = CfgCampo(L=a.L, pena_morte=a.pena, fitness=a.fitness, loja_no_posto=not a.sem_loja); cfg.custo_gene = a.custo_gene
     treino = [gerar_mapa(s, L=a.L) for s in range(4)]; teste = [gerar_mapa(a.teste_seed + s, L=a.L) for s in range(3)]
     res = dict(preset=a.preset, L=a.L, fitness=a.fitness, pena=a.pena, NF=NF, S=S, bracos={})
     print(f'== E43 campo | {a.preset} L={a.L} dias={a.dias} regua={a.fitness} P={p["P"]} G={p["G"]} R={p["R"]} x{len(p["seeds"])} | pena {a.pena} ==', flush=True)
@@ -34,7 +34,7 @@ def main(a):
         med['W'] = {sd: [round(float(x), 5) for x in champs[sd][0]] for sd in p['seeds']}; med['segundos'] = round(time.time() - t1)
         res['bracos'][nome] = med
         print(f'  {nome:<36} NP {A.NP:3d} fit {med["fit"]:6.2f} {med["fit_por_semente"]} ent {med["ent"]:5.1f} mortos {med["mortos"]:.2f} {med["mortos_por_semente"]} '
-              f'panes {med["panes"]:4.1f} fome {med["fome_fim"]:3.0f} agua {med["agua_fim"]:3.0f} dinh {med["dinh"]:4.0f} res {med["res"]:4.0f} L/abast {med["litros_por_abast"]:4.0f} abast {med["n_posto"]:4.1f} ({med["segundos"]}s)', flush=True)
+              f'panes {med["panes"]:4.1f} fome {med["fome_fim"]:3.0f} agua {med["agua_fim"]:3.0f} dinh {med["dinh"]:4.0f} res {med["res"]:4.0f} L/abast {med["litros_por_abast"]:4.0f} abast {med["n_posto"]:4.1f} dof {med["dof"]:4.0f} metab {med["metab"]:.2f} ({med["segundos"]}s)', flush=True)
         tmp = os.path.join(a.out, f'e43{a.tag}.json.tmp')
         with open(tmp, 'w') as fh: json.dump(res, fh, indent=1)
         os.replace(tmp, os.path.join(a.out, f'e43{a.tag}.json'))
@@ -45,5 +45,5 @@ if __name__ == '__main__':
     ap.add_argument('--fitness', default='sobrevive', choices=('padrao', 'sobrevive', 'bemestar')); ap.add_argument('--pena', type=float, default=5.)
     ap.add_argument('--out', default='/media/llm-data/universe-runs/neuromod-lab-taxi/e43'); ap.add_argument('--so', nargs='*', default=None)
     ap.add_argument('--seeds', type=int, nargs='*', default=None); ap.add_argument('--R', type=int, default=None); ap.add_argument('--G', type=int, default=None)
-    ap.add_argument('--teste-seed', type=int, default=1000); ap.add_argument('--tag', default=''); ap.add_argument('--dias', type=float, default=10.); ap.add_argument('--sem-loja', action='store_true', help='servicos SEPARADOS: comida/agua nao vendidas no posto (E47)'); ap.add_argument('--init-from', nargs=2, default=None)
+    ap.add_argument('--teste-seed', type=int, default=1000); ap.add_argument('--tag', default=''); ap.add_argument('--dias', type=float, default=10.); ap.add_argument('--sem-loja', action='store_true', help='servicos SEPARADOS: comida/agua nao vendidas no posto (E47)'); ap.add_argument('--init-from', nargs=2, default=None); ap.add_argument('--custo-gene', type=float, default=0., help='[E55] fome x (1 + custo*dof/100): cada gene ligado alem da espinha custa calorias')
     main(ap.parse_args())

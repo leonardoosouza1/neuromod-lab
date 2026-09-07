@@ -29,6 +29,7 @@ class CfgCampo:
         s.calor_sobe = .15; s.calor_desce = .6      # sustentavel a ~70% de rodagem (0.15*1.85*.7 = .19 sobe vs .6*.3 = .18 esfria); direto: 30 -> 92 em ~220 passos
         s.CALOR_MAX = 92.; s.D_QUENTE = 6.; s.D_PANE = 6.; s.D_RODAR = .15
         s.fome_mata = .15; s.FOME_CRIT = 90.; s.agua_mata = .15; s.AGUA_CRIT = 10.; s.KCAL_PANE = 20.
+        s.custo_gene = 0.; s.gene_min = .5        # [E55] cerebro que come: fome sobe x (1 + custo_gene*dof/100), dof = genes alem da espinha com |w| > gene_min (Lei do Metabolismo = AIC; acervo: 'custo e o que seleciona')
         s.preco_L = .3; s.preco_agua = .05; s.preco_comida = 2.; s.HOTEL = 8.; s.preco_oficina = 10.; s.REPARO = 25.
         s.tarifa_base = 3.; s.tarifa_km = .25; s.aluguel = 4.; s.LIMITE_DIVIDA = 60.; s.PERDA_ARMAZ = .15; s.RES_MAX = 120.; s.perda_res = .02/240
         s.REFEICAO = 90.; s.pena_morte = 5.; s.fitness = 'sobrevive'
@@ -78,7 +79,7 @@ class Campo:
         s.casa = s.distrito(s.pos)
         s.fuel = torch.full((B,), 85., device=DEV); s.agua = torch.full((B,), 85., device=DEV); s.fome = torch.full((B,), 10., device=DEV)
         s.fad = torch.full((B,), 10., device=DEV); s.calor = torch.full((B,), 30., device=DEV); s.vida = torch.full((B,), 100., device=DEV)
-        s.dinh = torch.full((B,), c.dinh0, device=DEV); s.res = torch.zeros(B, device=DEV); s.tpar = torch.zeros(B, device=DEV)
+        s.dinh = torch.full((B,), c.dinh0, device=DEV); s.res = torch.zeros(B, device=DEV); s.tpar = torch.zeros(B, device=DEV); s.metab = torch.ones(B, device=DEV)
         s.ent = torch.zeros(B, device=DEV); s.rec = torch.zeros(B, device=DEV); s.avar = torch.zeros(B, device=DEV); s.av_fuel = torch.zeros(B, device=DEV)
         s.n_posto = torch.zeros(B, device=DEV); s.litros = torch.zeros(B, device=DEV); s.n_oficina = torch.zeros(B, device=DEV); s.n_come = torch.zeros(B, device=DEV)
         s.dano_soma = torch.zeros(B, device=DEV); s.t_vida = torch.zeros(B, device=DEV); s.bem_soma = torch.zeros(B, device=DEV)
@@ -194,7 +195,7 @@ class Campo:
         s.fuel = (s.fuel - c.fuel_passo*cu*peso*mov.float() - c.fuel_passo*.33*marcha.float()).clamp(min=0.)
         s.calor = (s.calor + c.calor_sobe*cu*mov.float() - c.calor_desce*(~mov).float()).clamp(25., 120.)
         s.agua = (s.agua - c.agua_passo*vivo.float() - c.agua_calor*(s.calor > 60.).float()*vivo.float()).clamp(min=0.)
-        s.fome = (s.fome + c.fome_passo*vivo.float()).clamp(max=100.); s.fad = (s.fad + c.fad_passo*mov.float() - .1*(~mov).float()).clamp(0., 100.)
+        s.fome = (s.fome + c.fome_passo*s.metab*vivo.float()).clamp(max=100.); s.fad = (s.fad + c.fad_passo*mov.float() - .1*(~mov).float()).clamp(0., 100.)
         exausto = livre & (s.fad >= 95.); s.tpar = torch.where(exausto, torch.full_like(s.tpar, 12.), s.tpar); s.fad = torch.where(exausto, torch.full_like(s.fad, 40.), s.fad); s.avar += exausto.float()   # [G6] fadiga para o taxi
         s.res = (s.res*(1. - c.perda_res)).clamp(min=0.)
         # pane: reboque ate o posto mais perto, cobra calorias da reserva -> vida
@@ -309,6 +310,7 @@ def modo_execucao():
 def rodar(Arq, W, mapas, cfg, T, seed, R=1):
     global _COMPILE_OK
     m = Campo(mapas, W.shape[0], cfg, seed=seed, R=R); Wb = W[m.gidx]; a = Arq(); a.reset(m, Wb); fn = _passo_fn()
+    if cfg.custo_gene > 0.: m.metab = 1. + cfg.custo_gene*dof_de(Wb, cfg)/100.                    # [E55] cada gene ligado alem da espinha custa calorias
     for t in range(T):
         try: fn(m, a, Wb)
         except Exception as e:
@@ -318,6 +320,10 @@ def rodar(Arq, W, mapas, cfg, T, seed, R=1):
             raise
         a.atualizar(m)
     return m
+
+def dof_de(Wb, cfg):
+    """graus de liberdade LIGADOS alem da espinha linear: genes com |w| > gene_min a partir de Linear.NP (Linear: 0)."""
+    return (Wb[:, Linear.NP:].abs() > cfg.gene_min).float().sum(1) if Wb.shape[1] > Linear.NP else torch.zeros(Wb.shape[0], device=DEV)
 
 def _fit(m, cfg, T):
     morto = (m.vida <= 0).float(); vivo = 1. - morto
@@ -342,7 +348,7 @@ def medidas(Arq, W, mapas, cfg, T=1200, seed=7777, R=1, copias=128):
     med = dict(fit=float(_fit(m, cfg, T).mean()), mortos=float(morto.mean()), ent=float(m.ent.mean()),
                panes=float(m.av_fuel.mean()), fome_fim=float(m.fome.mean()), agua_fim=float(m.agua.mean()), dinh=float(m.dinh.mean()), res=float(m.res.mean()),
                litros_por_abast=float((m.litros/m.n_posto.clamp(min=1)).mean()), n_posto=float(m.n_posto.mean()), n_come=float(m.n_come.mean()), oficina=float(m.n_oficina.mean()),
-               vida_vivos=float(m.vida[m.vida > 0].mean()) if bool((m.vida > 0).any()) else 0.)
+               vida_vivos=float(m.vida[m.vida > 0].mean()) if bool((m.vida > 0).any()) else 0., dof=float(dof_de(W[None, :], cfg)[0]), metab=float(m.metab.mean()))
     return med
 
 
@@ -364,6 +370,7 @@ class Produto(Linear):
 def rodar_com_prefeito(Arq, W, mapas, cfg, T, seed, R=1, Wp=None, prefeito_cls=None):
     """como rodar(), mas com um prefeito por mapa agindo a cada dia (t % dia == 0). Wp=None -> identico a rodar()."""
     m = Campo(mapas, W.shape[0], cfg, seed=seed, R=R); Wb = W[m.gidx]; a = Arq(); a.reset(m, Wb); fn = _passo_fn()
+    if cfg.custo_gene > 0.: m.metab = 1. + cfg.custo_gene*dof_de(Wb, cfg)/100.                    # [E55] cada gene ligado alem da espinha custa calorias
     pref = prefeito_cls(m, Wp) if Wp is not None else None
     for t in range(T):
         if pref is not None and t > 0 and t % cfg.dia == 0:
