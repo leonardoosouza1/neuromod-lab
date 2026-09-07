@@ -7,6 +7,7 @@ from prefeito import Prefeito, coevoluir, SENT, ALAV
 from e43_campo import PRESETS
 
 def main(a):
+    from e43_campo import BRACOS; ARQ = dict(BRACOS).get(a.arq, Produto); print(f'ser: {a.arq} -> {ARQ.__name__} NP {ARQ.NP}', flush=True)
     p = dict(PRESETS[a.preset]); os.makedirs(a.out, exist_ok=True)
     p['T_evo'] = p['T_aval'] = int(240*a.dias)          # vida em dias (5 dias = viver de poupanca e otimo; 10 obriga a trabalhar)
     if a.seeds: p['seeds'] = tuple(a.seeds)
@@ -19,15 +20,15 @@ def main(a):
         if a.so and nome not in a.so: continue
         t1 = time.time()
         if com_pref:
-            champs, Wp, hist = coevoluir(Produto, treino, cfg, P=p['P'], ger=p['G'], T=p['T_evo'], seeds=p['seeds'], R=p['R'], cada=a.cada)
+            champs, Wp, hist = coevoluir(ARQ, treino, cfg, P=p['P'], ger=p['G'], T=p['T_evo'], seeds=p['seeds'], R=p['R'], cada=a.cada)
         else:
-            champs = evoluir(Produto, treino, cfg, P=p['P'], ger=p['G'], T=p['T_evo'], seeds=p['seeds'], R=p['R'], verbose=True); Wp = None; hist = []
+            champs = evoluir(ARQ, treino, cfg, P=p['P'], ger=p['G'], T=p['T_evo'], seeds=p['seeds'], R=p['R'], verbose=True); Wp = None; hist = []
         por = {}
         for sd in p['seeds']:
             # avaliacao nos mapas de teste: SEM prefeito (o ser sozinho, mundo padrao) e, se houver, COM o prefeito campeao do treino (mapa 0) aplicado ao teste
-            por[sd] = medidas(Produto, champs[sd][0], teste, cfg, T=p['T_aval'], seed=7777, R=1, copias=128)
+            por[sd] = medidas(ARQ, champs[sd][0], teste, cfg, T=p['T_aval'], seed=7777, R=1, copias=128)
             if Wp is not None:
-                m, pref = rodar_com_prefeito(Produto, champs[sd][0][None, :].repeat(128, 1), teste, cfg, p['T_aval'], 7777, R=1, Wp=Wp[:1].repeat(3, 1), prefeito_cls=Prefeito)
+                m, pref = rodar_com_prefeito(ARQ, champs[sd][0][None, :].repeat(128, 1), teste, cfg, p['T_aval'], 7777, R=1, Wp=Wp[:1].repeat(3, 1), prefeito_cls=Prefeito)
                 por[sd].update(mortos_com_pref=float((m.vida <= 0).float().mean()), ent_com_pref=float(m.ent.mean()), mult_final=pref.mult[0].tolist(), obras=pref.obras.sum(0).tolist(), caixa=pref.caixa.tolist())
         med = {k: (sum(por[sd][k] for sd in p['seeds'])/len(p['seeds']) if isinstance(por[p['seeds'][0]][k], float) else por[p['seeds'][0]][k]) for k in por[p['seeds'][0]]}
         med['mortos_por_semente'] = [round(por[sd]['mortos'], 3) for sd in p['seeds']]; med['W'] = {sd: [round(float(x), 5) for x in champs[sd][0]] for sd in p['seeds']}
@@ -44,5 +45,5 @@ if __name__ == '__main__':
     ap.add_argument('--preset', default='fumaca', choices=tuple(PRESETS)); ap.add_argument('--L', type=float, default=200.)
     ap.add_argument('--fitness', default='bemestar', choices=('padrao', 'sobrevive', 'bemestar')); ap.add_argument('--pena', type=float, default=5.); ap.add_argument('--cada', type=int, default=5)
     ap.add_argument('--out', default='/media/llm-data/universe-runs/neuromod-lab-taxi/e44'); ap.add_argument('--so', nargs='*', default=None)
-    ap.add_argument('--seeds', type=int, nargs='*', default=None); ap.add_argument('--G', type=int, default=None); ap.add_argument('--teste-seed', type=int, default=1000); ap.add_argument('--tag', default=''); ap.add_argument('--dias', type=float, default=10.); ap.add_argument('--mundo', default='padrao', choices=('padrao', 'distinto')); ap.add_argument('--kcal-pane', type=float, default=20.)
+    ap.add_argument('--seeds', type=int, nargs='*', default=None); ap.add_argument('--G', type=int, default=None); ap.add_argument('--teste-seed', type=int, default=1000); ap.add_argument('--tag', default=''); ap.add_argument('--dias', type=float, default=10.); ap.add_argument('--arq', default='produto (need x dist, portao)', help='braco do e43 usado como ser'); ap.add_argument('--mundo', default='padrao', choices=('padrao', 'distinto')); ap.add_argument('--kcal-pane', type=float, default=20.)
     main(ap.parse_args())

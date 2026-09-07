@@ -730,3 +730,18 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
   Nasce em zero. Versão restrita (autonomia+consumo × 10 opções = 20
   genes) e cheia (16×10). Na fila do E57 depois do prefeito, do zero e
   semeado. Predição 84.
+- **20:05 Leonardo: "viu um problema → resete as baterias que podem ter o
+  mesmo problema; valide melhor, perdeu tempo à toa."** Feito: (1) matei o
+  E57 (só-camadas e prefeito ainda em cima da espinha linear cega); (2)
+  **portão de sensibilidade** `testes_sentidos.py`: para cada arquitetura e
+  cada um dos 26 sentidos, perturba só os genes daquele sentido e mede se a
+  direção ou o serviço mudam — matriz sentido × arquitetura; falha se o
+  Bilinear ou o Completo tiverem sentido invisível; documenta o Linear cego
+  ao corpo. Vira portão obrigatório de toda arquitetura nova. (3) **E59** =
+  reset da bateria sobre a espinha bilinear: portões → linear, reflexo,
+  bilinear auto+consumo, bilinear cheio do zero no mundo distinto (pane dói)
+  → diagnóstico do bilinear → prefeito co-evoluído com ser bilinear (e44
+  ganhou `--arq`). O resto (só-camadas, custo, honesto) só depois de saber
+  se o bilinear corta as panes. Baterias contaminadas pela espinha cega e a
+  refazer quando o bilinear validar: E54 (completo vs linear), E55 (custo),
+  E56 (mundo distinto), E57 (sentidos).
