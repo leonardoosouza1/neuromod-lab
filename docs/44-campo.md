@@ -688,3 +688,10 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
   onde todo mundo morre 0.86 (degrau). Só-camadas rodando; diagnóstico de
   causa vem depois — sem ele, não dá pra dizer se o mundo cobra o cérebro
   ou só cobra demais de todo mundo.
+- **18:46 E56 semeados, mundo distinto:** linear 0.86 · completo 0.87 ·
+  só-camadas 0.86 — **degrau**: todo mundo morre igual, com dinheiro 31–37 e
+  fome 43–54 (não é economia). Regra da métrica de degrau: não concluir
+  nada sobre peças com o teto batendo. Matei o braço λ = 0.3 (inútil sob
+  degrau) e o honesto antigo saiu da fila por ora; diagnóstico de dano por
+  causa do linear distinto rodando agora — a suspeita é calor (custo 3 fora
+  da rua ⇒ calor sobe 3×). Recalibrar o mundo com o diagnóstico na mão.
