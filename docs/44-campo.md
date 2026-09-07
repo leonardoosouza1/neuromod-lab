@@ -675,3 +675,10 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
   Curioso: as 2 unidades lentas que sobraram leem algo (z0: fome +0.41, pax
   +0.35; z1: tanque −0.33, pax −0.39) — sinal sem uso. Fila E54g fechada; E56
   (mundo distinto) começou.
+- **16:53 E56 mundo distinto, do zero (P512, R4, 120 ger.):** linear **0.87**
+  / 16.9 entregas / 4.9 panes / dinheiro 32 / fome 44; reflexo 0.86 / 17.4.
+  Predição 82(b) ✓ (mais duro), mas perto do degrau (0.9): com dinheiro e
+  fome ok, de que morrem? Diagnóstico de dano por causa (diag_oraculo com
+  --braco linear --mundo distinto) enfileirado antes do honesto. Se for calor
+  (custo 3 fora da rua → calor sobe 3×), o mundo está duro demais no lugar
+  errado e se recalibra (calor_sobe) antes dos braços semeados valerem.
