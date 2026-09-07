@@ -606,3 +606,7 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
   gerações. Faltam as 5 partes desligadas (se alguma delas MELHORAR o
   completo, a parte atrapalha; se piorar, ajuda), o retrato (quais genes
   se moveram, ablação) e as 300 gerações.
+- **2026-09-07 01:40 (máquina desligada de 09-04 20:20 a 09-06 22:06):** a
+  fila E54d morreu no braço "só camadas" (ger. 100/120). Relançado como
+  E54e, nesta ordem: retrato do completo semeado (já tem campeão) → 5
+  partes semeadas (120 ger.) → completo semeado 300 ger.
