@@ -630,3 +630,8 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
   genes) rendem. É o primeiro Δ ≥ 5 pp em dias, com n=3 (±0.03): vai pro
   **honesto** (5 sementes, R=16, 120 ger., P512, semeado; só-camadas vs
   linear; ~4,6 h) atrás da fila. Se segurar, é a primeira peça que paga.
+- **15:16 E54 completo semeado, 300 ger.:** 0.61 / 26.2 / 5.0 panes [0.60
+  0.66 0.56], dof 373 (51 min). Contra 120 ger. (0.64) e linear (0.63): −2 pp
+  em mortos (ruído), panes −21 % (5.0 vs 6.3; n=3, cláusula de 80(c) batida
+  no limite). Nada montou em 300 gerações além do que 120 já davam; o dof só
+  cresce (355 → 373): genes de graça acumulam. Retrato em seguida.
