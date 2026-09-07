@@ -657,3 +657,16 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
   genes que ainda custam 5 % de fome e nada rende; a mutação (σ 0.2) impede
   zerar tudo. Nenhuma parte sobrevive em λ ≥ 1 (predição 81(d): aposta do
   reflexo ✗; hipocampo/lenta ✓ morrem). λ = 3 e retrato em seguida.
+- **16:27 E55 λ = 3:** mortos 0.72, dof 6, metab 1.17 — igual ao λ = 1. Fecha
+  a varredura: no mundo padrão nenhuma peça paga custo algum.
+- **16:40 Leonardo: "não dá pra fazer o mesmo no mundo dos táxis? foi você
+  que fez — melhora o mundo pra usar mais o cérebro: distritos realmente
+  distintos, ruas, preços".** Sim. **E56 `gerar_mapa(distinto=True)`:** ruas
+  (custo 1 na rua, 3 fora — o custo_frente passa a decidir), 4 perfis de
+  distrito (centro: tudo caro ×2, muito passageiro; industrial: posto ×0.6
+  farto, SEM comida; residencial: comida e descanso, SEM posto; periferia:
+  barato, vazio, pouco passageiro), demanda de passageiro por distrito,
+  preços oscilando ±50 % num ciclo de 3 dias com fase por distrito. Mundo
+  padrão continua bit a bit (amp 0, demanda 1). Fila (antes do honesto
+  antigo): portões → linear e reflexo do zero no mundo distinto → só-camadas,
+  completo e linear semeados → só-camadas e completo com λ = 0.3. Predição 82.

@@ -29,29 +29,59 @@ class CfgCampo:
         s.calor_sobe = .15; s.calor_desce = .6      # sustentavel a ~70% de rodagem (0.15*1.85*.7 = .19 sobe vs .6*.3 = .18 esfria); direto: 30 -> 92 em ~220 passos
         s.CALOR_MAX = 92.; s.D_QUENTE = 6.; s.D_PANE = 6.; s.D_RODAR = .15
         s.fome_mata = .15; s.FOME_CRIT = 90.; s.agua_mata = .15; s.AGUA_CRIT = 10.; s.KCAL_PANE = 20.
-        s.custo_gene = 0.; s.gene_min = .5        # [E55] cerebro que come: fome sobe x (1 + custo_gene*dof/100), dof = genes alem da espinha com |w| > gene_min (Lei do Metabolismo = AIC; acervo: 'custo e o que seleciona')
+        s.custo_gene = 0.; s.gene_min = .5; s.amp_preco = .5; s.periodo_preco = 3.   # [E56] precos oscilam +-50 % num ciclo de 3 dias por distrito (so em mapa distinto)        # [E55] cerebro que come: fome sobe x (1 + custo_gene*dof/100), dof = genes alem da espinha com |w| > gene_min (Lei do Metabolismo = AIC; acervo: 'custo e o que seleciona')
         s.preco_L = .3; s.preco_agua = .05; s.preco_comida = 2.; s.HOTEL = 8.; s.preco_oficina = 10.; s.REPARO = 25.
         s.tarifa_base = 3.; s.tarifa_km = .25; s.aluguel = 4.; s.LIMITE_DIVIDA = 60.; s.PERDA_ARMAZ = .15; s.RES_MAX = 120.; s.perda_res = .02/240
         s.REFEICAO = 90.; s.pena_morte = 5.; s.fitness = 'sobrevive'
         for k, v in kw.items(): setattr(s, k, v)
 
-def gerar_mapa(seed, L=400., K=None, tex=64):
-    """tudo na GPU. devolve dict de tensores: custo (tex,tex), servicos {tipo: (N,2)}, centros (K,2), aliq/pmul/alug (K,)."""
+PERFIS = ['centro', 'industrial', 'residencial', 'periferia']     # [E56] distritos DISTINTOS (Leonardo: 'distritos realmente distintos, ruas, precos')
+PERFIL = {  # pmul, aliq, alug, demanda de passageiro, e multiplicador de densidade por servico (posto, comida, agua, descanso, oficina)
+    'centro':      dict(pmul=2.0, aliq=.35, alug=2.5, dem=2.0, dens=(1.0, 1.5, 1.0, 0.5, 1.0)),   # tudo caro, muito passageiro
+    'industrial':  dict(pmul=0.6, aliq=.10, alug=0.8, dem=0.7, dens=(2.5, 0.0, 1.0, 0.0, 2.0)),   # gasolina barata e farta, SEM comida
+    'residencial': dict(pmul=1.0, aliq=.15, alug=1.0, dem=1.0, dens=(0.0, 2.0, 1.5, 2.0, 0.0)),   # comida e descanso, SEM posto
+    'periferia':   dict(pmul=0.5, aliq=.00, alug=0.3, dem=0.3, dens=(0.5, 0.5, 0.5, 0.5, 0.0)),   # barato, vazio, pouco passageiro
+}
+
+def gerar_mapa(seed, L=400., K=None, tex=64, distinto=False):
+    """tudo na GPU. devolve dict de tensores: custo (tex,tex), servicos {tipo: (N,2)}, centros (K,2), aliq/pmul/alug (K,).
+    distinto=True [E56]: ruas (custo 1 na rua, 3 fora), distritos com PERFIL (precos, aluguel, demanda e servicos por distrito) e
+    precos que mudam por dia (fase por distrito) — um mundo que exige memoria de lugar, atencao por contexto e politica por distrito."""
     g = torch.Generator(device=DEV); g.manual_seed(int(seed)); K = K or max(3, round(6*L/200.))
     ru = torch.rand(1, 1, tex, tex, generator=g, device=DEV)
     k = torch.ones(1, 1, 7, 7, device=DEV)/49.
     for _ in range(3): ru = torch.nn.functional.conv2d(torch.nn.functional.pad(ru, (3, 3, 3, 3), mode='replicate'), k)
     ru = (ru - ru.min())/(ru.max() - ru.min() + 1e-9); custo = 1. + 2.*ru[0, 0]                     # [1,3]
-    serv = {}
-    for t in TIPOS:
-        n = max(3, int(round(DENS[t]*L*L))); serv[t] = torch.rand(n, 2, generator=g, device=DEV)*L
     centros = torch.rand(K, 2, generator=g, device=DEV)*L
-    aliq = .05 + .30*torch.rand(K, generator=g, device=DEV); pmul = .7 + .9*torch.rand(K, generator=g, device=DEV)
-    alug = .5 + 1.5*torch.rand(K, generator=g, device=DEV)
+    if distinto:
+        # ruas: K linhas verticais + K horizontais (2 celulas de largura) com custo 1; fora da rua custo 3
+        custo = torch.full((tex, tex), 3., device=DEV)
+        for _ in range(K):
+            c1 = int(torch.randint(0, tex, (1,), generator=g, device=DEV)); c2 = int(torch.randint(0, tex, (1,), generator=g, device=DEV))
+            custo[:, c1:c1+2] = 1.; custo[c2:c2+2, :] = 1.
+        perfil = torch.randint(0, len(PERFIS), (K,), generator=g, device=DEV); perfil[:len(PERFIS)] = torch.arange(len(PERFIS), device=DEV)[:K]   # todo perfil aparece
+        P = [PERFIL[PERFIS[int(i)]] for i in perfil]
+        pmul = torch.tensor([q['pmul'] for q in P], device=DEV); aliq = torch.tensor([q['aliq'] for q in P], device=DEV)
+        alug = torch.tensor([q['alug'] for q in P], device=DEV); demanda = torch.tensor([q['dem'] for q in P], device=DEV)
+        fase_preco = torch.rand(K, generator=g, device=DEV)
+        serv = {}
+        for j, t in enumerate(TIPOS):
+            n = max(3, int(round(DENS[t]*L*L)))*3; pts = torch.rand(n, 2, generator=g, device=DEV)*L
+            d = (pts[:, None, :] - centros[None]).norm(dim=-1).argmin(1)
+            mult = torch.tensor([q['dens'][j] for q in P], device=DEV)[d]/2.5
+            keep = torch.rand(n, generator=g, device=DEV) < mult; pts = pts[keep]
+            if pts.shape[0] < 2: pts = torch.rand(2, 2, generator=g, device=DEV)*L                  # nunca zero (o obs precisa de um ponto)
+            serv[t] = pts
+    else:
+        serv = {}
+        for t in TIPOS:
+            n = max(3, int(round(DENS[t]*L*L))); serv[t] = torch.rand(n, 2, generator=g, device=DEV)*L
+        aliq = .05 + .30*torch.rand(K, generator=g, device=DEV); pmul = .7 + .9*torch.rand(K, generator=g, device=DEV)
+        alug = .5 + 1.5*torch.rand(K, generator=g, device=DEV); demanda = torch.ones(K, device=DEV); fase_preco = torch.zeros(K, device=DEV); perfil = torch.full((K,), -1, device=DEV)
     # campos pre-computados (grade GR x GR): distancia ao servico mais perto por tipo, e distrito da celula
     ax = (torch.arange(GR, device=DEV).float() + .5)*(L/GR); gy, gx = torch.meshgrid(ax, ax, indexing='ij'); cel = torch.stack([gx, gy], -1).view(-1, 2)   # (GR*GR,2) (x,y)
     campo_dist = (cel[:, None, :] - centros[None]).norm(dim=-1).argmin(1).view(GR, GR)                                        # (GR,GR) long
-    return dict(L=L, custo=custo, serv=serv, centros=centros, aliq=aliq, pmul=pmul, alug=alug, seed=int(seed), campo_dist=campo_dist)
+    return dict(L=L, custo=custo, serv=serv, centros=centros, aliq=aliq, pmul=pmul, alug=alug, seed=int(seed), campo_dist=campo_dist, demanda=demanda, fase_preco=fase_preco, perfil=perfil, distinto=bool(distinto))
 
 OBRAS_MAX = 16                          # slots livres por tipo e por mapa para o prefeito construir
 def _empilha(mapas, chave):
@@ -71,7 +101,9 @@ class Campo:
         s.serv = {}; s.serv_msk = {}
         for t in TIPOS: s.serv[t], s.serv_msk[t] = _empilha([{'p': m['serv'][t]} for m in mapas], 'p')
         s.centros = torch.stack([m['centros'] for m in mapas]); s.K = s.centros.shape[1]      # (NC,K,2)
-        s.aliq = torch.stack([m['aliq'] for m in mapas]); s.pmul = torch.stack([m['pmul'] for m in mapas]); s.alug = torch.stack([m['alug'] for m in mapas])
+        s.aliq = torch.stack([m['aliq'] for m in mapas]); s.pmul0 = torch.stack([m['pmul'] for m in mapas]); s.alug = torch.stack([m['alug'] for m in mapas])
+        s.demanda = torch.stack([m.get('demanda', torch.ones_like(m['pmul'])) for m in mapas]); s.fase_preco = torch.stack([m.get('fase_preco', torch.zeros_like(m['pmul'])) for m in mapas])
+        s.amp_preco = c.amp_preco if any(m.get('distinto', False) for m in mapas) else 0.; s.pmul = s.pmul0.clone()   # [E56] preco do dia = pmul0 x (1 + amp sin(2pi(dia/3 + fase)))
         s.fase = torch.rand(s.NC, generator=g, device=DEV)[s.cidx]*c.dia
         s.dirs = DIRS.to(DEV)
         # estado
@@ -182,6 +214,9 @@ class Campo:
     # --- fisica
     def passo(s, esc):
         c = s.cfg; B = s.B; s.t += 1
+        if s.amp_preco > 0.:
+            dia = torch.floor((s.t.float() + s.fase[:1]*0.)/c.dia)                                              # dia inteiro (mesmo p/ todos os mapas)
+            s.pmul = s.pmul0*(1. + s.amp_preco*torch.sin(2*math.pi*(dia/c.periodo_preco + s.fase_preco)))
         vivo = s.vida > 0; livre = (s.tpar <= 0) & vivo; s.tpar = (s.tpar - 1).clamp(min=0)
         nv = s.noite_(); v = torch.where(nv, c.vel_noite, c.vel)
         mov = livre & (esc < G) & (esc != G - 1)
@@ -230,7 +265,7 @@ class Campo:
         novo_px = s._perto(s.pos, 1)[:, 0]; novo_d = s._destino(novo_px[:, None, :])[:, 0]
         s.px[ar, kx] = torch.where(pega[:, None], novo_px, s.px[ar, kx]); s.pxd[ar, kx] = torch.where(pega[:, None], novo_d, s.pxd[ar, kx])
         s.px_ok[ar, kx] = s.px_ok[ar, kx] & ~pega                                                   # slot usado fica inativo
-        volta = torch.rand(B, c.NPX, generator=s.g, device=DEV) < (1./(20.*s.pref_mult[ci, 5]))[:, None]   # elasticidade: tarifa x2 = espera 2x
+        volta = torch.rand(B, c.NPX, generator=s.g, device=DEV) < (s.demanda[ci, s.distrito(s.pos)]/(20.*s.pref_mult[ci, 5]))[:, None]   # elasticidade: tarifa x2 = espera 2x; [E56] demanda do distrito
         s.px_ok = s.px_ok | volta
         cheg = livre & (s.pd_ >= 0) & ((s.pos - s.dest).norm(dim=-1) <= c.raio)
         pf = s.pref_mult[ci]; aliq = (s.aliq[ci, s.orig_d]*pf[:, 0]).clamp(0., .6)
