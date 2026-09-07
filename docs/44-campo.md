@@ -745,3 +745,13 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
   se o bilinear corta as panes. Baterias contaminadas pela espinha cega e a
   refazer quando o bilinear validar: E54 (completo vs linear), E55 (custo),
   E56 (mundo distinto), E57 (sentidos).
+- **20:05 portão de sensibilidade (26 sentidos × 5 arquiteturas, mundo
+  distinto, 240 ticks):** Linear — 18 sentidos invisíveis na direção (os 16
+  do corpo + aliq_frente e casa_frente, que raramente variam entre as 9
+  opções); Reflexo idem; **Bilinear — só e_reserva** (artefato: reserva fica
+  em 0 em 240 ticks; teste agora nasce com reserva/dinheiro variados);
+  bilinear auto+consumo — vê só os dois seus, por construção; **Completo —
+  nenhum invisível** (tálamo, hipocampo e camadas dão caminho ao corpo).
+  Confirma o achado 84 com a matriz e mostra o que o completo tinha que o
+  linear não tinha: um caminho do corpo até a direção. Braços do bilinear
+  rodando.

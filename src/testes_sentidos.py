@@ -7,6 +7,7 @@ os.environ['NM_COMPILE'] = '0'; c = CfgCampo(L=200., fitness='bemestar'); mapas 
 NOP = len(NOMES_OP)
 def roda(A, W, T=240):
     m = Campo(mapas, W.shape[0], c, seed=3, R=2); Wb = W[m.gidx]; a = A(); a.reset(m, Wb); escs = []
+    m.res = torch.rand(m.B, device=DEV)*60.; m.dinh = 20. + torch.rand(m.B, device=DEV)*60.   # estados que ficam parados em 240 ticks (reserva, dinheiro) nascem variados: senao o sentido parece invisivel
     for t in range(T):
         F, val = m.obs(); sc = torch.einsum('bgf,bf->bg', F, Wb[:, :NF]) + a.extra(m, Wb, F); sc = sc - sc.mean(1, keepdim=True)
         svn, sv = m.serv_need(); ss = svn*Wb[:, NF:NF+S] + Wb[:, NF+S:NF+S+1]
@@ -42,4 +43,4 @@ for k, nome in enumerate(NOMES_F[:NF]):
     print(linha, flush=True)
 for n, ls in invisiveis.items(): print(f"INVISIVEL em {n}: {ls}", flush=True)
 esperado_linear = set(NOMES_CORPO) - {'bias'}
-print('PORTAO SENTIDOS', 'ok' if not invisiveis.get('Bilinear') and not invisiveis.get('Completo') else 'FALHOU (Bilinear/Completo com sentido invisivel)', '| Linear corpo invisivel na direcao (achado 84):', set(invisiveis.get('Linear', [])) >= esperado_linear - {'e_tem_pax'}, flush=True)
+print('PORTAO SENTIDOS', 'ok' if not invisiveis.get('Bilinear') and not invisiveis.get('Completo') else 'FALHOU (Bilinear/Completo com sentido invisivel)', '| restrito (auto+cons) so ve os seus: ok' if set(invisiveis.get('Bilinear auto+cons', [])) <= set(NOMES_F[:NF]) - {'e_autonomia', 'e_consumo'} else '| restrito FALHOU', '| Linear corpo invisivel na direcao (achado 84):', set(invisiveis.get('Linear', [])) >= esperado_linear - {'e_tem_pax'}, flush=True)
