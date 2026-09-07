@@ -755,3 +755,9 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
   Confirma o achado 84 com a matriz e mostra o que o completo tinha que o
   linear não tinha: um caminho do corpo até a direção. Braços do bilinear
   rodando.
+- **20:29 E59 do zero, mundo distinto (pane dói):** linear 0.85 / 6.5 panes ·
+  reflexo 0.79 / 5.4 · **bilinear cheio (160 genes) 0.88 / 6.7, 10.8
+  entregas** — do zero, 160 genes aleatórios não montam (o mesmo do
+  completo). Bilinear auto+consumo (20 genes) rodando. Acrescentei à fila os
+  dois bilineares SEMEADOS do campeão linear (M nasce em zero): é o teste
+  justo — a espinha pronta e um gene a achar.
