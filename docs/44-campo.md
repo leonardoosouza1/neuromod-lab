@@ -716,3 +716,17 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
   mínimo-4 (+autonomia) do zero no mundo distinto (pane dói) → só-camadas
   semeado com sentidos → prefeito co-evoluído (sem vs com) → diagnóstico.
   Predição 83.
+- **19:40 E57 sentidos:** linear 0.85 / 6.5 panes, reflexo 0.79 / 5.4,
+  mínimo-4 (+autonomia) 0.80 / 6.2 — a autonomia como sentido NÃO ajudou
+  (predição 83(a) ✗). **Por quê — achado estrutural (E58):** os sentidos do
+  corpo são iguais nas 9 opções de movimento e a nota é centrada por linha
+  (G1); logo no Linear NENHUM sentido do corpo muda a direção — tanque,
+  autonomia, fome só entram na escolha de SERVIÇO via need. O ser linear
+  nunca procura o posto: abastece quando passa perto. Isso explica mínimo-3
+  = linear (e_fuel era invisível), por que o reflexo evoluído age pelo
+  serviço (v) e não pelo empurrão (w), e por que a pane é o teto de tudo.
+  **Bilinear**: peso de cada sentido de opção modulado pelo corpo (nota +=
+  Σ corpo_k·M[k,f]·F_op[f]); "autonomia negativa ⇒ ir ao posto" é UM gene.
+  Nasce em zero. Versão restrita (autonomia+consumo × 10 opções = 20
+  genes) e cheia (16×10). Na fila do E57 depois do prefeito, do zero e
+  semeado. Predição 84.

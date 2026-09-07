@@ -557,3 +557,31 @@ class Cerebro(Linear):
         x = torch.relu(torch.einsum('bf,bkf->bk', s.corpo, s.U2) + s.b2)                          # (B,K)
         s.z = s.z + (x - s.z)/s.tau
     def ativacao(s, m): return s.z
+
+
+class Bilinear(Linear):
+    """E58 — ACHADO ESTRUTURAL: os sentidos do CORPO sao iguais nas 9 opcoes de movimento, e o G1 centra a nota por linha; logo
+    NENHUM sentido do corpo (tanque, autonomia, fome...) muda a DIRECAO no Linear — so entra na escolha de servico via need.
+    O ser linear nunca 'procura o posto': abastece quando passa perto. E' a causa estrutural das panes.
+    Bilinear: peso de cada sentido de opcao modulado pelo corpo — nota += sum_k sum_f corpo_k * M[k,f] * F_op[f].
+    'Autonomia negativa => peso de d_posto negativo' e' UM gene (M[autonomia, d_posto] < 0). Nasce transparente (M = 0)."""
+    nome = 'bilinear-campo'; NOP = len(NOMES_OP); NC_ = len(NOMES_CORPO); NP = Linear.NP + NC_*NOP
+    def reset(s, m, W):
+        s.W = W; s.M = W[:, Linear.NP:Linear.NP + s.NC_*s.NOP].view(-1, s.NC_, s.NOP)
+    def extra(s, m, W, F):
+        corpo = F[:, G - 1, s.NOP:]                                          # (B,NC_) sentidos do corpo (iguais nas opcoes)
+        Wm = torch.einsum('bk,bkf->bf', corpo, s.M)                          # (B,NOP) pesos de opcao modulados pelo estado
+        return torch.einsum('bgf,bf->bg', F[:, :, :s.NOP], Wm)
+
+def fabrica_bilinear(sentidos):
+    """Bilinear restrito a alguns sentidos do corpo (ex.: autonomia e consumo): so as linhas M[k,:] desses sentidos existem."""
+    idx = [NOMES_CORPO.index(n) for n in sentidos]
+    class B(Bilinear):
+        nome = 'bilinear-' + '+'.join(sentidos); NP = Linear.NP + len(idx)*Bilinear.NOP; IDX = torch.tensor(idx, device=DEV)
+        def reset(s, m, W):
+            s.W = W; s.M = W[:, Linear.NP:Linear.NP + len(idx)*s.NOP].view(-1, len(idx), s.NOP)
+        def extra(s, m, W, F):
+            corpo = F[:, G - 1, s.NOP:].index_select(1, s.IDX)
+            Wm = torch.einsum('bk,bkf->bf', corpo, s.M)
+            return torch.einsum('bgf,bf->bg', F[:, :, :s.NOP], Wm)
+    return B
