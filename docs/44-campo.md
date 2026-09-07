@@ -622,3 +622,11 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
   espinha, de graça) — todas iguais ao completo (0.64) e ao linear (0.63).
   Predição 80(b) ✓: nenhuma parte muda ≥ 5 pp. Faltam sem reflexo e só
   camadas; depois 300 ger., retrato e E55 (custo de gene).
+- **14:25 E54 partes, fim:** sem reflexo 0.66 / 25.3 (+2 pp, ruído); **só
+  camadas (tálamo+córtex+hipocampo+reflexo, SEM rápida/lenta) 0.58 / 27.3**
+  [0.55 0.58 0.61] — 6 pp abaixo do completo (0.64) e 5 abaixo do linear
+  (0.63), dof 360. Leitura: os 254 genes das camadas livres (rápida+lenta)
+  são ruído que a evolução carrega; sem eles, as camadas do grafo (171
+  genes) rendem. É o primeiro Δ ≥ 5 pp em dias, com n=3 (±0.03): vai pro
+  **honesto** (5 sementes, R=16, 120 ger., P512, semeado; só-camadas vs
+  linear; ~4,6 h) atrás da fila. Se segurar, é a primeira peça que paga.
