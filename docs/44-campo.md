@@ -652,3 +652,8 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
   pp, o próprio imposto). Leitura honesta: neste mundo, com loja e 10 dias,
   nenhuma peça além da espinha paga nem 0,3 % de fome por gene. λ = 1 e 3
   rodando (esperado: dof → ~0).
+- **16:06 E55 λ = 1:** mortos 0.70 / 24.2 / 6.3 panes, **dof 5** (metab
+  1.05). Pior que o linear (0.63) em 7 pp: com custo alto o ser fica com 5
+  genes que ainda custam 5 % de fome e nada rende; a mutação (σ 0.2) impede
+  zerar tudo. Nenhuma parte sobrevive em λ ≥ 1 (predição 81(d): aposta do
+  reflexo ✗; hipocampo/lenta ✓ morrem). λ = 3 e retrato em seguida.
