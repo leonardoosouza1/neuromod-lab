@@ -12,7 +12,7 @@ def main(a):
     p['T_evo'] = p['T_aval'] = int(240*a.dias)          # vida em dias (5 dias = viver de poupanca e otimo; 10 obriga a trabalhar)
     if a.seeds: p['seeds'] = tuple(a.seeds)
     if a.G: p['G'] = a.G
-    cfg = CfgCampo(L=a.L, pena_morte=a.pena, fitness=a.fitness); cfg.KCAL_PANE = a.kcal_pane
+    cfg = CfgCampo(L=a.L, pena_morte=a.pena, fitness=a.fitness); cfg.KCAL_PANE = a.kcal_pane; cfg.dinh0 = a.dinh0
     treino = [gerar_mapa(s, L=a.L, distinto=a.mundo == 'distinto') for s in range(4)]; teste = [gerar_mapa(a.teste_seed + s, L=a.L, distinto=a.mundo == 'distinto') for s in range(3)]
     res = dict(preset=a.preset, L=a.L, fitness=a.fitness, pena=a.pena, sentidos=SENT, alavancas=ALAV, bracos={})
     print(f'== E44 prefeito | {a.preset} L={a.L} dias={a.dias} regua={a.fitness} P={p["P"]} G={p["G"]} R={p["R"]} x{len(p["seeds"])} ==', flush=True)
@@ -45,5 +45,5 @@ if __name__ == '__main__':
     ap.add_argument('--preset', default='fumaca', choices=tuple(PRESETS)); ap.add_argument('--L', type=float, default=200.)
     ap.add_argument('--fitness', default='bemestar', choices=('padrao', 'sobrevive', 'bemestar')); ap.add_argument('--pena', type=float, default=5.); ap.add_argument('--cada', type=int, default=5)
     ap.add_argument('--out', default='/media/llm-data/universe-runs/neuromod-lab-taxi/e44'); ap.add_argument('--so', nargs='*', default=None)
-    ap.add_argument('--seeds', type=int, nargs='*', default=None); ap.add_argument('--G', type=int, default=None); ap.add_argument('--teste-seed', type=int, default=1000); ap.add_argument('--tag', default=''); ap.add_argument('--dias', type=float, default=10.); ap.add_argument('--arq', default='produto (need x dist, portao)', help='braco do e43 usado como ser'); ap.add_argument('--mundo', default='padrao', choices=('padrao', 'distinto')); ap.add_argument('--kcal-pane', type=float, default=20.)
+    ap.add_argument('--seeds', type=int, nargs='*', default=None); ap.add_argument('--G', type=int, default=None); ap.add_argument('--teste-seed', type=int, default=1000); ap.add_argument('--tag', default=''); ap.add_argument('--dias', type=float, default=10.); ap.add_argument('--arq', default='produto (need x dist, portao)', help='braco do e43 usado como ser'); ap.add_argument('--mundo', default='padrao', choices=('padrao', 'distinto')); ap.add_argument('--dinh0', type=float, default=20., help='dinheiro inicial (10 = pobre de verdade: 5 refeicoes)'); ap.add_argument('--kcal-pane', type=float, default=20.)
     main(ap.parse_args())

@@ -40,7 +40,7 @@ PERFIL = {  # pmul, aliq, alug, demanda de passageiro, e multiplicador de densid
     'centro':      dict(pmul=2.0, aliq=.35, alug=2.5, dem=2.0, dens=(1.0, 1.5, 1.0, 0.5, 1.0)),   # tudo caro, muito passageiro
     'industrial':  dict(pmul=0.6, aliq=.10, alug=0.8, dem=0.7, dens=(2.5, 0.0, 1.0, 0.0, 2.0)),   # gasolina barata e farta, SEM comida
     'residencial': dict(pmul=1.0, aliq=.15, alug=1.0, dem=1.0, dens=(0.0, 2.0, 1.5, 2.0, 0.0)),   # comida e descanso, SEM posto
-    'periferia':   dict(pmul=0.5, aliq=.00, alug=0.3, dem=0.3, dens=(0.5, 0.5, 0.5, 0.5, 0.0)),   # barato, vazio, pouco passageiro
+    'periferia':   dict(pmul=0.5, aliq=.00, alug=0.8, dem=0.3, dens=(0.5, 0.5, 0.5, 0.5, 0.0)),   # barato, vazio, pouco passageiro (alug 0.3 -> 0.8: com 0.3 a PEDRA vivia 10 dias parada na periferia, E59)
 }
 
 def gerar_mapa(seed, L=400., K=None, tex=64, distinto=False):

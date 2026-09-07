@@ -761,3 +761,16 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
   completo). Bilinear auto+consumo (20 genes) rodando. Acrescentei à fila os
   dois bilineares SEMEADOS do campeão linear (M nasce em zero): é o teste
   justo — a espinha pronta e um gene a achar.
+- **20:34 E59 bilinear auto+consumo do zero: 0.68 [0.97 0.55 0.51], panes
+  3.0 (−54 %) — MAS 6 entregas, 1 abastecimento, dinheiro 2, fome 74:** em
+  2/3 sementes o ser virou PEDRA: fica parado perto de comida na periferia
+  (aluguel 0.3/dia) e vive 10 dias dos 20 de nascença (comida a 2 = 10
+  refeições). A régua bemestar não distingue pedra de trabalhador (pedra:
+  fome .26 + tanque 1 + água .45 + vida 1 = 0.54; trabalhador ≈ 0.53); só
+  a morte separa, e a pedra não morre. É a "métrica de degrau" ao contrário.
+  Conserto de MUNDO, não de régua: nasce com 10 (5 refeições) e aluguel
+  mínimo 0.8/dia (periferia 0.3 → 0.8): a pedra entra em dívida no dia 5 e
+  morre; quem trabalha nem nota. **E59b**: linear, reflexo, bilinear
+  auto+consumo do zero (pobre) → bilineares semeados → diagnóstico →
+  prefeito com ser bilinear. Predição 84 vale para o E59b; critério extra:
+  ent ≥ 15 (senão é pedra).
