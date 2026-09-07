@@ -682,3 +682,9 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
   --braco linear --mundo distinto) enfileirado antes do honesto. Se for calor
   (custo 3 fora da rua → calor sobe 3×), o mundo está duro demais no lugar
   errado e se recalibra (calor_sobe) antes dos braços semeados valerem.
+- **18:28 E56 (PC reiniciou 17:56; filas relançadas):** portão do mundo ok
+  (preços variam até 47 % em 1 dia; rua 33 %). Semeados no mundo distinto:
+  linear 0.86 / 16.1; **completo 0.87 / 16.3** — empate de novo, num mundo
+  onde todo mundo morre 0.86 (degrau). Só-camadas rodando; diagnóstico de
+  causa vem depois — sem ele, não dá pra dizer se o mundo cobra o cérebro
+  ou só cobra demais de todo mundo.
