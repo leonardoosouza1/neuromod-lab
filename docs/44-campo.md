@@ -695,3 +695,13 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
   degrau) e o honesto antigo saiu da fila por ora; diagnóstico de dano por
   causa do linear distinto rodando agora — a suspeita é calor (custo 3 fora
   da rua ⇒ calor sobe 3×). Recalibrar o mundo com o diagnóstico na mão.
+- **18:47 diagnóstico do linear no mundo distinto:** dano 136 por ser: **pane
+  28–123 (4,7 panes)**, calor 31 (0 desligamentos), fome 11, sede 0. NÃO é
+  calor: é o mesmo assassino do mundo antigo, a pane (alcance), agravada
+  porque residencial não tem posto e periferia tem metade. Mundo certo no
+  lugar errado: o assassino uniforme (pane) esconde tudo o que os distritos
+  cobrariam. **E56c**: mesma cidade distinta com a pane doendo em vez de
+  matar (KCAL_PANE 20 → 8; D_PANE 6 fica) para tirar o degrau e deixar
+  preços/distritos/memória serem a margem. Fila: linear+reflexo do zero →
+  só-camadas/completo/linear semeados → λ 0.3 → diagnóstico do só-camadas.
+  Honesto antigo atrás disso. Predição 82 vale para o E56c.
