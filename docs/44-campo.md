@@ -635,3 +635,11 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
   em mortos (ruído), panes −21 % (5.0 vs 6.3; n=3, cláusula de 80(c) batida
   no limite). Nada montou em 300 gerações além do que 120 já davam; o dof só
   cresce (355 → 373): genes de graça acumulam. Retrato em seguida.
+- **15:24 retrato do completo semeado, 3 sementes (ablação no teste):** tálamo
+  removido → 1.00 / 1.00 / 0.96; reflexo → 0.76 / 0.99 / 0.72; córtex → 0.71 /
+  0.62 / 0.97; hipocampo → 0.68 / 0.65 / 0.63; **rápida → 1.00 / 0.60 / 0.64;
+  lenta → 0.66 / 0.61 / 0.64** (unidades com correlação 0.00 com tudo: mortas,
+  z constante); só linear → 1.00. Leitura: as peças do grafo (tálamo, reflexo,
+  córtex) ligam e viram pilar por co-adaptação; hipocampo e as camadas
+  genéricas são decoração carregando 70–90 % dos genes acima de 0.5. Bate com
+  "só camadas" 0.58 < completo 0.64. Painel publicado (artifact).
