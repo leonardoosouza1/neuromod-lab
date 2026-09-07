@@ -75,8 +75,8 @@ def main():
               ' · '.join(f'{k}: {v["mortos"]:.2f}/{v["panes"]:.1f}' for k, v in abl.items()), flush=True)
         for u, c in le.items(): print(f'   {u} le: ' + ' '.join(f'{v} {r:+.2f}' for v, r in c.items()), flush=True)
         for k, b in R[sd]['blocos'].items(): print(f'   {k:<32} n {b["n"]:4d} |w| med {b["abs_med"]:.2f} max {b["abs_max"]:.2f} >0.5: {100*b["frac_grande"]:.0f}%', flush=True)
-    json.dump(R, open(os.path.join(a.out, f'retrato_cerebro{a.tag}.json'), 'w'))
-    painel(R, os.path.join(a.out, f'retrato_cerebro{a.tag}.html'))
+        json.dump(R, open(os.path.join(a.out, f'retrato_cerebro{a.tag}.json'), 'w')); painel(R, os.path.join(a.out, f'retrato_cerebro{a.tag}.html'))   # grava a cada semente (um kill nao perde tudo)
+        del rec; torch.cuda.empty_cache()
 
 def painel(R, out):
     sd = sorted(R)[0]; r = R[sd]; e = r['eeg']; T = len(e['fuel']); K = Cerebro.K; H = Cerebro.H

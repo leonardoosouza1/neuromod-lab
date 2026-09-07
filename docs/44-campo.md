@@ -610,3 +610,9 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
   fila E54d morreu no braço "só camadas" (ger. 100/120). Relançado como
   E54e, nesta ordem: retrato do completo semeado (já tem campeão) → 5
   partes semeadas (120 ger.) → completo semeado 300 ger.
+- **2026-09-07 01:45 retrato do completo semeado (s0):** ver docs/47. Ablação:
+  sem rápida 1.00, sem tálamo 1.00, sem reflexo 0.76, sem córtex 0.71, sem
+  hipocampo 0.68, sem lenta 0.66 (= completo), só linear 1.00. As partes
+  foram usadas (co-adaptação), o total não mudou. Retrato morreu com status
+  137 depois da semente 0 (sem JSON/HTML); agora grava por semente e roda de
+  novo atrás da fila (e54f).
