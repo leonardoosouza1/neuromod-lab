@@ -670,3 +670,8 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
   padrão continua bit a bit (amp 0, demanda 1). Fila (antes do honesto
   antigo): portões → linear e reflexo do zero no mundo distinto → só-camadas,
   completo e linear semeados → só-camadas e completo com λ = 0.3. Predição 82.
+- **16:36 retrato E55 λ = 1 (s2):** ablação plana (completo 0.71; sem
+  qualquer parte 0.68–0.74; só linear 0.72): sob custo o cérebro É a espinha.
+  Curioso: as 2 unidades lentas que sobraram leem algo (z0: fome +0.41, pax
+  +0.35; z1: tanque −0.33, pax −0.39) — sinal sem uso. Fila E54g fechada; E56
+  (mundo distinto) começou.
