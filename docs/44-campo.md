@@ -616,3 +616,9 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
   foram usadas (co-adaptação), o total não mudou. Retrato morreu com status
   137 depois da semente 0 (sem JSON/HTML); agora grava por semente e roda de
   novo atrás da fila (e54f).
+- **2026-09-07 13:50 E54 partes desligadas desde o nascimento (semeado, 120
+  ger., P512, R4):** sem tálamo 0.62 / 25.7 · sem córtex 0.61 / 27.2 · sem
+  hipocampo 0.61 / 26.6 (dof 355: o campeão carrega 355 genes > 0.5 além da
+  espinha, de graça) — todas iguais ao completo (0.64) e ao linear (0.63).
+  Predição 80(b) ✓: nenhuma parte muda ≥ 5 pp. Faltam sem reflexo e só
+  camadas; depois 300 ger., retrato e E55 (custo de gene).
