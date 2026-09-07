@@ -17,7 +17,7 @@ ACOES = [('posto', 25.), ('posto', 50.), ('posto', 75.), ('posto', 100.), ('post
          ('comida', 0.), ('descanso', 0.), ('oficina', 0.)]
 S = len(ACOES)
 NOMES_OP = ['d_alvo', 'd_posto', 'd_comida', 'd_agua', 'd_oficina', 'd_descanso', 'custo_frente', 'preco_frente', 'aliq_frente', 'casa_frente']
-NOMES_CORPO = ['e_fuel', 'e_agua', 'e_fome', 'e_fadiga', 'e_calor', 'e_vida', 'e_dinheiro', 'e_reserva', 'e_tem_pax', 'h_sin', 'h_cos', 'e_noite', 'custo_aqui', 'bias']
+NOMES_CORPO = ['e_fuel', 'e_agua', 'e_fome', 'e_fadiga', 'e_calor', 'e_vida', 'e_dinheiro', 'e_reserva', 'e_tem_pax', 'h_sin', 'h_cos', 'e_noite', 'custo_aqui', 'bias', 'e_consumo', 'e_autonomia']   # [E57] painel do carro: consumo medido (L por metro, media movel) e autonomia = (tanque/consumo - d_posto)/100
 NF = len(NOMES_OP) + len(NOMES_CORPO)   # 24
 NOMES_F = NOMES_OP + NOMES_CORPO + [f'sv_{a[0]}{int(a[1]) if a[1] else ""}' for a in ACOES] + ['sv_bias']
 
@@ -112,6 +112,7 @@ class Campo:
         s.fuel = torch.full((B,), 85., device=DEV); s.agua = torch.full((B,), 85., device=DEV); s.fome = torch.full((B,), 10., device=DEV)
         s.fad = torch.full((B,), 10., device=DEV); s.calor = torch.full((B,), 30., device=DEV); s.vida = torch.full((B,), 100., device=DEV)
         s.dinh = torch.full((B,), c.dinh0, device=DEV); s.res = torch.zeros(B, device=DEV); s.tpar = torch.zeros(B, device=DEV); s.metab = torch.ones(B, device=DEV)
+        s.cons = torch.full((B,), c.fuel_passo*2., device=DEV)                       # [E57] consumo por metro andado, media movel (nasce no tipico: custo 2)
         s.ent = torch.zeros(B, device=DEV); s.rec = torch.zeros(B, device=DEV); s.avar = torch.zeros(B, device=DEV); s.av_fuel = torch.zeros(B, device=DEV)
         s.n_posto = torch.zeros(B, device=DEV); s.litros = torch.zeros(B, device=DEV); s.n_oficina = torch.zeros(B, device=DEV); s.n_come = torch.zeros(B, device=DEV)
         s.dano_soma = torch.zeros(B, device=DEV); s.t_vida = torch.zeros(B, device=DEV); s.bem_soma = torch.zeros(B, device=DEV)
@@ -179,8 +180,10 @@ class Campo:
         F.append(s.pmul[ci, dn]); F.append(s.aliq[ci, dn]); F.append((dn == s.casa[:, None]).float())
         Fop = torch.stack(F, -1)                                                                 # (B,G,10)
         h = s.hora()*2*math.pi/24.
+        auton = (s.fuel/s.cons.clamp(min=1e-3) - s._dist[:, 0])/100.                                                    # [E57] quanto ainda anda menos a distancia ao posto mais perto (em 100 m)
         corpo = torch.stack([s.fuel/100., s.agua/100., s.fome/100., s.fad/100., s.calor/120., s.vida/100., (s.dinh/150.).clamp(-1., 1.), s.res/c.RES_MAX,
-                             (s.pd_ >= 0).float(), torch.sin(h), torch.cos(h), nv.float(), s.custo_em(s.pos), torch.ones_like(s.fuel)], -1)   # (B,14)
+                             (s.pd_ >= 0).float(), torch.sin(h), torch.cos(h), nv.float(), s.custo_em(s.pos), torch.ones_like(s.fuel),
+                             s.cons/(c.fuel_passo*3.), auton.clamp(-2., 4.)], -1)   # (B,16)
         Fo = torch.cat([Fop, corpo[:, None, :].expand(-1, G, -1)], -1)
         val = torch.ones(s.B, G, dtype=torch.bool, device=DEV)
         return Fo, val
@@ -228,6 +231,7 @@ class Campo:
         s.pos = (s.pos + mov[:, None].float()*v[:, None]*d).clamp(0., s.L)
         marcha = livre & ~mov                                                    # [G2] parado com motor ligado: marcha lenta gasta 1/3
         s.fuel = (s.fuel - c.fuel_passo*cu*peso*mov.float() - c.fuel_passo*.33*marcha.float()).clamp(min=0.)
+        s.cons = torch.where(mov, s.cons + (c.fuel_passo*cu*peso/v.clamp(min=1e-3) - s.cons)*.05, s.cons)                # [E57] o carro mede o proprio consumo por metro (media movel 20 passos)
         s.calor = (s.calor + c.calor_sobe*cu*mov.float() - c.calor_desce*(~mov).float()).clamp(25., 120.)
         s.agua = (s.agua - c.agua_passo*vivo.float() - c.agua_calor*(s.calor > 60.).float()*vivo.float()).clamp(min=0.)
         s.fome = (s.fome + c.fome_passo*s.metab*vivo.float()).clamp(max=100.); s.fad = (s.fad + c.fad_passo*mov.float() - .1*(~mov).float()).clamp(0., 100.)

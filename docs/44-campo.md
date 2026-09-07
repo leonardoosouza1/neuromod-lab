@@ -705,3 +705,14 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
   preços/distritos/memória serem a margem. Fila: linear+reflexo do zero →
   só-camadas/completo/linear semeados → λ 0.3 → diagnóstico do só-camadas.
   Honesto antigo atrás disso. Predição 82 vale para o E56c.
+- **19:15 Leonardo: "pense em algo funcional: dá pra saber o gasto de tudo,
+  calcular pela distância quanto ele gasta; o prefeito deveria ver isso e
+  ajudar."** Certo, e são SENSORES (não gates): `e_consumo` (o carro mede o
+  próprio consumo por metro, média móvel) e `e_autonomia` (tanque/consumo −
+  distância ao posto, o "km até esvaziar" do painel). NF 24 → 26, tálamo
+  cobre os dois no grupo corpo. E o prefeito entra no mundo distinto (ele
+  constrói postos; o residencial não tem). Matei o E56c semeado (sem
+  sentidos) e o honesto antigo. **E57** na GPU: portões → linear, reflexo,
+  mínimo-4 (+autonomia) do zero no mundo distinto (pane dói) → só-camadas
+  semeado com sentidos → prefeito co-evoluído (sem vs com) → diagnóstico.
+  Predição 83.
