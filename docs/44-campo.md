@@ -643,3 +643,12 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
   córtex) ligam e viram pilar por co-adaptação; hipocampo e as camadas
   genéricas são decoração carregando 70–90 % dos genes acima de 0.5. Bate com
   "só camadas" 0.58 < completo 0.64. Painel publicado (artifact).
+- **15:45 E55 λ = 0.3 (cada gene ligado custa 0,3 % de fome; semeado, 120
+  ger.):** mortos 0.66 / 25.3 / 6.0 panes, **dof 3 / 7 / 56** (era 355–373
+  de graça), metab 1.07. Com um custo de 7 % na fome a evolução LARGA quase
+  tudo: reflexo 0/4 genes, tálamo 0–2/15, córtex 0–5/48, hipocampo 0–8/104,
+  camadas genéricas 0–40/254. As "pilares" da ablação (tálamo, reflexo)
+  sumiram sem dó → eram co-adaptação, não função. Mortos ≈ linear (0.63 +3
+  pp, o próprio imposto). Leitura honesta: neste mundo, com loja e 10 dias,
+  nenhuma peça além da espinha paga nem 0,3 % de fome por gene. λ = 1 e 3
+  rodando (esperado: dof → ~0).
