@@ -46,11 +46,11 @@ def tracar(Arq, W, mapas, cfg, T, copias=128, seed=7777):
     return orc, dias, [round(float(x), 2) for x in morte.sum(0)/n_m], float((m.vida <= 0).float().mean()), float(m.ent.mean())
 
 def main(a):
-    T = int(240*a.dias); teste = [gerar_mapa(1000 + s, L=a.L) for s in range(3)]
+    T = int(240*a.dias); teste = [gerar_mapa(1000 + s, L=a.L, distinto=a.mundo == 'distinto') for s in range(3)]
     cfg = CfgCampo(L=a.L, fitness='bemestar', loja_no_posto=not a.sem_loja)
-    J = json.load(open(a.campeao))['bracos']; nomeM = 'minimo 3 (d_alvo, d_posto, e_fuel)'
+    J = json.load(open(a.campeao))['bracos']; nomeM = a.braco
     ArqM = dict(BRACOS)[nomeM]; WM = torch.tensor(J[nomeM]['W'][sorted(J[nomeM]['W'])[0]], device=DEV)
-    casos = [('campeao minimo-3', ArqM, WM)] + [(f'oraculo {v}', fabrica_oraculo(nome=v, **VARIANTES[v]), torch.zeros(Linear.NP, device=DEV)) for v in a.variantes]
+    casos = [(f'campeao {nomeM[:24]}', ArqM, WM)] + [(f'oraculo {v}', fabrica_oraculo(nome=v, **VARIANTES[v]), torch.zeros(Linear.NP, device=DEV)) for v in a.variantes]
     out = {}
     for nome, Arq, W in casos:
         orc, dias, causa, mortos, ent = tracar(Arq, W, teste, cfg, T, copias=a.copias)
@@ -64,7 +64,7 @@ def main(a):
 if __name__ == '__main__':
     ap = argparse.ArgumentParser()
     ap.add_argument('--L', type=float, default=200.); ap.add_argument('--dias', type=float, default=10.); ap.add_argument('--copias', type=int, default=128)
-    ap.add_argument('--sem-loja', action='store_true'); ap.add_argument('--variantes', nargs='*', default=['base', 'oportunista', 'poupador', 'poup_oport', 'poup_oport_tarde', 'poup_oport_caixa0', 'poup12_oport_tarde'])
+    ap.add_argument('--sem-loja', action='store_true'); ap.add_argument('--braco', default='minimo 3 (d_alvo, d_posto, e_fuel)'); ap.add_argument('--mundo', default='padrao', choices=('padrao', 'distinto')); ap.add_argument('--variantes', nargs='*', default=['base', 'oportunista', 'poupador', 'poup_oport', 'poup_oport_tarde', 'poup_oport_caixa0', 'poup12_oport_tarde'])
     ap.add_argument('--campeao', default='/media/llm-data/universe-runs/neuromod-lab-taxi/e43/e43_triagem_L200_10d.json')
     ap.add_argument('--tag', default=''); ap.add_argument('--out', default='/media/llm-data/universe-runs/neuromod-lab-taxi/e51')
     main(ap.parse_args())
