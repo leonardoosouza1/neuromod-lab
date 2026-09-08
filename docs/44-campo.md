@@ -850,3 +850,7 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
   o guincho é grátis; a seleção por "procurar o posto" é fraca. Bilinear
   semeado e diagnóstico em seguida; o teste com dentes é o E61b (guincho 10
   + 5 L, 5 sementes).
+- **23:30 E61 bilinear semeado com luz de reserva (guincho grátis):** 0.82 /
+  17.5 / 6.4 panes — igual. Diagnóstico caiu (127: `sed -i` numa fila em
+  execução não muda o que o `read` já abriu — inode novo); re-enfileirado
+  no fim do E61b. **E61b (guincho 10 + 5 L, 5 sementes) começou 23:31.**
