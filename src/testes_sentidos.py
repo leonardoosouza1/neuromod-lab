@@ -7,7 +7,7 @@ os.environ['NM_COMPILE'] = '0'; c = CfgCampo(L=200., fitness='bemestar'); mapas 
 NOP = len(NOMES_OP)
 def roda(A, W, T=240):
     m = Campo(mapas, W.shape[0], c, seed=3, R=2); Wb = W[m.gidx]; a = A(); a.reset(m, Wb); escs = []
-    m.res = torch.rand(m.B, device=DEV)*60.; m.dinh = 20. + torch.rand(m.B, device=DEV)*60.   # estados que ficam parados em 240 ticks (reserva, dinheiro) nascem variados: senao o sentido parece invisivel
+    gg = torch.Generator(device=DEV); gg.manual_seed(7); m.res = torch.rand(m.B, generator=gg, device=DEV)*60.; m.dinh = 20. + torch.rand(m.B, generator=gg, device=DEV)*60.   # estados parados em 240 ticks nascem variados (DETERMINISTICO: senao p0 != p1 por acaso)
     for t in range(T):
         F, val = m.obs(); sc = torch.einsum('bgf,bf->bg', F, Wb[:, :NF]) + a.extra(m, Wb, F); sc = sc - sc.mean(1, keepdim=True)
         svn, sv = m.serv_need(); ss = svn*Wb[:, NF:NF+S] + Wb[:, NF+S:NF+S+1]

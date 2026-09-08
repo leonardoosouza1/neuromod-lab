@@ -65,13 +65,13 @@ class SerCompleto(Cerebro):
         mem = s._mem(m)                                                                                  # (define s.dn)
         delta = s.DLT.gather(1, s.dn[:, None, None].expand(-1, 1, len(IDX_CORTEX))).squeeze(1)
         sc = sc + torch.einsum('bgf,bf->bg', F.index_select(2, s.IDXC), W[:, s.IDXC]*delta)               # cortex por distrito
-        Wm = torch.einsum('bk,bkf->bf', mem, s.M_h); sc = sc + torch.einsum('bgf,bf->bg', F, Wm)          # hipocampo bilinear
+        Wm = torch.einsum('bk,bkf->bf', mem, s.M_h)*Cerebro.ESC; sc = sc + torch.einsum('bgf,bf->bg', F, Wm)          # hipocampo bilinear (escala como o Cerebro)
         a = s._ativ(); sc = sc - (s.w*a)[:, None]*F[:, :, 1]                                              # reflexo: empurra pro posto
         return sc
     def extra_serv(s, m):
         ss = Cerebro.extra_serv(s, m)
         mem = s.MEM.gather(1, s.dn[:, None, None].expand(-1, 1, NM)).squeeze(1)*s.g_hip
-        ss = ss + torch.einsum('bk,bks->bs', mem, s.P_h)
+        ss = ss + torch.einsum('bk,bks->bs', mem, s.P_h)*Cerebro.ESC_S
         z = torch.zeros(m.B, S, device=DEV); z[:, :5] = (s.v*s._ativ())[:, None]
         return ss + z
     def atualizar(s, m):

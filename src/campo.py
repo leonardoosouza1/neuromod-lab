@@ -535,7 +535,7 @@ class Cerebro(Linear):
     somam na nota de movimento) + camada LENTA (K unidades relu sobre o corpo, com estado z_k = EMA de tau_k num BANCO log-espacado
     ~5/~25/~100 ticks; z modula os pesos de movimento (bilinear z x sentido) e as notas de servico). Nasce TRANSPARENTE (regra 17):
     V = M = P = 0 -> identico ao Linear bit a bit; U/U2 (entradas) nascem aleatorios e so importam quando a saida liga."""
-    nome = 'cerebro-campo'; H = 4; K = 3; NC_ = len(NOMES_CORPO); OFF_TAU = (0., 2., 4.)
+    nome = 'cerebro-campo'; H = 4; K = 3; NC_ = len(NOMES_CORPO); OFF_TAU = (0., 2., 4.); ESC = .01; ESC_S = .1   # [E59c] escala: F cru (ate 200) x h/z x genes .2 afogava a espinha (teste de escala: 58 % das decisoes)
     O_U = Linear.NP; O_BU = O_U + H*NF; O_V = O_BU + H
     O_U2 = O_V + H; O_B2 = O_U2 + K*NC_; O_TAU = O_B2 + K; O_M = O_TAU + K; O_P = O_M + K*NF
     NP = O_P + K*S
@@ -549,10 +549,10 @@ class Cerebro(Linear):
     def extra(s, m, W, F):
         s.corpo = F[:, G - 1, len(NOMES_OP):]                                                # sentidos do corpo (iguais nas 9 opcoes): opcao 'ficar'
         h = torch.relu(torch.einsum('bgf,bhf->bgh', F, s.U) + s.bU[:, None, :]); s.h = h         # (B,G,H) camada rapida
-        rapida = torch.einsum('bgh,bh->bg', h, s.V)
-        Wm = torch.einsum('bk,bkf->bf', s.z, s.M); lenta = torch.einsum('bgf,bf->bg', F, Wm)      # pesos modulados pelo estado lento
+        rapida = torch.einsum('bgh,bh->bg', h, s.V)*s.ESC
+        Wm = torch.einsum('bk,bkf->bf', s.z, s.M)*s.ESC; lenta = torch.einsum('bgf,bf->bg', F, Wm)      # pesos modulados pelo estado lento
         return rapida + lenta
-    def extra_serv(s, m): return torch.einsum('bk,bks->bs', s.z, s.P)
+    def extra_serv(s, m): return torch.einsum('bk,bks->bs', s.z, s.P)*s.ESC_S
     def atualizar(s, m):
         x = torch.relu(torch.einsum('bf,bkf->bk', s.corpo, s.U2) + s.b2)                          # (B,K)
         s.z = s.z + (x - s.z)/s.tau

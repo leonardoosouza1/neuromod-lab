@@ -786,3 +786,15 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
   escala (s0): 4.3 panes, morre de fome 57 % + dívida 36 %: o ruído tirou o
   ser da rota. Lição pro portão: acrescentar teste de ESCALA (perturbação σ
   .2 num bloco novo não pode mudar > 30 % das decisões).
+- **21:20 teste de ESCALA (portão novo):** ruído de semeadura σ .2 muda 9 %
+  das decisões no Bilinear (com escala) e 8 % no Reflexo — mas **58 % no
+  Completo: AFOGA A ESPINHA.** As camadas genéricas (rápida: V·relu(F·U);
+  lenta: z·M·F) e o hipocampo (mem·M_h·F) multiplicam F cru (até 200) por
+  genes de .2. Todo "semeado" do E54/E56/E57 partiu de uma espinha afogada:
+  "rápida virou pilar" era o ser se re-afinando ao ruído; "só camadas 0.58 >
+  completo 0.64" era tirar o bloco mais barulhento. Escala .01 (movimento)
+  e .1 (serviço) nas camadas genéricas e no hipocampo. Teste corrigido
+  (reserva/dinheiro deterministicos). **E60 = o reset pedido pelo Leonardo,
+  agora com fundamento:** mundo distinto pobre, semeados do linear: linear,
+  bilinear auto+cons, só-camadas, completo (todos com escala) → os mesmos
+  com custo de gene 0.3. Atrás do E59c (bilinear semeado, diag, prefeito).
