@@ -31,7 +31,7 @@ class CfgCampo:
         s.calor_sobe = .15; s.calor_desce = .6      # sustentavel a ~70% de rodagem (0.15*1.85*.7 = .19 sobe vs .6*.3 = .18 esfria); direto: 30 -> 92 em ~220 passos
         s.CALOR_MAX = 92.; s.D_QUENTE = 6.; s.D_PANE = 6.; s.D_RODAR = .15
         s.fome_mata = .15; s.FOME_CRIT = 90.; s.agua_mata = .15; s.AGUA_CRIT = 10.; s.KCAL_PANE = 20.
-        s.custo_gene = 0.; s.gene_min = .5; s.custo_suave = False; s.margem_risco = 30.; s.GUINCHO = 0.; s.FUEL_POS_PANE = 15.; s.nevoa = float('inf'); s.k_cego = 2.   # [E63] raio de VISIBILIDADE dos servicos: alem dele a distancia satura (gradiente zero) e o ser tem de LEMBRAR onde viu. inf = mundo onisciente de hoje (identico bit a bit)   # [E61b] guincho cobra dinheiro e deixa o ser no posto com FUEL_POS_PANE (15 = subsidio: 6 panes/vida = vive de guincho);
+        s.custo_gene = 0.; s.gene_min = .5; s.custo_suave = False; s.varredura = 'exata'; s.margem_risco = 30.; s.GUINCHO = 0.; s.FUEL_POS_PANE = 15.; s.nevoa = float('inf'); s.k_cego = 2.   # [E63] raio de VISIBILIDADE dos servicos: alem dele a distancia satura (gradiente zero) e o ser tem de LEMBRAR onde viu. inf = mundo onisciente de hoje (identico bit a bit)   # [E61b] guincho cobra dinheiro e deixa o ser no posto com FUEL_POS_PANE (15 = subsidio: 6 panes/vida = vive de guincho);
         s.amp_preco = .5; s.periodo_preco = 3.   # [E56] precos oscilam +-50 % num ciclo de 3 dias por distrito (so em mapa distinto)        # [E55] cerebro que come: fome sobe x (1 + custo_gene*dof/100), dof = genes alem da espinha com |w| > gene_min (Lei do Metabolismo = AIC; acervo: 'custo e o que seleciona')
         s.preco_L = .3; s.preco_agua = .05; s.preco_comida = 2.; s.HOTEL = 8.; s.preco_oficina = 10.; s.REPARO = 25.
         s.tarifa_base = 3.; s.tarifa_km = .25; s.aluguel = 4.; s.LIMITE_DIVIDA = 60.; s.PERDA_ARMAZ = .15; s.RES_MAX = 120.; s.perda_res = .02/240
@@ -108,6 +108,7 @@ class Campo:
         s.demanda = torch.stack([m.get('demanda', torch.ones_like(m['pmul'])) for m in mapas]); s.fase_preco = torch.stack([m.get('fase_preco', torch.zeros_like(m['pmul'])) for m in mapas])
         s.amp_preco = c.amp_preco if any(m.get('distinto', False) for m in mapas) else 0.; s.pmul = s.pmul0.clone()   # [E56] preco do dia = pmul0 x (1 + amp sin(2pi(dia/3 + fase)))
         s.fase = torch.rand(s.NC, generator=g, device=DEV)[s.cidx]*c.dia
+        if getattr(c, 'varredura', 'exata') == 'grade': s._recalc_grade()   # [chunks]
         s.dirs = DIRS.to(DEV)
         # estado
         s.pos = torch.rand(B, 2, generator=g, device=DEV)*s.L
@@ -139,7 +140,30 @@ class Campo:
     def d_serv(s, t, p):                        # EXATA (so na posicao atual, p (B,2)): raio de uso do servico
         ci = s.cidx; pts = s.serv[t][ci]; msk = s.serv_msk[t][ci]
         d = (p[:, None, :] - pts).norm(dim=-1).masked_fill(~msk, 1e9); return d.min(-1).values
-    def _perto_todos(s, p):                      # ponto mais perto e distancia, por tipo (ordem TIPOS): (B,5,2), (B,5) — 5 varreduras por passo, nao 15
+    KG = 2                                       # [chunks, Leonardo 09-08] candidatos por celula da grade
+    def _recalc_grade(s):
+        """[chunks] para cada celula GRxGR e cada tipo, os KG pontos mais proximos do CENTRO da celula (NC,GR,GR,KG). Custa NC*16k*Nmax uma vez;
+        depois cada ser olha so KG candidatos em vez de Nmax (32) — 16x menos trafego. Erro so quando o ponto mais proximo da posicao nao esta
+        entre os KG mais proximos do centro da celula (celula 1.6 u em L=200): medido em perf_varredura.py."""
+        ax = (torch.arange(GR, device=DEV).float() + .5)*(s.L/GR); gy, gx = torch.meshgrid(ax, ax, indexing='ij'); cel = torch.stack([gx, gy], -1).view(-1, 2)   # (GR*GR,2)
+        s.g_idx = {}
+        for t in TIPOS:
+            pts = s.serv[t]; msk = s.serv_msk[t]                                                        # (NC,N,2), (NC,N)
+            d = (cel[None, :, None, :] - pts[:, None, :, :]).norm(dim=-1).masked_fill(~msk[:, None, :], 1e9)   # (NC,GR*GR,N)
+            s.g_idx[t] = d.topk(s.KG, dim=-1, largest=False).indices.view(s.NC, GR, GR, s.KG)
+    def _perto_todos(s, p):
+        if getattr(s.cfg, 'varredura', 'exata') == 'grade': return s._perto_grade(p)
+        return s._perto_exata(p)
+    def _perto_grade(s, p):                      # [chunks] (B,5,2), (B,5): olha so os KG candidatos da celula do ser
+        ci = s.cidx; ar = torch.arange(p.shape[0], device=DEV); P = []; D = []
+        cx = (p[:, 0]/s.L*GR).long().clamp(0, GR - 1); cy = (p[:, 1]/s.L*GR).long().clamp(0, GR - 1)
+        for t in TIPOS:
+            idx = s.g_idx[t][ci, cy, cx]                                                              # (B,KG)
+            pts = s.serv[t][ci[:, None], idx]                                                          # (B,KG,2)
+            d = (p[:, None, :] - pts).norm(dim=-1); k = d.argmin(-1)
+            P.append(pts[ar, k]); D.append(d[ar, k])
+        return torch.stack(P, 1), torch.stack(D, 1)
+    def _perto_exata(s, p):                      # ponto mais perto e distancia, por tipo (ordem TIPOS): (B,5,2), (B,5) — 5 varreduras por passo, nao 15
         ci = s.cidx; ar = torch.arange(p.shape[0], device=DEV); P = []; D = []
         for t in TIPOS:
             pts = s.serv[t][ci]; msk = s.serv_msk[t][ci]
@@ -161,6 +185,7 @@ class Campo:
         if not hasattr(s, 'g_pref'): s.g_pref = torch.Generator(device=DEV); s.g_pref.manual_seed(99991 + s.NC)   # gerador PROPRIO (semente fixa, sem ler tensor): nao consome o fluxo do mundo
         novo = torch.rand(NC, 2, generator=s.g_pref, device=DEV)*s.L
         s.serv[t][ar, k] = torch.where(faz[:, None], novo, s.serv[t][ar, k]); s.serv_msk[t][ar, k] = msk[ar, k] | faz
+        if getattr(s.cfg, 'varredura', 'exata') == 'grade': s._recalc_grade()   # [chunks] obra nova muda os vizinhos (1x por dia por mapa: barato)
     def hora(s):  return ((s.t.float() + s.fase) % s.cfg.dia)/s.cfg.dia*24.
     def noite_(s):
         h = s.hora(); return (h >= 22.) | (h < 6.)
