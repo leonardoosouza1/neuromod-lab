@@ -835,3 +835,11 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
   guincho 10 + 5 L, luz de reserva, 5 sementes: linear/reflexo/bilinear do
   zero → bilinear e só-camadas semeados → diagnóstico → prefeito. Predição
   87. Atrás do E61.
+- **22:57 E60 reset com escala (mundo pobre, semeados do linear, 120 ger.):**
+  linear 0.81 · **completo 0.78** · só-camadas 0.81 · bilinear auto+cons
+  0.82 — todos iguais (±3 pp). Predição 85 ✓: o "só camadas 0.58" de ontem
+  era artefato de escala; nenhuma peça rende neste mundo sem um sentido de
+  risco e um mundo onde a pane custe. Custo 0.3 caiu por bug meu: o
+  comentário do patch do guincho engoliu `amp_preco`/`periodo_preco` na
+  mesma linha (AttributeError); restaurado, checado instanciando o Campo
+  distinto. Filas relançadas: E61 → E61b → custo do E60.
