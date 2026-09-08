@@ -798,3 +798,16 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
   agora com fundamento:** mundo distinto pobre, semeados do linear: linear,
   bilinear auto+cons, só-camadas, completo (todos com escala) → os mesmos
   com custo de gene 0.3. Atrás do E59c (bilinear semeado, diag, prefeito).
+- **21:34 E59c bilinear semeado COM escala (mundo pobre):** cheio 0.77 / 18.7 /
+  6.5 panes · auto+cons 0.82 / 6.9 — vs linear 0.80 / 6.7. Panes iguais:
+  predição 84(b) ✗. Genes (84c): M[autonomia, d_posto] = −4.0 / +0.6 / −0.6
+  — moveu, mas com o sinal ERRADO para procurar o posto. Mecanismo: a
+  autonomia é POSITIVA quase sempre (tanque/consumo ≈ 166 u contra d_posto
+  ≈ 30 → +1.4) e só cruza zero quando já não há como chegar; um único gene
+  M×autonomia então age o tempo todo como peso constante em d_posto e só
+  inverte tarde demais. Um "gene de procurar o posto quando a autonomia
+  aperta" exige um sentido que seja ZERO enquanto está seguro e cresça
+  quando a margem some: `e_risco = relu(d_posto + 30 − alcance)/100` — a
+  luz de reserva do painel. Sentido novo muda NF (invalida os JSONs de
+  semeadura de hoje): entra amanhã, junto do reset; hoje a fila segue com o
+  prefeito (ser bilinear) e o E60 (reset com escala).
