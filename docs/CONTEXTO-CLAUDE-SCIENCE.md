@@ -70,3 +70,14 @@ escala** (ruído de semeadura não pode afogar a espinha). Negativo com mecanism
 
 Repositório privado `leonardoosouza1/neuromod-lab`; docs em `docs/44-campo.md` (diário), `docs/47-relatorio-2026-09-07.md`,
 `PREDICOES.md` (ledger), `docs/acervo/` (compêndios de neurociência/física/biologia que já lemos).
+
+## Atualização 2026-09-08 19:10 (operador GPU)
+- Escada de névoa (∞/25/15), custo suave, sensores de risco/autonomia e **busca ×8** (P=2048, 300 ger., paciência 60)
+  todos fecharam em EMPATE com a espinha linear (±5 pp; MDE 9 pp; q8: linear 0.82 vs bilinear-risco 0.85, p=0.44,
+  ambos param na ger. 60 sem melhorar o semeado). Ledger #90–91 ✗. Relatório: `docs/48-relatorio-2026-09-08.md`.
+- Conclusão registrada: no táxi, seleção pura não compõe "dirigir E abastecer a tempo" em nenhuma configuração;
+  o que falta é o **sinal de aprendizado** (professor/gradiente), não peça, mundo, régua ou orçamento.
+- Linha "peça que paga no táxi" proposta como fechada; táxi fica como bancada de régua/portões/prefeito.
+  Perguntas abertas para o CS: (a) um teste que separe "seleção não compõe" de "a régua não vê" (ex.: fitness
+  moldada por etapas, ou professor de um passo + seleção); (b) critério de parada para declarar uma linha morta.
+- Fila `_nmd/` VAZIA e daemon ativo: qualquer pedido dentro da whitelist roda em ~1 h por braço (P=512, L=200).
