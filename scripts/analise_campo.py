@@ -31,8 +31,11 @@ def carrega(caminho):
         bracos[nome] = v
     return d, bracos
 
-def analisa(caminho, ref=None, metrica='mortos'):
+def analisa(caminho, ref=None, metrica='mortos', mais=()):
     d, bracos = carrega(caminho)
+    for outro in mais:   # [E65] bracos de OUTROS arquivos (mesmas sementes/mundos de teste) entram pareados, com o nome do arquivo
+        tag = os.path.basename(outro).replace('e43', '').replace('.json', '')
+        for nome, v in carrega(outro)[1].items(): bracos[f'{nome} @{tag}'] = v
     chave = f'{metrica}_por_semente'
     tem = {k: np.array(v[chave]) for k, v in bracos.items() if chave in v}
     if not tem:
@@ -63,7 +66,8 @@ def analisa(caminho, ref=None, metrica='mortos'):
 if __name__ == '__main__':
     ap = argparse.ArgumentParser()
     ap.add_argument('alvo'); ap.add_argument('--ref', default=None)
-    ap.add_argument('--metrica', default='mortos', choices=['mortos', 'fit'])
+    ap.add_argument('--metrica', default='mortos', choices=['mortos', 'fit', 'panes', 'ent', 'dinh', 'res'])
+    ap.add_argument('--mais', nargs='*', default=(), help='[E65] outros JSONs com as MESMAS sementes: bracos entram pareados')
     a = ap.parse_args()
     alvos = sorted(glob.glob(os.path.join(a.alvo, 'e4*.json'))) if os.path.isdir(a.alvo) else [a.alvo]
-    for c in alvos: analisa(c, a.ref, a.metrica)
+    for c in alvos: analisa(c, a.ref, a.metrica, a.mais)
