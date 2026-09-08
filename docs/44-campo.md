@@ -864,3 +864,11 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
   risco é ZERO enquanto seguro, então a semeadura não faz ruído e a escala
   pode ser 1. **E61c**: bilinear risco (esc 1) semeado do linear-com-guincho
   (5 sementes) → diagnóstico → prefeito → só-camadas semeado → portão.
+- **2026-09-08 11:05 (máquina desligada ~23:56 → 10:21):** o E61c (risco esc 1,
+  10 dias, 5 sementes) não terminou antes do desligamento; gatilho do
+  protocolo rápido não disparou. Relançado direto o **E61d rápido** (5 dias,
+  60 ger., R=2, paciência 20, 5 sementes; semeados do linear-com-guincho:
+  linear, bilinear risco esc 1, esc 3, só-camadas → diagnóstico esc 3 →
+  prefeito) e o custo do E60 atrás. Registrado no lab.py: a mutação corta os
+  genes em ±5 — o gene de procurar o posto precisa de |M·esc| ≈ 12 (por isso
+  o braço esc 3).
