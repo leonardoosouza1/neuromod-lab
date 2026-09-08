@@ -31,7 +31,7 @@ class CfgCampo:
         s.calor_sobe = .15; s.calor_desce = .6      # sustentavel a ~70% de rodagem (0.15*1.85*.7 = .19 sobe vs .6*.3 = .18 esfria); direto: 30 -> 92 em ~220 passos
         s.CALOR_MAX = 92.; s.D_QUENTE = 6.; s.D_PANE = 6.; s.D_RODAR = .15
         s.fome_mata = .15; s.FOME_CRIT = 90.; s.agua_mata = .15; s.AGUA_CRIT = 10.; s.KCAL_PANE = 20.
-        s.custo_gene = 0.; s.gene_min = .5; s.margem_risco = 30.; s.amp_preco = .5; s.periodo_preco = 3.   # [E56] precos oscilam +-50 % num ciclo de 3 dias por distrito (so em mapa distinto)        # [E55] cerebro que come: fome sobe x (1 + custo_gene*dof/100), dof = genes alem da espinha com |w| > gene_min (Lei do Metabolismo = AIC; acervo: 'custo e o que seleciona')
+        s.custo_gene = 0.; s.gene_min = .5; s.margem_risco = 30.; s.GUINCHO = 0.; s.FUEL_POS_PANE = 15.   # [E61b] guincho cobra dinheiro e deixa o ser no posto com FUEL_POS_PANE (15 = subsidio: 6 panes/vida = vive de guincho); s.amp_preco = .5; s.periodo_preco = 3.   # [E56] precos oscilam +-50 % num ciclo de 3 dias por distrito (so em mapa distinto)        # [E55] cerebro que come: fome sobe x (1 + custo_gene*dof/100), dof = genes alem da espinha com |w| > gene_min (Lei do Metabolismo = AIC; acervo: 'custo e o que seleciona')
         s.preco_L = .3; s.preco_agua = .05; s.preco_comida = 2.; s.HOTEL = 8.; s.preco_oficina = 10.; s.REPARO = 25.
         s.tarifa_base = 3.; s.tarifa_km = .25; s.aluguel = 4.; s.LIMITE_DIVIDA = 60.; s.PERDA_ARMAZ = .15; s.RES_MAX = 120.; s.perda_res = .02/240
         s.REFEICAO = 90.; s.pena_morte = 5.; s.fitness = 'sobrevive'
@@ -244,7 +244,7 @@ class Campo:
         # pane: reboque ate o posto mais perto, cobra calorias da reserva -> vida
         s.avar += pane.float(); s.av_fuel += pane.float(); s.tpar = torch.where(pane, torch.full_like(s.tpar, 18.), s.tpar)
         ci = s.cidx; posto_pos = s._ptos[:, 0]                                    # [auditoria 7] posto mais perto ja calculado no obs() (quem entra em pane nao moveu)
-        s.pos = torch.where(pane[:, None], posto_pos, s.pos); s.fuel = torch.where(pane, torch.full_like(s.fuel, 15.), s.fuel)
+        s.pos = torch.where(pane[:, None], posto_pos, s.pos); s.fuel = torch.where(pane, torch.full_like(s.fuel, c.FUEL_POS_PANE), s.fuel); s.dinh = s.dinh - c.GUINCHO*pane.float()   # [E61b] guincho paga
         kcal = torch.minimum(s.res, torch.full_like(s.res, c.KCAL_PANE)); s.res = s.res - kcal*pane.float()
         dn = c.D_PANE*pane.float() + (c.KCAL_PANE - kcal)*pane.float()
         # calor: desliga

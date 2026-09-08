@@ -823,3 +823,15 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
   artefatos de limiar (aliq_frente/casa_frente quase não variam entre as 9
   opções; fome/fadiga mudam devagar em 240 ticks) — tolerados no veredito.
   E60 (reset com escala) em curso.
+- **22:15 Leonardo: "demora pra quase nenhum resultado, me cheira a bug".**
+  Velocidade conferida: 7 min por braço (linear 406 s, bilinear 443 s),
+  compilado, GPU 99 %; lento porque 8k seres/passo é pouco (preso em
+  lançamento de kernel: 1.4 ms/passo; 8× seres = 2× tempo) → E61b roda 5
+  sementes pelo mesmo tempo. O faro dele achou outra coisa: **a pane é
+  subsídio** — guincho grátis até o posto + 15 L; a 8 kcal custa 14 de vida
+  por algo que valeria 4.5 de dinheiro + transporte; 6 panes/vida = o ser
+  vive de guincho e a evolução aceita. Regra de mundo: `GUINCHO` (dinheiro)
+  e `FUEL_POS_PANE` (litros ao chegar), defaults iguais ao de antes; E61b =
+  guincho 10 + 5 L, luz de reserva, 5 sementes: linear/reflexo/bilinear do
+  zero → bilinear e só-camadas semeados → diagnóstico → prefeito. Predição
+  87. Atrás do E61.
