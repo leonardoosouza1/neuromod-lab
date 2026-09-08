@@ -42,5 +42,12 @@ for k, nome in enumerate(NOMES_F[:NF]):
         if dpos <= 1. and dserv <= .005: invisiveis.setdefault(n, []).append(nome)
     print(linha, flush=True)
 for n, ls in invisiveis.items(): print(f"INVISIVEL em {n}: {ls}", flush=True)
+# TESTE DE ESCALA (licao do E59b): semear = espinha + ruido sigma .2 em TODOS os genes novos; esse ruido nao pode afogar a espinha
+# (mudar > 30 % das decisoes de movimento). Se muda, o bloco novo precisa de escala.
+Wl = torch.randn(12, Linear.NP, device=DEV)*.5; p_lin, e_lin = roda(Linear, Wl)
+for n, A in ARQS[1:]:
+    W = torch.zeros(12, A.NP, device=DEV); W[:, :Linear.NP] = Wl; W[:, Linear.NP:] = torch.randn(12, A.NP - Linear.NP, device=DEV)*.2
+    p, e = roda(A, W); frac = float((e != e_lin).float().mean())
+    print(f"escala {n:<20}: ruido de semeadura (sigma .2 nos {A.NP - Linear.NP} genes novos) muda {100*frac:.0f}% das decisoes {'OK' if frac < .3 else 'AFOGA A ESPINHA'}", flush=True)
 esperado_linear = set(NOMES_CORPO) - {'bias'}
 print('PORTAO SENTIDOS', 'ok' if not invisiveis.get('Bilinear') and not invisiveis.get('Completo') else 'FALHOU (Bilinear/Completo com sentido invisivel)', '| restrito (auto+cons) so ve os seus: ok' if set(invisiveis.get('Bilinear auto+cons', [])) <= set(NOMES_F[:NF]) - {'e_autonomia', 'e_consumo'} else '| restrito FALHOU', '| Linear corpo invisivel na direcao (achado 84):', set(invisiveis.get('Linear', [])) >= esperado_linear - {'e_tem_pax'}, flush=True)
