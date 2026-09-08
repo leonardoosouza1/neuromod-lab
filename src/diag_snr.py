@@ -24,4 +24,5 @@ for sg in a.sigmas:
     r = dict(corr=cors, corr_media=sum(cors)/len(cors), dp_entre_individuos=dp_ind, dp_entre_mundos=dp_mundo, fit_media=float(F.mean()), elite_15pct_mantida=sobre)
     res['sigmas'][str(sg)] = r
     print(f'  sigma {sg:.2f} | corr entre mundos {r["corr_media"]:+.3f} {[round(c,3) for c in cors]} | DP entre individuos {dp_ind:.3f} vs DP do MESMO individuo entre mundos {dp_mundo:.3f} | elite 15% que continua elite noutro mundo {[round(x,2) for x in sobre]} (acaso = 0.15) | fit media {r["fit_media"]:+.2f}', flush=True)
+    res['sigmas'][str(sg)]['F'] = F.cpu().tolist()   # [painel] matriz (n_mundos, P) de notas, para o grafico mundo A x mundo B
 json.dump(res, open(os.path.join(a.out, f'diag_snr{a.tag}.json'), 'w'), indent=1)
