@@ -43,7 +43,7 @@ def main(a):
 if __name__ == '__main__':
     ap = argparse.ArgumentParser()
     ap.add_argument('--preset', default='fumaca', choices=tuple(PRESETS)); ap.add_argument('--L', type=float, default=200.)
-    ap.add_argument('--fitness', default='bemestar', choices=('padrao', 'sobrevive', 'bemestar')); ap.add_argument('--pena', type=float, default=5.); ap.add_argument('--cada', type=int, default=5)
+    ap.add_argument('--fitness', default='bemestar', choices=('padrao', 'sobrevive', 'bemestar', 'riqueza')); ap.add_argument('--pena', type=float, default=5.); ap.add_argument('--cada', type=int, default=5)
     ap.add_argument('--out', default='/media/llm-data/universe-runs/neuromod-lab-taxi/e44'); ap.add_argument('--so', nargs='*', default=None)
     ap.add_argument('--seeds', type=int, nargs='*', default=None); ap.add_argument('--G', type=int, default=None); ap.add_argument('--teste-seed', type=int, default=1000); ap.add_argument('--tag', default=''); ap.add_argument('--dias', type=float, default=10.); ap.add_argument('--arq', default='produto (need x dist, portao)', help='braco do e43 usado como ser'); ap.add_argument('--mundo', default='padrao', choices=('padrao', 'distinto')); ap.add_argument('--guincho', type=float, default=0., help='[E61b] preco do guincho na pane'); ap.add_argument('--fuel-pane', type=float, default=15., help='[E61b] litros com que o guincho deixa o ser no posto'); ap.add_argument('--dinh0', type=float, default=20., help='dinheiro inicial (10 = pobre de verdade: 5 refeicoes)'); ap.add_argument('--kcal-pane', type=float, default=20.)
     main(ap.parse_args())

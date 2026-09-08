@@ -376,6 +376,8 @@ def _fit(m, cfg, T):
         fit = vivo*(1. + m.vida/100. + (m.dinh/100.).clamp(0., 1.) + 0.05*m.ent + 0.5*m.res/cfg.RES_MAX) - cfg.pena_morte*morto + tarde
     elif cfg.fitness == 'bemestar':
         fit = m.bem_soma/float(T) + 0.05*m.ent - cfg.pena_morte*morto + tarde
+    elif cfg.fitness == 'riqueza':   # [E62] bem-estar + RENDA gerada (tarifas recebidas, m.rec): trabalhar conta sem virar 'entregas' — a pedra rende 0
+        fit = m.bem_soma/float(T) + m.rec/300. - cfg.pena_morte*morto + tarde
     else:   # padrao (entregas)
         fit = m.ent - 0.3*m.avar - cfg.pena_morte*morto + tarde
     return fit
