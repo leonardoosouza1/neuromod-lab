@@ -1704,7 +1704,7 @@ def evoluir(Arq, cidades, cfg, P=512, ger=25, T=1500, seed=0, elite=.15,
 
 
 def evoluir_sementes(Arq, cidades, cfg, P=512, ger=25, T=1500, seeds=(0,1,2),
-                     elite=.15, verbose=True, R=1, cfg_gen=None, W0=None, sigma0=.2, avaliar_fn=None):
+                     elite=.15, verbose=True, R=1, cfg_gen=None, W0=None, sigma0=.2, avaliar_fn=None, paciencia=None):
     """MEGA-LOTE de sementes: as S populacoes (uma por semente de evolucao)
     empilhadas num Lote so — B cresce S vezes e sai da regiao limitada por
     LANCAMENTO de kernel (VRAM vazia + GPU 'ocupada' = kernels pequenos).
@@ -1754,6 +1754,11 @@ def evoluir_sementes(Arq, cidades, cfg, P=512, ger=25, T=1500, seeds=(0,1,2),
         if verbose and it % 5 == 0:
             linha = ' '.join(f'{hist[sd][-1]:>8.2f}' for sd in seeds)
             print(f'  ger {it:>3} | {linha}   (melhor por semente)', flush=True)
+        if paciencia and it >= paciencia:   # [E61d] parada antecipada: o melhor (media das sementes) nao subiu > 1 % em `paciencia` geracoes
+            agora = sum(hist[sd][-1] for sd in seeds)/len(seeds); antes = sum(max(hist[sd][:-paciencia]) for sd in seeds)/len(seeds)
+            if agora <= antes + 0.01*abs(antes) + 1e-6:
+                if verbose: print(f'  parada antecipada na ger {it} (sem melhora em {paciencia} ger.)', flush=True)
+                break
     Wv = W.view(S, P, NPQ)
     return {sd: (Wv[si][0], hist[sd], snaps[sd]) for si, sd in enumerate(seeds)}
 
