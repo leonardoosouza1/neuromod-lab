@@ -877,3 +877,5 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
   0.78 / 0.81). Custo só piora: nenhuma peça paga (predição 85 ✓ na
   cláusula do custo). Bilinear auto+cons com custo rodando; honesto de 10
   dias (árbitro do 0.46) em seguida.
+  Bilinear auto+cons com custo: 0.82 (igual sem custo: 14 genes custam pouco
+  e não rendem). E60 fechado; honesto de 10 dias (E61e) começou 12:13.
