@@ -565,12 +565,12 @@ class Bilinear(Linear):
     O ser linear nunca 'procura o posto': abastece quando passa perto. E' a causa estrutural das panes.
     Bilinear: peso de cada sentido de opcao modulado pelo corpo — nota += sum_k sum_f corpo_k * M[k,f] * F_op[f].
     'Autonomia negativa => peso de d_posto negativo' e' UM gene (M[autonomia, d_posto] < 0). Nasce transparente (M = 0)."""
-    nome = 'bilinear-campo'; NOP = len(NOMES_OP); NC_ = len(NOMES_CORPO); NP = Linear.NP + NC_*NOP
+    nome = 'bilinear-campo'; NOP = len(NOMES_OP); NC_ = len(NOMES_CORPO); NP = Linear.NP + NC_*NOP; ESC = .01   # [E59c] escala: corpo (ate 4) x distancia (ate 200) = 800 por gene; com ESC .01 um gene de 0.2 vale ~1.6 pontos (a escala do linear), senao o ruido de semeadura (sigma .2 x 160 genes) destroi a espinha
     def reset(s, m, W):
         s.W = W; s.M = W[:, Linear.NP:Linear.NP + s.NC_*s.NOP].view(-1, s.NC_, s.NOP)
     def extra(s, m, W, F):
         corpo = F[:, G - 1, s.NOP:]                                          # (B,NC_) sentidos do corpo (iguais nas opcoes)
-        Wm = torch.einsum('bk,bkf->bf', corpo, s.M)                          # (B,NOP) pesos de opcao modulados pelo estado
+        Wm = torch.einsum('bk,bkf->bf', corpo, s.M)*s.ESC                    # (B,NOP) pesos de opcao modulados pelo estado
         return torch.einsum('bgf,bf->bg', F[:, :, :s.NOP], Wm)
 
 def fabrica_bilinear(sentidos):
@@ -582,6 +582,6 @@ def fabrica_bilinear(sentidos):
             s.W = W; s.M = W[:, Linear.NP:Linear.NP + len(idx)*s.NOP].view(-1, len(idx), s.NOP)
         def extra(s, m, W, F):
             corpo = F[:, G - 1, s.NOP:].index_select(1, s.IDX)
-            Wm = torch.einsum('bk,bkf->bf', corpo, s.M)
+            Wm = torch.einsum('bk,bkf->bf', corpo, s.M)*s.ESC
             return torch.einsum('bgf,bf->bg', F[:, :, :s.NOP], Wm)
     return B
