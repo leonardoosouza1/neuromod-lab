@@ -31,7 +31,7 @@ class CfgCampo:
         s.calor_sobe = .15; s.calor_desce = .6      # sustentavel a ~70% de rodagem (0.15*1.85*.7 = .19 sobe vs .6*.3 = .18 esfria); direto: 30 -> 92 em ~220 passos
         s.CALOR_MAX = 92.; s.D_QUENTE = 6.; s.D_PANE = 6.; s.D_RODAR = .15
         s.fome_mata = .15; s.FOME_CRIT = 90.; s.agua_mata = .15; s.AGUA_CRIT = 10.; s.KCAL_PANE = 20.
-        s.custo_gene = 0.; s.gene_min = .5; s.margem_risco = 30.; s.GUINCHO = 0.; s.FUEL_POS_PANE = 15.; s.nevoa = float('inf'); s.k_cego = 2.   # [E63] raio de VISIBILIDADE dos servicos: alem dele a distancia satura (gradiente zero) e o ser tem de LEMBRAR onde viu. inf = mundo onisciente de hoje (identico bit a bit)   # [E61b] guincho cobra dinheiro e deixa o ser no posto com FUEL_POS_PANE (15 = subsidio: 6 panes/vida = vive de guincho);
+        s.custo_gene = 0.; s.gene_min = .5; s.custo_suave = False; s.margem_risco = 30.; s.GUINCHO = 0.; s.FUEL_POS_PANE = 15.; s.nevoa = float('inf'); s.k_cego = 2.   # [E63] raio de VISIBILIDADE dos servicos: alem dele a distancia satura (gradiente zero) e o ser tem de LEMBRAR onde viu. inf = mundo onisciente de hoje (identico bit a bit)   # [E61b] guincho cobra dinheiro e deixa o ser no posto com FUEL_POS_PANE (15 = subsidio: 6 panes/vida = vive de guincho);
         s.amp_preco = .5; s.periodo_preco = 3.   # [E56] precos oscilam +-50 % num ciclo de 3 dias por distrito (so em mapa distinto)        # [E55] cerebro que come: fome sobe x (1 + custo_gene*dof/100), dof = genes alem da espinha com |w| > gene_min (Lei do Metabolismo = AIC; acervo: 'custo e o que seleciona')
         s.preco_L = .3; s.preco_agua = .05; s.preco_comida = 2.; s.HOTEL = 8.; s.preco_oficina = 10.; s.REPARO = 25.
         s.tarifa_base = 3.; s.tarifa_km = .25; s.aluguel = 4.; s.LIMITE_DIVIDA = 60.; s.PERDA_ARMAZ = .15; s.RES_MAX = 120.; s.perda_res = .02/240
@@ -371,8 +371,12 @@ def rodar(Arq, W, mapas, cfg, T, seed, R=1):
     return m
 
 def dof_de(Wb, cfg):
-    """graus de liberdade LIGADOS alem da espinha linear: genes com |w| > gene_min a partir de Linear.NP (Linear: 0)."""
-    return (Wb[:, Linear.NP:].abs() > cfg.gene_min).float().sum(1) if Wb.shape[1] > Linear.NP else torch.zeros(Wb.shape[0], device=DEV)
+    """graus de liberdade LIGADOS alem da espinha linear: genes com |w| > gene_min a partir de Linear.NP (Linear: 0).
+    custo_suave [CS 09-08]: sum w^2/(w^2 + w0^2) — mesmo AIC quando |w| >> w0, mas sem o degrau em 0.5 (o degrau era um vale: paga o imposto inteiro antes de render)."""
+    if Wb.shape[1] <= Linear.NP: return torch.zeros(Wb.shape[0], device=DEV)
+    w = Wb[:, Linear.NP:]
+    if getattr(cfg, 'custo_suave', False): w2 = w*w; return (w2/(w2 + cfg.gene_min**2)).sum(1)
+    return (w.abs() > cfg.gene_min).float().sum(1)
 
 def _fit(m, cfg, T):
     morto = (m.vida <= 0).float(); vivo = 1. - morto

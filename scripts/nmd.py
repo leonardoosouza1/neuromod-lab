@@ -37,7 +37,7 @@ PY    = '/home/leonardo/projects/LLM/.venv-rocm/bin/python'
 BASE  = '/media/llm-data/universe-runs/neuromod-lab-taxi'
 SPOOL = os.path.join(BASE, '_nmd')
 
-SCRIPTS = {'rodar', 'e43_campo', 'e44_prefeito', 'diag_oraculo', 'autopsia',
+SCRIPTS = {'rodar', 'e43_campo', 'e44_prefeito', 'diag_oraculo', 'autopsia', 'testes_campo', 'testes_bilinear', 'testes_completo',
            'retrato_cerebro', 'base_fechada', 'ablacao_mem', 'testes', 'testes_sentidos'}
 ENVS    = {'NM_RISCO', 'NM_COMPILE', 'HSA_OVERRIDE_GFX_VERSION', 'OMP_NUM_THREADS',
            'TORCHINDUCTOR_COMPILE_THREADS', 'MKL_NUM_THREADS'}
