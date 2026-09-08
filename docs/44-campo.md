@@ -872,3 +872,8 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
   prefeito) e o custo do E60 atrás. Registrado no lab.py: a mutação corta os
   genes em ±5 — o gene de procurar o posto precisa de |M·esc| ≈ 12 (por isso
   o braço esc 3).
+- **2026-09-08 12:08 E60 custo de gene λ = 0.3 (mundo pobre, semeados):**
+  completo 0.92 / 15.4 / 5.4 panes · só-camadas 0.92 / 15.5 / 4.1 (sem custo:
+  0.78 / 0.81). Custo só piora: nenhuma peça paga (predição 85 ✓ na
+  cláusula do custo). Bilinear auto+cons com custo rodando; honesto de 10
+  dias (árbitro do 0.46) em seguida.
