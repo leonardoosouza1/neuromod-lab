@@ -843,3 +843,10 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
   comentário do patch do guincho engoliu `amp_preco`/`periodo_preco` na
   mesma linha (AttributeError); restaurado, checado instanciando o Campo
   distinto. Filas relançadas: E61 → E61b → custo do E60.
+- **23:23 E61 luz de reserva, do zero (mundo pobre, guincho grátis):** linear
+  0.86 / 6.4 panes (cego ao corpo, esperado) · reflexo 0.80 / 6.2 · bilinear
+  cheio 0.80 / 6.3. A luz sozinha não corta panes: ela acende com ~18 L (60
+  u de alcance, posto a ~30 u) — dá tempo, mas a pane custa só 14 de vida e
+  o guincho é grátis; a seleção por "procurar o posto" é fraca. Bilinear
+  semeado e diagnóstico em seguida; o teste com dentes é o E61b (guincho 10
+  + 5 L, 5 sementes).
