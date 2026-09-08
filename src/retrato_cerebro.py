@@ -57,6 +57,34 @@ def main():
             zk = rec['z'][:, :, k].flatten()[msk]; le[f'z{k}'] = {v: round(corr(zk, rec[v].flatten()[msk]), 3) for v in ('fuel', 'fome', 'agua', 'dinh', 'pax')}
         for k in range(Cerebro.H):
             hk = rec['h'][:, :, k].flatten()[msk]; le[f'h{k}'] = {v: round(corr(hk, rec[v].flatten()[msk]), 3) for v in ('fuel', 'fome', 'agua', 'dinh', 'pax')}
+        # [Leonardo 09-08: 'vi correlacao entre linhas'] quem LIDERA quem: correlacao com atraso (unidade vs sentido, -60..+60 ticks) no ser que viveu mais;
+        # e media disparada por evento (abastecimento / embarque): o que o cerebro faz nos 40 ticks antes e depois.
+        def _corr(x, y):
+            x = x - x.mean(); y = y - y.mean(); d = (x.norm()*y.norm()).clamp(min=1e-6); return float((x*y).sum()/d)
+        T0 = int(tv[b0]); atraso = {}
+        series = {f'z{k}': rec['z'][:T0, b0, k] for k in range(Cerebro.K)}
+        series.update({f'h{k}': rec['h'][:T0, b0, k] for k in range(Cerebro.H)})
+        if 'gate' in rec: series.update({f'gate{k}': rec['gate'][:T0, b0, k] for k in range(rec['gate'].shape[2])}); series['reflexo'] = rec['ref'][:T0, b0]
+        sent = {v: rec[v][:T0, b0] for v in ('fuel', 'fome', 'dinh', 'pax')}
+        for u, x in series.items():
+            if float(x.std()) < 1e-6: continue
+            atraso[u] = {}
+            for v, y in sent.items():
+                melhor = (0, 0.)
+                for L_ in range(-60, 61, 10):
+                    if L_ >= 0: c = _corr(x[:T0 - L_], y[L_:]) if T0 - L_ > 50 else 0.    # unidade em t vs sentido em t+L: L>0 = unidade LIDERA
+                    else: c = _corr(x[-L_:], y[:T0 + L_]) if T0 + L_ > 50 else 0.
+                    if abs(c) > abs(melhor[1]): melhor = (L_, c)
+                atraso[u][v] = dict(atraso=melhor[0], corr=round(melhor[1], 3))
+        # eventos: abastecimento = tanque sobe > 15 num tick; embarque = pax 0 -> 1
+        f_ = rec['fuel'][:T0, b0]; px_ = rec['pax'][:T0, b0]
+        ev = {'abastece': (f_[1:] - f_[:-1] > 15.).nonzero().flatten() + 1, 'embarca': ((px_[1:] > .5) & (px_[:-1] < .5)).nonzero().flatten() + 1}
+        psth = {}
+        for nome_ev, idx in ev.items():
+            idx = [int(i) for i in idx if 40 <= int(i) < T0 - 40]
+            if not idx: continue
+            psth[nome_ev] = dict(n=len(idx), curvas={u: torch.stack([x[i - 40:i + 40] for i in idx]).mean(0).tolist() for u, x in list(series.items())[:8]},
+                                 tanque=torch.stack([f_[i - 40:i + 40] for i in idx]).mean(0).tolist())
         # peso de cada parte na decisao: desvio da contribuicao (ticks vivos)
         parte = {k: float(rec[k].flatten()[msk].std()) for k in ('lin', 'rap', 'len')}
         # ablacao
@@ -70,7 +98,9 @@ def main():
             Wa = W.clone()
             for i0, i1 in zera: Wa[i0:i1] = 0.
             med = medidas(A, Wa, teste, cfg, T=T, seed=7777, R=1, copias=128); abl[nome] = dict(mortos=med['mortos'], ent=med['ent'], panes=med['panes'])
-        R[sd] = dict(eeg=eeg, le=le, parte=parte, blocos=blocos(W, A), tau=[float(x) for x in ag.tau[0]], ablacao=abl, ser=b0, t_vida=int(tv[b0]))
+        R[sd] = dict(eeg=eeg, le=le, parte=parte, blocos=blocos(W, A), tau=[float(x) for x in ag.tau[0]], ablacao=abl, ser=b0, t_vida=int(tv[b0]), atraso=atraso, psth=psth)
+        lid = [(u, v, a['atraso'], a['corr']) for u, d in atraso.items() for v, a in d.items() if a['atraso'] > 0 and abs(a['corr']) > .3]
+        print('   unidades que LIDERAM um sentido (atraso > 0, |corr| > .3):', lid[:8] if lid else 'nenhuma (tudo espelho ou atrasado)', flush=True)
         print(f'seed {sd}: tau {[round(x,1) for x in R[sd]["tau"]]} | desvio das partes lin {parte["lin"]:.3f} rap {parte["rap"]:.3f} len {parte["len"]:.3f} | ablacao ' +
               ' · '.join(f'{k}: {v["mortos"]:.2f}/{v["panes"]:.1f}' for k, v in abl.items()), flush=True)
         for u, c in le.items(): print(f'   {u} le: ' + ' '.join(f'{v} {r:+.2f}' for v, r in c.items()), flush=True)
