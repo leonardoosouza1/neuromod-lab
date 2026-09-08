@@ -774,3 +774,15 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
   auto+consumo do zero (pobre) → bilineares semeados → diagnóstico →
   prefeito com ser bilinear. Predição 84 vale para o E59b; critério extra:
   ent ≥ 15 (senão é pedra).
+- **21:11 E59b, mundo pobre:** linear 0.80 / 18.6 / 6.7 panes · reflexo 0.79
+  · bilinear auto+cons do zero 0.93 · **bilineares semeados 0.91 / 0.91** —
+  piores que a espinha de onde nasceram. Causa: escala. O termo corpo×opção
+  multiplica corpo (até 4) por distância (até 200): um gene de 0.2 (o ruído
+  de semeadura) vale ~160 pontos de nota, contra ~100 do linear inteiro; 20–
+  160 genes assim afogam a espinha e a evolução não os encolhe a tempo.
+  Portão de sensibilidade não pega isso (mede "muda?", não "quanto"). Escala
+  .01 no termo (gene 0.2 ≈ 1.6 pontos). **E59c**: portões → bilineares
+  semeados com escala → diagnóstico → prefeito. Diagnóstico do semeado sem
+  escala (s0): 4.3 panes, morre de fome 57 % + dívida 36 %: o ruído tirou o
+  ser da rota. Lição pro portão: acrescentar teste de ESCALA (perturbação σ
+  .2 num bloco novo não pode mudar > 30 % das decisões).
