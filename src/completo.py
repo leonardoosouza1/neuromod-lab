@@ -60,14 +60,17 @@ class SerCompleto(Cerebro):
         s.dn = m.distrito(m.pos).clamp(max=DMAX-1)
         return s.MEM.gather(1, s.dn[:, None, None].expand(-1, 1, NM)).squeeze(1)*s.g_hip           # (B,3) memoria do distrito atual x ganho
     def extra(s, m, W, F):
-        sc = Cerebro.extra(s, m, W, F)                                                                  # rapida + lenta
-        gf = s._gate(m).gather(1, s.IDXG); sc = sc + torch.einsum('bgf,bf->bg', F, W[:, :NF]*(gf - 1.))   # talamo: F@(W*(gate-1))
-        mem = s._mem(m)                                                                                  # (define s.dn)
+        # [perfil 09-08: 12 bmm minusculos/passo] soma os vetores de peso por ser ANTES de multiplicar por F: 1 bmm em vez de ~10.
+        s.corpo = F[:, G - 1, len(NOMES_OP):]
+        h = torch.relu(torch.einsum('bgf,bhf->bgh', F, s.U) + s.bU[:, None, :]); s.h = h                     # rapida (unico bmm por opcao)
+        Wtot = torch.einsum('bk,bkf->bf', s.z, s.M)*s.ESC                                                   # lenta: pesos modulados pelo estado
+        gf = s._gate(m).gather(1, s.IDXG); Wtot = Wtot + W[:, :NF]*(gf - 1.)                                # talamo
+        mem = s._mem(m)                                                                                     # (define s.dn)
         delta = s.DLT.gather(1, s.dn[:, None, None].expand(-1, 1, len(IDX_CORTEX))).squeeze(1)
-        sc = sc + torch.einsum('bgf,bf->bg', F.index_select(2, s.IDXC), W[:, s.IDXC]*delta)               # cortex por distrito
-        Wm = torch.einsum('bk,bkf->bf', mem, s.M_h)*Cerebro.ESC; sc = sc + torch.einsum('bgf,bf->bg', F, Wm)          # hipocampo bilinear (escala como o Cerebro)
-        a = s._ativ(); sc = sc - (s.w*a)[:, None]*F[:, :, 1]                                              # reflexo: empurra pro posto
-        return sc
+        Wtot = Wtot.index_add(1, s.IDXC, W[:, s.IDXC]*delta)                                                # cortex por distrito (4 colunas)
+        Wtot = Wtot + torch.einsum('bk,bkf->bf', mem, s.M_h)*Cerebro.ESC                                    # hipocampo bilinear
+        a = s._ativ(); Wtot = Wtot.index_add(1, torch.tensor([1], device=DEV), -(s.w*a)[:, None])            # reflexo: empurra pro posto (coluna d_posto)
+        return torch.einsum('bgh,bh->bg', h, s.V)*s.ESC + torch.einsum('bgf,bf->bg', F, Wtot)
     def extra_serv(s, m):
         ss = Cerebro.extra_serv(s, m)
         mem = s.MEM.gather(1, s.dn[:, None, None].expand(-1, 1, NM)).squeeze(1)*s.g_hip
