@@ -31,7 +31,7 @@ class CfgCampo:
         s.calor_sobe = .15; s.calor_desce = .6      # sustentavel a ~70% de rodagem (0.15*1.85*.7 = .19 sobe vs .6*.3 = .18 esfria); direto: 30 -> 92 em ~220 passos
         s.CALOR_MAX = 92.; s.D_QUENTE = 6.; s.D_PANE = 6.; s.D_RODAR = .15
         s.fome_mata = .15; s.FOME_CRIT = 90.; s.agua_mata = .15; s.AGUA_CRIT = 10.; s.KCAL_PANE = 20.
-        s.custo_gene = 0.; s.gene_min = .5; s.margem_risco = 30.; s.GUINCHO = 0.; s.FUEL_POS_PANE = 15.   # [E61b] guincho cobra dinheiro e deixa o ser no posto com FUEL_POS_PANE (15 = subsidio: 6 panes/vida = vive de guincho);
+        s.custo_gene = 0.; s.gene_min = .5; s.margem_risco = 30.; s.GUINCHO = 0.; s.FUEL_POS_PANE = 15.; s.nevoa = float('inf'); s.k_cego = 2.   # [E63] raio de VISIBILIDADE dos servicos: alem dele a distancia satura (gradiente zero) e o ser tem de LEMBRAR onde viu. inf = mundo onisciente de hoje (identico bit a bit)   # [E61b] guincho cobra dinheiro e deixa o ser no posto com FUEL_POS_PANE (15 = subsidio: 6 panes/vida = vive de guincho);
         s.amp_preco = .5; s.periodo_preco = 3.   # [E56] precos oscilam +-50 % num ciclo de 3 dias por distrito (so em mapa distinto)        # [E55] cerebro que come: fome sobe x (1 + custo_gene*dof/100), dof = genes alem da espinha com |w| > gene_min (Lei do Metabolismo = AIC; acervo: 'custo e o que seleciona')
         s.preco_L = .3; s.preco_agua = .05; s.preco_comida = 2.; s.HOTEL = 8.; s.preco_oficina = 10.; s.REPARO = 25.
         s.tarifa_base = 3.; s.tarifa_km = .25; s.aluguel = 4.; s.LIMITE_DIVIDA = 60.; s.PERDA_ARMAZ = .15; s.RES_MAX = 120.; s.perda_res = .02/240
@@ -177,17 +177,22 @@ class Campo:
         F = [ (pn - alvo[:, None, :]).norm(dim=-1)*esc ]
         # distancia EXATA de cada opcao ao ponto mais perto (achado na posicao atual, UMA vez por passo; serv_ab/passo reusam) [G7]
         s._ptos, s._dist = s._perto_todos(s.pos)                                                # (B,5,2), (B,5) na ordem TIPOS
+        # [E63 NEVOA] o ser so VE o servico dentro de c.nevoa; alem disso a distancia satura e o gradiente some (andar na
+        # direcao de um posto invisivel nao muda a nota). A distancia VERDADEIRA segue valendo para a FISICA (serv_ab por
+        # raio 6, reboque da pane): nevoa e' percepcao, nao teleporte. Cego = PESSIMISTA (k_cego x nevoa): se nao vejo o
+        # posto, o corpo assume longe — senao a nevoa BAIXA o risco percebido e a luz apaga justo quando devia acender.
+        s._dist_v = torch.where(s._dist <= c.nevoa, s._dist, torch.full_like(s._dist, c.k_cego*c.nevoa))   # (B,5) percebida
         for j in (0, 1, 2, 4, 3):
-            F.append((pn - s._ptos[:, j][:, None, :]).norm(dim=-1)*esc)
+            F.append((pn - s._ptos[:, j][:, None, :]).norm(dim=-1).clamp(max=c.nevoa)*esc)
         F.append(s.custo_em(pn)); dn = s.distrito(pn); ci = s.cidx[:, None].expand(-1, G)
         F.append(s.pmul[ci, dn]); F.append(s.aliq[ci, dn]); F.append((dn == s.casa[:, None]).float())
         Fop = torch.stack(F, -1)                                                                 # (B,G,10)
         h = s.hora()*2*math.pi/24.
-        auton = (s.fuel/s.cons.clamp(min=1e-3) - s._dist[:, 0])/100.                                                    # [E57] quanto ainda anda menos a distancia ao posto mais perto (em 100 m)
+        auton = (s.fuel/s.cons.clamp(min=1e-3) - s._dist_v[:, 0])/100.                                                    # [E57] quanto ainda anda menos a distancia ao posto mais perto (em 100 m)
         cols = [s.fuel/100., s.agua/100., s.fome/100., s.fad/100., s.calor/120., s.vida/100., (s.dinh/150.).clamp(-1., 1.), s.res/c.RES_MAX,
                 (s.pd_ >= 0).float(), torch.sin(h), torch.cos(h), nv.float(), s.custo_em(s.pos), torch.ones_like(s.fuel),
                 s.cons/(c.fuel_passo*3.), auton.clamp(-2., 4.)]
-        if RISCO: cols.append(((s._dist[:, 0] + c.margem_risco - s.fuel/s.cons.clamp(min=1e-3))/100.).clamp(min=0., max=3.))   # [E61] zero enquanto ha margem; cresce quando o posto fica fora do alcance
+        if RISCO: cols.append(((s._dist_v[:, 0] + c.margem_risco - s.fuel/s.cons.clamp(min=1e-3))/100.).clamp(min=0., max=3.))   # [E61] zero enquanto ha margem; cresce quando o posto fica fora do alcance
         corpo = torch.stack(cols, -1)   # (B,16|17)
         Fo = torch.cat([Fop, corpo[:, None, :].expand(-1, G, -1)], -1)
         val = torch.ones(s.B, G, dtype=torch.bool, device=DEV)

@@ -16,9 +16,9 @@ def main(a):
     if a.seeds: p['seeds'] = tuple(a.seeds)
     if a.R: p['R'] = a.R
     if a.G: p['G'] = a.G
-    cfg = CfgCampo(L=a.L, pena_morte=a.pena, fitness=a.fitness, loja_no_posto=not a.sem_loja); cfg.custo_gene = a.custo_gene; cfg.KCAL_PANE = a.kcal_pane; cfg.dinh0 = a.dinh0; cfg.GUINCHO = a.guincho; cfg.FUEL_POS_PANE = a.fuel_pane
+    cfg = CfgCampo(L=a.L, pena_morte=a.pena, fitness=a.fitness, loja_no_posto=not a.sem_loja); cfg.custo_gene = a.custo_gene; cfg.KCAL_PANE = a.kcal_pane; cfg.dinh0 = a.dinh0; cfg.GUINCHO = a.guincho; cfg.FUEL_POS_PANE = a.fuel_pane; cfg.nevoa = a.nevoa
     treino = [gerar_mapa(s, L=a.L, distinto=a.mundo == 'distinto') for s in range(4)]; teste = [gerar_mapa(a.teste_seed + s, L=a.L, distinto=a.mundo == 'distinto') for s in range(3)]
-    res = dict(preset=a.preset, L=a.L, fitness=a.fitness, pena=a.pena, NF=NF, S=S, bracos={})
+    res = dict(nevoa=a.nevoa, preset=a.preset, L=a.L, fitness=a.fitness, pena=a.pena, NF=NF, S=S, bracos={})
     print(f'== E43 campo | {a.preset} L={a.L} dias={a.dias} regua={a.fitness} P={p["P"]} G={p["G"]} R={p["R"]} x{len(p["seeds"])} | pena {a.pena} ==', flush=True)
     for nome, A in BRACOS:
         if a.so and nome not in a.so: continue
@@ -30,7 +30,9 @@ def main(a):
         for sd in p['seeds']:
             por[sd] = medidas(A, champs[sd][0], teste, cfg, T=p['T_aval'], seed=7777, R=1, copias=128)
         for k in por[p['seeds'][0]]: med[k] = sum(por[sd][k] for sd in p['seeds'])/len(p['seeds'])
-        med['fit_por_semente'] = [round(por[sd]['fit'], 3) for sd in p['seeds']]; med['mortos_por_semente'] = [round(por[sd]['mortos'], 3) for sd in p['seeds']]
+        # [regua pareada] por-semente para TODAS as medidas, nao so fit/mortos: as sementes sao as MESMAS em
+        # todos os bracos, e comparar medias joga o pareamento fora (a variancia entre sementes entra duas vezes).
+        for k in list(med): med[k + '_por_semente'] = [round(por[sd][k], 3) for sd in p['seeds']]
         med['W'] = {sd: [round(float(x), 5) for x in champs[sd][0]] for sd in p['seeds']}; med['segundos'] = round(time.time() - t1)
         res['bracos'][nome] = med
         print(f'  {nome:<36} NP {A.NP:3d} fit {med["fit"]:6.2f} {med["fit_por_semente"]} ent {med["ent"]:5.1f} mortos {med["mortos"]:.2f} {med["mortos_por_semente"]} '
@@ -45,5 +47,5 @@ if __name__ == '__main__':
     ap.add_argument('--fitness', default='sobrevive', choices=('padrao', 'sobrevive', 'bemestar', 'riqueza')); ap.add_argument('--pena', type=float, default=5.)
     ap.add_argument('--out', default='/media/llm-data/universe-runs/neuromod-lab-taxi/e43'); ap.add_argument('--so', nargs='*', default=None)
     ap.add_argument('--seeds', type=int, nargs='*', default=None); ap.add_argument('--R', type=int, default=None); ap.add_argument('--G', type=int, default=None)
-    ap.add_argument('--teste-seed', type=int, default=1000); ap.add_argument('--tag', default=''); ap.add_argument('--dias', type=float, default=10.); ap.add_argument('--sem-loja', action='store_true', help='servicos SEPARADOS: comida/agua nao vendidas no posto (E47)'); ap.add_argument('--init-from', nargs=2, default=None); ap.add_argument('--guincho', type=float, default=0., help='[E61b] preco do guincho na pane'); ap.add_argument('--fuel-pane', type=float, default=15., help='[E61b] litros com que o guincho deixa o ser no posto'); ap.add_argument('--dinh0', type=float, default=20., help='dinheiro inicial (10 = pobre de verdade: 5 refeicoes)'); ap.add_argument('--kcal-pane', type=float, default=20., help='[E56c] calorias que a pane cobra da reserva (falta vira dano); 20 = pane mata, 8 = pane doi'); ap.add_argument('--paciencia', type=int, default=None, help='[E61d] parada antecipada: N ger. sem melhora > 1%'); ap.add_argument('--mundo', default='padrao', choices=('padrao', 'distinto'), help='[E56] distinto = ruas + distritos com perfil + precos que mudam'); ap.add_argument('--custo-gene', type=float, default=0., help='[E55] fome x (1 + custo*dof/100): cada gene ligado alem da espinha custa calorias')
+    ap.add_argument('--teste-seed', type=int, default=1000); ap.add_argument('--tag', default=''); ap.add_argument('--dias', type=float, default=10.); ap.add_argument('--sem-loja', action='store_true', help='servicos SEPARADOS: comida/agua nao vendidas no posto (E47)'); ap.add_argument('--init-from', nargs=2, default=None); ap.add_argument('--guincho', type=float, default=0., help='[E61b] preco do guincho na pane'); ap.add_argument('--fuel-pane', type=float, default=15., help='[E61b] litros com que o guincho deixa o ser no posto'); ap.add_argument('--dinh0', type=float, default=20., help='dinheiro inicial (10 = pobre de verdade: 5 refeicoes)'); ap.add_argument('--kcal-pane', type=float, default=20., help='[E56c] calorias que a pane cobra da reserva (falta vira dano); 20 = pane mata, 8 = pane doi'); ap.add_argument('--paciencia', type=int, default=None, help='[E61d] parada antecipada: N ger. sem melhora > 1%'); ap.add_argument('--mundo', default='padrao', choices=('padrao', 'distinto'), help='[E56] distinto = ruas + distritos com perfil + precos que mudam'); ap.add_argument('--nevoa', type=float, default=float('inf'), help='[E63] raio de visibilidade dos servicos (m); alem dele a distancia satura. inf = onisciente (padrao, identico a hoje)'); ap.add_argument('--custo-gene', type=float, default=0., help='[E55] fome x (1 + custo*dof/100): cada gene ligado alem da espinha custa calorias')
     main(ap.parse_args())
