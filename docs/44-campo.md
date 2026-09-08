@@ -811,3 +811,10 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
   luz de reserva do painel. Sentido novo muda NF (invalida os JSONs de
   semeadura de hoje): entra amanhã, junto do reset; hoje a fila segue com o
   prefeito (ser bilinear) e o E60 (reset com escala).
+- **21:50 prefeito no mundo distinto pobre, ser bilinear (co-evolução, P512,
+  120 ger.):** sem prefeito 0.81 / 18.2; **com prefeito 0.68 / 20.1 (−13 pp)**.
+  Alavancas: alíquota ×2.0, gasolina ×0.52, água ×1.05, comida ×0.5, aluguel
+  ×0.5, tarifa ×2.0; obras: 0 água, **22 comidas, 8 postos**. O prefeito viu o
+  problema (residencial sem posto) e construiu postos, subsidiou gasolina e
+  comida e cobrou em imposto: −13 pp, perto dos −15 previstos. Não resolve a
+  pane sozinho porque o ser não procura o posto (sentido de risco amanhã).
