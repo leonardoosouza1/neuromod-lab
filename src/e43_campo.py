@@ -25,7 +25,7 @@ def main(a):
         if a.so and nome not in a.so: continue
         t1 = time.time(); W0 = None
         if a.init_from:
-            J = json.load(open(a.init_from[0]))['bracos'][a.init_from[1]]['W']; W0 = {sd: J[str(sd)] for sd in p['seeds']}
+            J = json.load(open(a.init_from[0]))['bracos'][a.init_from[1]]['W']; W0 = {sd: J.get(str(sd), J[sorted(J)[sd % len(J)]]) for sd in p['seeds']}   # semente sem campeao no JSON (ex.: 3 sementes -> 5): usa o campeao de outra semente (ciclico)
         champs = evoluir(A, treino, cfg, P=p['P'], ger=p['G'], T=p['T_evo'], seeds=p['seeds'], R=p['R'], verbose=True, W0=W0, paciencia=a.paciencia, sigma_espinha=a.sigma_espinha)
         med = {}; por = {}
         for sd in p['seeds']:
