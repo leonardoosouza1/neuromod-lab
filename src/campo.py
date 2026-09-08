@@ -18,7 +18,9 @@ ACOES = [('posto', 25.), ('posto', 50.), ('posto', 75.), ('posto', 100.), ('post
 S = len(ACOES)
 NOMES_OP = ['d_alvo', 'd_posto', 'd_comida', 'd_agua', 'd_oficina', 'd_descanso', 'custo_frente', 'preco_frente', 'aliq_frente', 'casa_frente']
 NOMES_CORPO = ['e_fuel', 'e_agua', 'e_fome', 'e_fadiga', 'e_calor', 'e_vida', 'e_dinheiro', 'e_reserva', 'e_tem_pax', 'h_sin', 'h_cos', 'e_noite', 'custo_aqui', 'bias', 'e_consumo', 'e_autonomia']   # [E57] painel do carro: consumo medido (L por metro, media movel) e autonomia = (tanque/consumo - d_posto)/100
-NF = len(NOMES_OP) + len(NOMES_CORPO)   # 24
+RISCO = os.environ.get('NM_RISCO', '0') == '1'   # [E61] luz de reserva: e_risco = relu(d_posto + margem - alcance)/100 (0 = seguro; cresce quando a margem some). Ligado por NM_RISCO=1 (muda NF: nao misturar com JSONs de semeadura antigos)
+if RISCO: NOMES_CORPO = NOMES_CORPO + ['e_risco']
+NF = len(NOMES_OP) + len(NOMES_CORPO)   # 24 (+2 painel, +1 risco)
 NOMES_F = NOMES_OP + NOMES_CORPO + [f'sv_{a[0]}{int(a[1]) if a[1] else ""}' for a in ACOES] + ['sv_bias']
 
 class CfgCampo:
@@ -29,7 +31,7 @@ class CfgCampo:
         s.calor_sobe = .15; s.calor_desce = .6      # sustentavel a ~70% de rodagem (0.15*1.85*.7 = .19 sobe vs .6*.3 = .18 esfria); direto: 30 -> 92 em ~220 passos
         s.CALOR_MAX = 92.; s.D_QUENTE = 6.; s.D_PANE = 6.; s.D_RODAR = .15
         s.fome_mata = .15; s.FOME_CRIT = 90.; s.agua_mata = .15; s.AGUA_CRIT = 10.; s.KCAL_PANE = 20.
-        s.custo_gene = 0.; s.gene_min = .5; s.amp_preco = .5; s.periodo_preco = 3.   # [E56] precos oscilam +-50 % num ciclo de 3 dias por distrito (so em mapa distinto)        # [E55] cerebro que come: fome sobe x (1 + custo_gene*dof/100), dof = genes alem da espinha com |w| > gene_min (Lei do Metabolismo = AIC; acervo: 'custo e o que seleciona')
+        s.custo_gene = 0.; s.gene_min = .5; s.margem_risco = 30.; s.amp_preco = .5; s.periodo_preco = 3.   # [E56] precos oscilam +-50 % num ciclo de 3 dias por distrito (so em mapa distinto)        # [E55] cerebro que come: fome sobe x (1 + custo_gene*dof/100), dof = genes alem da espinha com |w| > gene_min (Lei do Metabolismo = AIC; acervo: 'custo e o que seleciona')
         s.preco_L = .3; s.preco_agua = .05; s.preco_comida = 2.; s.HOTEL = 8.; s.preco_oficina = 10.; s.REPARO = 25.
         s.tarifa_base = 3.; s.tarifa_km = .25; s.aluguel = 4.; s.LIMITE_DIVIDA = 60.; s.PERDA_ARMAZ = .15; s.RES_MAX = 120.; s.perda_res = .02/240
         s.REFEICAO = 90.; s.pena_morte = 5.; s.fitness = 'sobrevive'
@@ -181,9 +183,11 @@ class Campo:
         Fop = torch.stack(F, -1)                                                                 # (B,G,10)
         h = s.hora()*2*math.pi/24.
         auton = (s.fuel/s.cons.clamp(min=1e-3) - s._dist[:, 0])/100.                                                    # [E57] quanto ainda anda menos a distancia ao posto mais perto (em 100 m)
-        corpo = torch.stack([s.fuel/100., s.agua/100., s.fome/100., s.fad/100., s.calor/120., s.vida/100., (s.dinh/150.).clamp(-1., 1.), s.res/c.RES_MAX,
-                             (s.pd_ >= 0).float(), torch.sin(h), torch.cos(h), nv.float(), s.custo_em(s.pos), torch.ones_like(s.fuel),
-                             s.cons/(c.fuel_passo*3.), auton.clamp(-2., 4.)], -1)   # (B,16)
+        cols = [s.fuel/100., s.agua/100., s.fome/100., s.fad/100., s.calor/120., s.vida/100., (s.dinh/150.).clamp(-1., 1.), s.res/c.RES_MAX,
+                (s.pd_ >= 0).float(), torch.sin(h), torch.cos(h), nv.float(), s.custo_em(s.pos), torch.ones_like(s.fuel),
+                s.cons/(c.fuel_passo*3.), auton.clamp(-2., 4.)]
+        if RISCO: cols.append(((s._dist[:, 0] + c.margem_risco - s.fuel/s.cons.clamp(min=1e-3))/100.).clamp(min=0., max=3.))   # [E61] zero enquanto ha margem; cresce quando o posto fica fora do alcance
+        corpo = torch.stack(cols, -1)   # (B,16|17)
         Fo = torch.cat([Fop, corpo[:, None, :].expand(-1, G, -1)], -1)
         val = torch.ones(s.B, G, dtype=torch.bool, device=DEV)
         return Fo, val
