@@ -818,3 +818,8 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
   problema (residencial sem posto) e construiu postos, subsidiou gasolina e
   comida e cobrou em imposto: −13 pp, perto dos −15 previstos. Não resolve a
   pane sozinho porque o ser não procura o posto (sentido de risco amanhã).
+- **21:57 portão com escala consertada:** Completo passa de 58 % → **26 %**
+  (OK), Bilinear 6 %, Reflexo 6 %. Sentidos invisíveis restantes são
+  artefatos de limiar (aliq_frente/casa_frente quase não variam entre as 9
+  opções; fome/fadiga mudam devagar em 240 ticks) — tolerados no veredito.
+  E60 (reset com escala) em curso.
