@@ -1,0 +1,87 @@
+<title>Pico do Campeão</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+:root{--bg:#f2f4f6;--paper:#ffffff;--ink:#1b2229;--ink2:#4c5a66;--line:#d5dce2;--ga:#3a4652;--es1:#d9a21b;--es3:#c9662a;--bi:#7f93a3;--ok:#2f8f5b;--bad:#b5432b;--grid:#e6eaee}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0f1418;--paper:#171d23;--ink:#e8edf1;--ink2:#a5b1bc;--line:#2b353f;--ga:#b8c4cf;--es1:#f0b93a;--es3:#e0793a;--bi:#8fa3b3;--ok:#4fbf7f;--bad:#e06a50;--grid:#242d36}}
+:root[data-theme="dark"]{--bg:#0f1418;--paper:#171d23;--ink:#e8edf1;--ink2:#a5b1bc;--line:#2b353f;--ga:#b8c4cf;--es1:#f0b93a;--es3:#e0793a;--bi:#8fa3b3;--ok:#4fbf7f;--bad:#e06a50;--grid:#242d36}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 "Source Sans 3",system-ui,sans-serif;margin:0}
+main{max-width:1080px;margin:0 auto;padding:32px 20px 64px}
+h1{font:700 44px/1.05 "Barlow Condensed",Impact,sans-serif;letter-spacing:.01em;margin:0 0 6px;text-wrap:balance}
+h2{font:700 24px/1.15 "Barlow Condensed",Impact,sans-serif;margin:0 0 4px}
+.eyebrow{font:600 12px/1 "JetBrains Mono",monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--ink2);margin-bottom:10px}
+.lede{max-width:68ch;color:var(--ink2);font-size:17px;margin:0 0 28px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(440px,1fr));gap:20px}
+figure{background:var(--paper);border:1px solid var(--line);border-radius:6px;margin:0;padding:18px 18px 14px;display:flex;flex-direction:column;gap:8px}
+figure.wide{grid-column:1/-1}
+canvas{width:100%;height:300px;display:block}
+figcaption{max-width:70ch;color:var(--ink2);font-size:14.5px}
+figcaption b{color:var(--ink)}
+.leg{display:flex;flex-wrap:wrap;gap:14px;font:600 12.5px "JetBrains Mono",monospace;color:var(--ink2)}
+.leg i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:6px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:0 0 24px}
+.kpi{background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:12px 14px}
+.kpi .n{font:600 28px/1.1 "JetBrains Mono",monospace;font-variant-numeric:tabular-nums}
+.kpi .l{font-size:13px;color:var(--ink2)}
+.verd{border-left:4px solid var(--bad);padding:10px 16px;background:var(--paper);border-radius:0 6px 6px 0;margin:28px 0 0;max-width:80ch}
+.verd b{font-family:"Barlow Condensed",sans-serif;font-size:20px}
+.num{font-family:"JetBrains Mono",monospace;font-variant-numeric:tabular-nums}
+@media (prefers-reduced-motion:no-preference){figure{transition:border-color .2s}}
+</style>
+<main>
+<div class="eyebrow">neuromod-lab · táxi · E64–E66 · 2026-09-08</div>
+<h1>O campeão está num pico, não num planalto</h1>
+<p class="lede">Cinco dias trocando peça, mundo, régua e busca sem sair de ~0.8 de mortos. Hoje testamos as duas explicações que faltavam: <b>otimizador</b> (seleção por elite → gradiente estimado) e <b>ruído da nota</b> (o mundo muda a cada geração). Nenhuma explica. A fitness cai em toda direção a partir do campeão: para a régua "riqueza em 10 dias", dirigir pouco paga mais do que dirigir e abastecer.</p>
+<div class="kpis">
+ <div class="kpi"><div class="n">0.82 → 0.77</div><div class="l">mortos GA → ES σ .1 (−5 pp, IC −14/+4; régua pede 10)</div></div>
+ <div class="kpi"><div class="n">corr 0.81</div><div class="l">nota do mesmo indivíduo em dois mundos (σ .3): a régua enxerga o genoma</div></div>
+ <div class="kpi"><div class="n">−2.14 → −3.23</div><div class="l">fitness média de clones → mutantes σ .3: toda direção é ladeira abaixo</div></div>
+ <div class="kpi"><div class="n">45 %</div><div class="l">da elite de um mundo continua elite no outro (acaso 15 %)</div></div>
+</div>
+<div class="grid">
+<figure><h2>1 · Fitness média × tamanho da mutação</h2><canvas id="c1"></canvas><figcaption><b>O que é:</b> 2048 cópias do campeão com ruído σ nos genes, nota média em 3 mundos. <b>O que diz:</b> quanto mais longe do campeão, pior — em média. Não há vale a atravessar nem planalto: é um pico desta régua. A barra é o desvio entre indivíduos.</figcaption></figure>
+<figure><h2>2 · Mortos por semente: GA vs ES</h2><div class="leg"><span><i style="background:var(--ga)"></i>GA (q8)</span><span><i style="background:var(--es1)"></i>ES σ .1</span><span><i style="background:var(--es3)"></i>ES σ .3</span><span><i style="background:var(--bi)"></i>GA bilinear-risco</span></div><canvas id="c2"></canvas><figcaption><b>O que é:</b> cada linha é uma semente (mesmos mundos de teste, 128 cópias). <b>O que diz:</b> ES σ .1 desce em 4 de 5 sementes, mas 5 pp é metade do que a régua consegue afirmar com n=5. Trocar o otimizador não abre porta nova.</figcaption></figure>
+<figure class="wide"><h2>3 · Melhor da geração no treino (média das 5 sementes)</h2><div class="leg"><span><i style="background:var(--ga)"></i>GA</span><span><i style="background:var(--es1)"></i>ES σ .1</span><span><i style="background:var(--es3)"></i>ES σ .3</span></div><canvas id="c3"></canvas><figcaption><b>O que é:</b> nota do melhor indivíduo a cada geração; cada geração sorteia outro mundo. <b>O que diz:</b> ninguém sobe. A oscilação é do mundo sorteado, não de aprendizado — e a figura 4 mostra que isso não cega a seleção.</figcaption></figure>
+<figure><h2>4 · A nota enxerga o genoma?</h2><div class="leg"><span><i style="background:var(--ok)"></i>correlação entre mundos</span><span><i style="background:var(--es1)"></i>elite que continua elite</span><span><i style="background:var(--bi)"></i>acaso (0.15)</span></div><canvas id="c4"></canvas><figcaption><b>O que é:</b> mesma população avaliada em 3 sorteios de mundo. <b>O que diz:</b> em σ 0 (clones) a correlação é zero — é o ruído puro. Em σ .3, escala da mutação do GA, 0.81: a seleção escolhe genoma, não sorte. Em σ .1 é meio-cega (0.45) — a única brecha, testada no q11 com R=16.</figcaption></figure>
+<figure><h2>5 · Nota no mundo A × nota no mundo B</h2><div class="leg"><span><i style="background:var(--bi)"></i>σ 0</span><span><i style="background:var(--es1)"></i>σ .1</span><span><i style="background:var(--es3)"></i>σ .3</span></div><canvas id="c5"></canvas><figcaption id="cap5"><b>O que é:</b> cada ponto é um indivíduo; nota em dois mundos diferentes. <b>O que diz:</b> nuvem redonda = a régua não vê o genoma; nuvem inclinada = vê. </figcaption></figure>
+</div>
+<div class="verd"><b>Veredito.</b> Busca ×4, otimizador com gradiente e ruído da nota: três lados independentes, mesma resposta. O que sobra é a régua e o mundo — o táxi em 10 dias premia "parar". A próxima pergunta não é mais "que peça", é "que mundo faz dirigir valer a pena". Pred 92 ✗, 93 ✗; 94 (ES R=16) pendente.</div>
+</main>
+<script>
+const D=/*DATA*/;
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function cv(id){const c=document.getElementById(id),r=devicePixelRatio||1,w=c.clientWidth,h=c.clientHeight;c.width=w*r;c.height=h*r;const x=c.getContext('2d');x.scale(r,r);x.font='12px "JetBrains Mono",monospace';return[x,w,h]}
+function axes(x,w,h,m,xl,yl){x.strokeStyle=css('--line');x.lineWidth=1;x.beginPath();x.moveTo(m.l,m.t);x.lineTo(m.l,h-m.b);x.lineTo(w-m.r,h-m.b);x.stroke();x.fillStyle=css('--ink2');x.textAlign='center';x.fillText(xl,(m.l+w-m.r)/2,h-4);x.save();x.translate(11,(m.t+h-m.b)/2);x.rotate(-Math.PI/2);x.fillText(yl,0,0);x.restore()}
+function ticks(x,w,h,m,sx,sy,xs,ys,fx,fy){x.fillStyle=css('--ink2');x.strokeStyle=css('--grid');x.textAlign='center';x.textBaseline='top';for(const v of xs){x.fillText(fx?fx(v):v,sx(v),h-m.b+4)}x.textAlign='right';x.textBaseline='middle';for(const v of ys){x.beginPath();x.moveTo(m.l,sy(v));x.lineTo(w-m.r,sy(v));x.stroke();x.fillText(fy?fy(v):v,m.l-6,sy(v))}}
+function draw(){
+ const mean=a=>a.reduce((s,v)=>s+v,0)/a.length;
+ // 1 fitness x sigma
+ {const [x,w,h]=cv('c1'),m={l:56,r:16,t:14,b:36};const sg=['0.0','0.1','0.3'];const ys=sg.map(k=>D.snr[k].fit_media),sd=sg.map(k=>D.snr[k].dp_entre_individuos);
+  const sx=v=>m.l+(w-m.l-m.r)*(v/.35+.03),sy=v=>m.t+(h-m.t-m.b)*(( -1.6-v)/(2.8));axes(x,w,h,m,'σ da mutação (genes do campeão + ruído)','fitness média (riqueza)');ticks(x,w,h,m,sx,sy,[0,.1,.3],[-2,-2.5,-3,-3.5,-4],v=>'σ '+v);
+  x.strokeStyle=css('--bad');x.lineWidth=2.5;x.beginPath();sg.forEach((k,i)=>{const X=sx(+k),Y=sy(ys[i]);i?x.lineTo(X,Y):x.moveTo(X,Y)});x.stroke();
+  sg.forEach((k,i)=>{const X=sx(+k),Y=sy(ys[i]);x.strokeStyle=css('--ink2');x.lineWidth=1.2;x.beginPath();x.moveTo(X,sy(ys[i]+sd[i]));x.lineTo(X,sy(ys[i]-sd[i]));x.stroke();x.fillStyle=css('--bad');x.beginPath();x.arc(X,Y,6,0,7);x.fill();x.fillStyle=css('--ink');x.textAlign='left';x.textBaseline='bottom';x.fillText(ys[i].toFixed(2),X+10,Y-4)});
+  x.fillStyle=css('--ink2');x.textAlign='right';x.fillText('clones do campeão →',sx(0)+150,sy(ys[0])-16)}
+ // 2 paired dots
+ {const [x,w,h]=cv('c2'),m={l:56,r:16,t:14,b:36};const arms=['GA','ES s.1','ES s.3','GA bilinear-risco'],col=['--ga','--es1','--es3','--bi'];
+  const sx=i=>m.l+(w-m.l-m.r)*((i+.5)/arms.length),sy=v=>m.t+(h-m.t-m.b)*((0.92-v)/(0.92-0.68));axes(x,w,h,m,'','mortos em 10 dias (fração)');ticks(x,w,h,m,sx,sy,[],[.7,.75,.8,.85,.9],null,v=>v.toFixed(2));
+  x.textAlign='center';x.textBaseline='top';x.fillStyle=css('--ink2');arms.forEach((a,i)=>x.fillText(a,sx(i),h-m.b+4));
+  for(let s=0;s<5;s++){x.strokeStyle=css('--line');x.lineWidth=1;x.beginPath();arms.forEach((a,i)=>{const Y=sy(D.bracos[a].mortos[s]);i?x.lineTo(sx(i),Y):x.moveTo(sx(i),Y)});x.stroke()}
+  arms.forEach((a,i)=>{D.bracos[a].mortos.forEach((v,s)=>{x.fillStyle=css(col[i]);x.beginPath();x.arc(sx(i),sy(v),5,0,7);x.fill()});const mu=mean(D.bracos[a].mortos);x.strokeStyle=css(col[i]);x.lineWidth=3;x.beginPath();x.moveTo(sx(i)-22,sy(mu));x.lineTo(sx(i)+22,sy(mu));x.stroke();x.fillStyle=css('--ink');x.textAlign='left';x.textBaseline='middle';x.fillText(mu.toFixed(2),sx(i)+26,sy(mu))})}
+ // 3 trajectories
+ {const [x,w,h]=cv('c3'),m={l:56,r:16,t:14,b:36};const arms=['GA','ES s.1','ES s.3'],col=['--ga','--es1','--es3'];
+  const sx=g=>m.l+(w-m.l-m.r)*(g/66),sy=v=>m.t+(h-m.t-m.b)*((0.6-v)/1.4);axes(x,w,h,m,'geração','melhor da geração (média das sementes)');ticks(x,w,h,m,sx,sy,[0,10,20,30,40,50,60],[-.8,-.4,0,.4],null,v=>v.toFixed(1));
+  arms.forEach((a,i)=>{const T=D.traj[a],gs=Object.keys(T).map(Number).sort((p,q)=>p-q);x.strokeStyle=css(col[i]);x.lineWidth=2.5;x.beginPath();gs.forEach((g,j)=>{const Y=sy(mean(T[g]));j?x.lineTo(sx(g),Y):x.moveTo(sx(g),Y)});x.stroke();
+   x.globalAlpha=.35;gs.forEach(g=>{T[g].forEach(v=>{x.fillStyle=css(col[i]);x.beginPath();x.arc(sx(g),sy(v),2.5,0,7);x.fill()})});x.globalAlpha=1})}
+ // 4 SNR bars
+ {const [x,w,h]=cv('c4'),m={l:56,r:16,t:14,b:36};const sg=['0.0','0.1','0.3'];const sx=i=>m.l+(w-m.l-m.r)*((i+.5)/3),sy=v=>m.t+(h-m.t-m.b)*(1-v);axes(x,w,h,m,'','');ticks(x,w,h,m,sx,sy,[],[0,.25,.5,.75,1],null,v=>v.toFixed(2));
+  x.textAlign='center';x.textBaseline='top';x.fillStyle=css('--ink2');sg.forEach((k,i)=>x.fillText('σ '+k+(k=='0.0'?' (clones)':k=='0.3'?' (GA)':''),sx(i),h-m.b+4));
+  sg.forEach((k,i)=>{const c=Math.max(0,D.snr[k].corr_media),e=mean(D.snr[k].elite_15pct_mantida),bw=34;x.fillStyle=css('--ok');x.fillRect(sx(i)-bw-3,sy(c),bw,sy(0)-sy(c));x.fillStyle=css('--es1');x.fillRect(sx(i)+3,sy(e),bw,sy(0)-sy(e));x.fillStyle=css('--ink');x.textBaseline='bottom';x.fillText(c.toFixed(2),sx(i)-bw/2-3,sy(c)-2);x.fillText(e.toFixed(2),sx(i)+bw/2+3,sy(e)-2)});
+  x.strokeStyle=css('--bi');x.setLineDash([5,4]);x.lineWidth=1.5;x.beginPath();x.moveTo(m.l,sy(.15));x.lineTo(w-m.r,sy(.15));x.stroke();x.setLineDash([])}
+ // 5 scatter A x B
+ {const [x,w,h]=cv('c5'),m={l:56,r:16,t:14,b:36};const has=D.snr['0.3'].F;axes(x,w,h,m,'nota no mundo A','nota no mundo B');
+  if(!has){x.fillStyle=css('--ink2');x.textAlign='center';x.textBaseline='middle';x.fillText('matriz de notas chega com o job q10b (fila atrás do q11)',(m.l+w-m.r)/2,(m.t+h-m.b)/2);document.getElementById('cap5').innerHTML+=' <b>Aguardando a matriz de notas.</b>'}
+  else{const all=['0.0','0.1','0.3'].flatMap(k=>D.snr[k].F[0].concat(D.snr[k].F[1]));const lo=Math.min(...all),hi=Math.max(...all);const sx=v=>m.l+(w-m.l-m.r)*((v-lo)/(hi-lo)),sy=v=>m.t+(h-m.t-m.b)*(1-(v-lo)/(hi-lo));ticks(x,w,h,m,sx,sy,[-6,-4,-2,0],[-6,-4,-2,0]);
+   x.strokeStyle=css('--line');x.beginPath();x.moveTo(sx(lo),sy(lo));x.lineTo(sx(hi),sy(hi));x.stroke();
+   [['0.3','--es3'],['0.1','--es1'],['0.0','--bi']].forEach(([k,c])=>{const F=D.snr[k].F;x.fillStyle=css(c);x.globalAlpha=.45;for(let i=0;i<F[0].length;i+=2){x.beginPath();x.arc(sx(F[0][i]),sy(F[1][i]),2,0,7);x.fill()}x.globalAlpha=1})}}
+}
+draw();addEventListener('resize',draw);matchMedia('(prefers-color-scheme: dark)').addEventListener('change',draw);new MutationObserver(draw).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+</script>
