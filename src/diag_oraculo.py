@@ -48,6 +48,7 @@ def tracar(Arq, W, mapas, cfg, T, copias=128, seed=7777):
 def main(a):
     T = int(240*a.dias); teste = [gerar_mapa(1000 + s, L=a.L, distinto=a.mundo == 'distinto') for s in range(3)]
     cfg = CfgCampo(L=a.L, fitness='bemestar', loja_no_posto=not a.sem_loja); cfg.KCAL_PANE = a.kcal_pane; cfg.dinh0 = a.dinh0; cfg.GUINCHO = a.guincho; cfg.FUEL_POS_PANE = a.fuel_pane
+    if a.fome_passo is not None: cfg.fome_passo = a.fome_passo
     J = json.load(open(a.campeao))['bracos']; nomeM = a.braco
     ArqM = dict(BRACOS)[nomeM]; WM = torch.tensor(J[nomeM]['W'][sorted(J[nomeM]['W'])[0]], device=DEV)
     casos = [(f'campeao {nomeM[:24]}', ArqM, WM)] + [(f'oraculo {v}', fabrica_oraculo(nome=v, **VARIANTES[v]), torch.zeros(Linear.NP, device=DEV)) for v in a.variantes]
@@ -64,7 +65,7 @@ def main(a):
 if __name__ == '__main__':
     ap = argparse.ArgumentParser()
     ap.add_argument('--L', type=float, default=200.); ap.add_argument('--dias', type=float, default=10.); ap.add_argument('--copias', type=int, default=128)
-    ap.add_argument('--sem-loja', action='store_true'); ap.add_argument('--braco', default='minimo 3 (d_alvo, d_posto, e_fuel)'); ap.add_argument('--guincho', type=float, default=0., help='[E61b] preco do guincho na pane'); ap.add_argument('--fuel-pane', type=float, default=15., help='[E61b] litros com que o guincho deixa o ser no posto'); ap.add_argument('--dinh0', type=float, default=20., help='dinheiro inicial (10 = pobre de verdade: 5 refeicoes)'); ap.add_argument('--kcal-pane', type=float, default=20.); ap.add_argument('--mundo', default='padrao', choices=('padrao', 'distinto')); ap.add_argument('--variantes', nargs='*', default=['base', 'oportunista', 'poupador', 'poup_oport', 'poup_oport_tarde', 'poup_oport_caixa0', 'poup12_oport_tarde'])
+    ap.add_argument('--sem-loja', action='store_true'); ap.add_argument('--braco', default='minimo 3 (d_alvo, d_posto, e_fuel)'); ap.add_argument('--fome-passo', type=float, default=None, help='[calibracao doc 51] fome por tick (default .32)'); ap.add_argument('--guincho', type=float, default=0., help='[E61b] preco do guincho na pane'); ap.add_argument('--fuel-pane', type=float, default=15., help='[E61b] litros com que o guincho deixa o ser no posto'); ap.add_argument('--dinh0', type=float, default=20., help='dinheiro inicial (10 = pobre de verdade: 5 refeicoes)'); ap.add_argument('--kcal-pane', type=float, default=20.); ap.add_argument('--mundo', default='padrao', choices=('padrao', 'distinto')); ap.add_argument('--variantes', nargs='*', default=['base', 'oportunista', 'poupador', 'poup_oport', 'poup_oport_tarde', 'poup_oport_caixa0', 'poup12_oport_tarde'])
     ap.add_argument('--campeao', default='/media/llm-data/universe-runs/neuromod-lab-taxi/e43/e43_triagem_L200_10d.json')
     ap.add_argument('--tag', default=''); ap.add_argument('--out', default='/media/llm-data/universe-runs/neuromod-lab-taxi/e51')
     main(ap.parse_args())
