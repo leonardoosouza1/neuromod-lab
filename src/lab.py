@@ -1765,6 +1765,52 @@ def evoluir_sementes(Arq, cidades, cfg, P=512, ger=25, T=1500, seeds=(0,1,2),
     return {sd: (Wv[si][0], hist[sd], snaps[sd]) for si, sd in enumerate(seeds)}
 
 
+def evoluir_es(Arq, cidades, cfg, P=512, ger=25, T=1500, seeds=(0, 1, 2), verbose=True, R=1, W0=None,
+               sigma0=.2, avaliar_fn=None, paciencia=None, sigma_espinha=.05, sigma_es=.1, lr=.3, cfg_gen=None, elite=.15):
+    """[E65] Estrategia evolutiva ANTITETICA com utilidades por posto (Salimans et al. 2017): mesmo orcamento de
+    avaliacoes por geracao que evoluir_sementes (P+1 seres por semente: theta, theta+s*eps, theta-s*eps), mas o
+    sinal de aprendizado e um GRADIENTE estimado do fitness em vez de selecao por elite. Testa a hipotese do
+    fechamento do taxi: 'o gargalo e o sinal de aprendizado, nao a busca'. theta nasce do campeao W0 (genes novos
+    = 0) ou de randn*.8; sigma_espinha e ignorado (a exploracao E o eps). Devolve {semente: (melhor_visto, hist, snaps)}
+    no mesmo formato do GA; o campeao e o melhor individuo AVALIADO (theta ou amostra), nunca um theta nao medido."""
+    S = len(seeds); NPQ = Arq.NP; N = P//2; PP = 2*N + 1
+    gs = []; th = []
+    for sd in seeds:
+        g = torch.Generator(device=DEV); g.manual_seed(sd); gs.append(g)
+        if W0 is None: th.append(torch.randn(NPQ, generator=g, device=DEV)*.8)
+        else:
+            base = W0[sd] if isinstance(W0, dict) else W0
+            base = torch.as_tensor(base, dtype=torch.float32, device=DEV).flatten()
+            t = torch.zeros(NPQ, device=DEV); t[:base.numel()] = base; th.append(t)
+    theta = torch.stack(th)                                # (S, NP)
+    hist = {sd: [] for sd in seeds}; snaps = {sd: [] for sd in seeds}
+    melhor = {sd: (-float('inf'), theta[si].clone()) for si, sd in enumerate(seeds)}
+    ne = max(2, int(PP*elite))
+    for it in range(ger):
+        cfg_it = cfg_gen(it, ger) if cfg_gen is not None else cfg
+        eps = torch.stack([torch.randn(N, NPQ, generator=gs[si], device=DEV) for si in range(S)])   # (S, N, NP)
+        pop = torch.cat([theta[:, None, :], theta[:, None, :] + sigma_es*eps, theta[:, None, :] - sigma_es*eps], 1).clamp(-5, 5)   # (S, PP, NP)
+        f = (avaliar_fn or avaliar)(Arq, pop.reshape(S*PP, NPQ), cidades, cfg_it, T, seed=777000+it*13, R=R).view(S, PP)
+        for si, sd in enumerate(seeds):
+            fs = f[si]; o = fs.argsort(descending=True); hist[sd].append(float(fs[o[0]]))
+            if float(fs[o[0]]) > melhor[sd][0]: melhor[sd] = (float(fs[o[0]]), pop[si, o[0]].clone())
+            u = torch.empty(PP, device=DEV); u[o] = torch.linspace(.5, -.5, PP, device=DEV)   # utilidade por POSTO (livre de escala)
+            grad = ((u[1:N+1] - u[N+1:])[:, None]*eps[si]).sum(0)/(N*sigma_es)
+            theta[si] = (theta[si] + lr*grad).clamp(-5, 5)
+            if it % 5 == 0:
+                q = torch.tensor([0., .25, .5, .75, 1.], device=DEV); fb = fs[o]
+                snaps[sd].append({'ger': it, 'fit_percentis': [float(x) for x in torch.quantile(fb, q)], 'fit_media': float(fb.mean()),
+                                  'diversidade': float(pop[si].std(0).mean()), 'alocacao_elite': alocacao(pop[si][o], ne), 'passo': float((lr*grad).norm())})
+        if verbose and it % 5 == 0:
+            linha = ' '.join(f'{hist[sd][-1]:>8.2f}' for sd in seeds)
+            print(f'  ger {it:>3} | {linha}   (melhor por semente, ES s={sigma_es} lr={lr})', flush=True)
+        if paciencia and it >= paciencia:
+            agora = sum(hist[sd][-1] for sd in seeds)/len(seeds); antes = sum(max(hist[sd][:-paciencia]) for sd in seeds)/len(seeds)
+            if agora <= antes + 0.01*abs(antes) + 1e-6:
+                if verbose: print(f'  parada antecipada na ger {it} (sem melhora em {paciencia} ger.)', flush=True)
+                break
+    return {sd: (melhor[sd][1], hist[sd], snaps[sd]) for sd in seeds}
+
 def evoluir_juntas(arqs, cidades, cfg, P=512, ger=25, T=1500, seed=0, elite=.15,
                    verbose=True, R=1, ckpt=None, ckpt_cada=10):
     """Todas as arquiteturas evoluem NO MESMO RUN, geracao a geracao.
