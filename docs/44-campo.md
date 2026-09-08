@@ -854,3 +854,13 @@ largura ficar ~0, um limiar basta porque o posto enche o tanque de uma vez
   17.5 / 6.4 panes — igual. Diagnóstico caiu (127: `sed -i` numa fila em
   execução não muda o que o `read` já abriu — inode novo); re-enfileirado
   no fim do E61b. **E61b (guincho 10 + 5 L, 5 sementes) começou 23:31.**
+- **23:55 E61b guincho pago, do zero, 5 sementes:** linear 0.98 · reflexo
+  0.96 · bilinear cheio 0.96 — todo mundo endividado (dinheiro −5 a −15) e
+  com 4.5–5 panes: sem guincho grátis o ser cego morre, e o bilinear do zero
+  não acha o gene. Conta que faltava: o gene de procurar o posto precisa
+  valer ~ −12 (peso do passageiro 3.6 ÷ risco 0.3), e com escala .01 seria
+  −1200 — inalcançável; com escala 1 o ruído de semeadura afogava. Saída:
+  bilinear SÓ do sentido retificado (`e_risco`, 10 genes) com escala 1 — o
+  risco é ZERO enquanto seguro, então a semeadura não faz ruído e a escala
+  pode ser 1. **E61c**: bilinear risco (esc 1) semeado do linear-com-guincho
+  (5 sementes) → diagnóstico → prefeito → só-camadas semeado → portão.

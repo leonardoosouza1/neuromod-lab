@@ -578,11 +578,13 @@ class Bilinear(Linear):
         Wm = torch.einsum('bk,bkf->bf', corpo, s.M)*s.ESC                    # (B,NOP) pesos de opcao modulados pelo estado
         return torch.einsum('bgf,bf->bg', F[:, :, :s.NOP], Wm)
 
-def fabrica_bilinear(sentidos):
-    """Bilinear restrito a alguns sentidos do corpo (ex.: autonomia e consumo): so as linhas M[k,:] desses sentidos existem."""
+def fabrica_bilinear(sentidos, esc=None):
+    """Bilinear restrito a alguns sentidos do corpo: so as linhas M[k,:] desses sentidos existem. esc: escala do termo (default = Bilinear.ESC = .01).
+    [E61c] Com um sentido RETIFICADO que e' zero enquanto seguro (e_risco), a semeadura nao faz ruido (0 x gene = 0) e a escala pode ser 1:
+    o gene de procurar o posto precisa valer ~ -12 (peso do passageiro 3.6 / risco 0.3) — com escala .01 seria -1200, inalcancavel."""
     idx = [NOMES_CORPO.index(n) for n in sentidos]
     class B(Bilinear):
-        nome = 'bilinear-' + '+'.join(sentidos); NP = Linear.NP + len(idx)*Bilinear.NOP; IDX = torch.tensor(idx, device=DEV)
+        nome = 'bilinear-' + '+'.join(sentidos); NP = Linear.NP + len(idx)*Bilinear.NOP; IDX = torch.tensor(idx, device=DEV); ESC = Bilinear.ESC if esc is None else esc
         def reset(s, m, W):
             s.W = W; s.M = W[:, Linear.NP:Linear.NP + len(idx)*s.NOP].view(-1, len(idx), s.NOP)
         def extra(s, m, W, F):
