@@ -49,6 +49,11 @@ def agora(): return datetime.now(timezone.utc).isoformat(timespec='seconds')
 
 def valida(p):
     """Devolve (argv, env, out_dir) ou levanta ValueError com o motivo."""
+    global SCRIPTS
+    wl = os.path.join(SPOOL, 'whitelist.json')                      # [09-08] hot-reload: politica editavel sem reiniciar o daemon
+    if os.path.exists(wl):
+        try: SCRIPTS = set(json.load(open(wl)))
+        except Exception: pass
     if not isinstance(p, dict):                    raise ValueError('pedido não é objeto')
     pid = str(p.get('id', '')).strip()
     if not re.fullmatch(r'[\w-]{1,40}', pid):      raise ValueError('id inválido')
