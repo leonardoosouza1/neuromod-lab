@@ -11,6 +11,7 @@ PROIBIDO = [r'\bimport\s+(?!torch\b|math\b)', r'\bfrom\s+(?!torch\b|math\b)', r'
 for pat in PROIBIDO:
     if re.search(pat, src): raise SystemExit(f'POLITICA RECUSADA: padrao proibido {pat!r}')
 ns = {'torch': torch, 'math': __import__('math'), 'G': G, 'S': S, 'NF': NF, 'NOMES_OP': NOMES_OP, 'NOMES_CORPO': NOMES_CORPO, 'Linear': Linear, 'DEV': DEV}
+torch.set_default_device(DEV)   # agente cria tensor sem device -> cai na GPU (r5_1 crashou com cpu vs cuda)
 exec(compile(src, a.politica, 'exec'), ns); assert 'fabrica' in ns, 'politica.py precisa definir fabrica() -> classe com reset/extra/decidir/atualizar'
 POL0 = ns['fabrica']()
 import inspect
