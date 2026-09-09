@@ -1,0 +1,14 @@
+{
+ "construcao": {
+  "tipo": "politica",
+  "tarefa": "ATENCAO: as rodadas 1-2 morreram por um erro NOSSO no contrato (ordem de ACOES errada no prompt). Agora a tabela e' a do codigo: k=0..4 posto 25/50/75/100/150 L, 5-6 agua 50/100, 7 comida, 8 descanso, 9 oficina; a loja do posto vende comida e agua (no posto, k=7 e k=5/6 ficam disponiveis). Escreva a politica em 3 camadas: (1) EMERGENCIA: se e_autonomia < .3 (tanque nao chega ao posto com margem) -> argmin(F[:,:,1]) rumo ao posto e, quando tudo[:,G+3] > -1e8, comprar posto 100 (G+3) ou o maior que o dinheiro paga (G+2, G+1, G+0); se e_fome > .6 -> rumo a comida (F[:,:,2]) e comprar G+7 quando disponivel; se e_agua < .35 -> G+5/G+6. (2) OPORTUNISMO: ja no posto (tudo[:,G+0] > -1e8): comprar comida se e_fome > .3 e agua se e_agua < .6, ANTES de sair. (3) TRABALHO: argmin(F[:,:,0]) rumo ao passageiro/destino; de madrugada (e_noite) com e_fadiga > .7 -> descanso (F[:,:,5], G+8). Nunca devolver 8 (ficar) sem motivo. O juiz mostra o TRACO das escolhas (fracao ficar/mover/cada servico nos primeiros 240 ticks) e a AUTOPSIA — o campeao evoluido faz 6 refeicoes e 4 abastecidas em 10 dias e morre 0.85. Predicao com numeros: mortos, entregas, refeicoes, abastecidas."
+ },
+ "lugar": {
+  "tipo": "cenario",
+  "tarefa": "Calibracao medida ate agora na cidade (pax_cidade true): npx 12/respawn 20 -> linear 0.93; npx 22/respawn 12 (contraste 4x) -> linear 0.89; npx 32/respawn 15 -> (chegando). A banda 0.40-0.80 provavelmente exige npx 36-48 com respawn 10-15. Escolha UM ponto dentro disso, mantenha contraste centro/periferia 3-4x, e faca a predicao por braco (linear, COMPLETO, bilinear risco+demanda+espera) com o mecanismo de POR QUE quem le demanda/espera ganha. Se voce acha que a densidade sozinha nao poe o linear na banda, diga qual outro parametro e por que (ex.: tarifa_km, dinh0)."
+ },
+ "minimo": {
+  "tipo": "cenario",
+  "tarefa": "Unico cenario valido da r1 foi 'deserto de descanso' (linear 0.81, COMPLETO 0.78, -3 pp): fadiga nao e' o eixo letal; panes de gasolina (6.4 por vida) dominam. Proponha o cenario MINIMO que faz o eixo LETAL depender de lugar: ex. posto so em um distrito (dens posto 0 nos outros) ou preco da gasolina muito diferente por distrito (pmul), com passageiro perto (pax_cidade false) para manter o linear na banda. Bracos: linear, COMPLETO, bilinear risco (esc 3). Predicao com numeros e mecanismo; mude o menor numero de parametros."
+ }
+}

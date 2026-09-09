@@ -37,3 +37,14 @@ Piso: com 12 passageiros na cidade toda, todo mundo morre 0.91–0.95. Lugar pas
    (emergência / oportunismo no posto-loja / trabalho) e "vá buscar, não pare"; minimo → achar a densidade mínima em que o linear volta a 0.5–0.7.
 ## O que não repetir
 Escassez total; predição sem olhar a tabela de calibração; política que espera o serviço "aparecer" (o táxi tem de ir).
+
+## Fechamento da rodada 1 (00:15)
+| item | previu | mediu | veredito | mecanismo |
+|---|---|---|---|---|
+| lugar_2 (oásis central) | ~95 % dos pax no centro; linear morre por não ir ao centro | todos 1.00, ~2 entregas | ✗ escala | escassez total (npx 6, periferia .05, rua fora 6) mata todos antes de qualquer escolha |
+| minimo_1 (só pax_cidade) | linear cai, COMPLETO separa | linear 0.92, COMPLETO 0.93 | ✗ piso | réplica do E70 com protocolo curto: 12 pax na cidade = duro demais |
+| minimo_2 (deserto de descanso) | pane de fadiga mata o linear; COMPLETO ≥ 10 pp | linear 0.81, COMPLETO 0.78 | ✗ (válido, sem efeito) | único cenário na banda; fadiga não é o eixo letal (panes de gasolina 6.4 dominam) |
+
+**Erro do consolidador (eu):** a ordem de ACOES no contrato da API foi escrita de memória e estava errada; as políticas dos agentes
+compraram o índice errado e morreram de fome "sem comprar nada". Todas as mortes de política das rodadas 1–2 são inválidas como
+teste da hipótese "nenhuma política sobrevive". Contrato corrigido com a tabela do código (S ações, índice → ação) antes da r3.

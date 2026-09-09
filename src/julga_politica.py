@@ -12,7 +12,17 @@ for pat in PROIBIDO:
     if re.search(pat, src): raise SystemExit(f'POLITICA RECUSADA: padrao proibido {pat!r}')
 ns = {'torch': torch, 'math': __import__('math'), 'G': G, 'S': S, 'NF': NF, 'NOMES_OP': NOMES_OP, 'NOMES_CORPO': NOMES_CORPO, 'Linear': Linear, 'DEV': DEV}
 exec(compile(src, a.politica, 'exec'), ns); assert 'fabrica' in ns, 'politica.py precisa definir fabrica() -> classe com reset/extra/decidir/atualizar'
-POL = ns['fabrica'](); POL.NP = Linear.NP
+POL0 = ns['fabrica'](); POL0.NP = Linear.NP
+class POL(POL0):   # shim: aceita reset(m) ou reset(m, W); extra pode faltar
+    NP = Linear.NP
+    def reset(s, m, W):
+        try: return super().reset(m, W)
+        except TypeError: return super().reset(m)
+    def extra(s, m, W, F):
+        if hasattr(POL0, 'extra'): return super().extra(m, W, F)
+        s.F = F; return torch.zeros(m.B, G, device=DEV)
+    def atualizar(s, m):
+        if hasattr(POL0, 'atualizar'): return super().atualizar(m)
 fl = argparse.Namespace(L=200., dias=10., fitness='riqueza', nevoa=float('inf'), npx=12, respawn=20., pax_cidade=False, ponto=0., dinh0=10., fome_passo=None, kcal_pane=8., guincho=0., fuel_pane=15., P=None, G=None, paciencia=None, R=None, seeds=None, so=None, mundo='distinto')
 cen = json.load(open(a.cenario)) if a.cenario else {}; ex = aplica_cenario(fl, cen)
 cfg = CfgCampo(L=fl.L, fitness=fl.fitness); cfg.KCAL_PANE = fl.kcal_pane; cfg.dinh0 = fl.dinh0; cfg.GUINCHO = fl.guincho; cfg.FUEL_POS_PANE = fl.fuel_pane; cfg.nevoa = fl.nevoa; cfg.ponto = fl.ponto; cfg.NPX = fl.npx; cfg.respawn = fl.respawn; cfg.pax_cidade = fl.pax_cidade
@@ -30,7 +40,17 @@ def mede(Arq, W, nome):
     med = {k: sum(v)/len(v) for k, v in r.items()}; med['por_seed'] = {k: [round(x, 3) for x in v] for k, v in r.items()}
     print(f"  {nome:<28} mortos {med['mortos']:.2f} {med['por_seed']['mortos']} ent {med['ent']:5.1f} renda {med['rec']:5.0f} panes {med['panes']:4.1f} | AUTOPSIA: refeicoes {med['n_come']:4.1f} abastecidas {med['n_posto']:4.1f} fome_fim {med['fome_fim']:3.0f} agua_fim {med['agua_fim']:3.0f} dinheiro_fim {med['dinh_fim']:4.0f} (fome 100 = morreu de fome; refeicoes 0 = nunca comprou comida; dinheiro < 0 = divida)", flush=True); return med
 print(f'== juiz de politica | {os.path.basename(a.politica)} | cenario {a.cenario or "base(default)"} | {len(a.seeds)} sementes x {a.copias} copias x 3 mapas ==', flush=True)
+def traco(Arq, W, T=240):   # histograma das ESCOLHAS nos primeiros T ticks: mostra o mecanismo (parado? comprando? andando?)
+    m = Campo(teste, 64, cfg, seed=7777, R=1); Wb = W[None, :].repeat(64, 1)[m.gidx]; ar = Arq(); ar.reset(m, Wb); cont = torch.zeros(G + S, device=DEV); dist = 0.
+    for t in range(T):
+        F, val = m.obs(); sc = torch.einsum('bgf,bf->bg', F, Wb[:, :NF]) + ar.extra(m, Wb, F); sc = sc - sc.mean(1, keepdim=True)
+        svn, sv = m.serv_need(); ss = (svn*Wb[:, NF:NF+S] + Wb[:, NF+S:NF+S+1]).masked_fill(sv <= 0, -1e9); tudo = torch.cat([sc, ss], 1)
+        esc = ar.decidir(tudo, m) if hasattr(ar, 'decidir') else tudo.argmax(1); esc = esc.long().clamp(0, G + S - 1); p0 = m.pos.clone(); m.passo(esc); ar.atualizar(m)
+        cont += torch.bincount(esc, minlength=G + S).float(); dist += float((m.pos - p0).norm(dim=-1).mean())
+    f = (cont/cont.sum()).tolist(); nomes = ['mover']*(G - 1) + ['ficar'] + [f'{t}{int(q) if q else ""}' for t, q in ACOES]
+    agg = {'mover': sum(f[:G - 1]), 'ficar': f[G - 1]}; agg.update({nomes[G + k]: f[G + k] for k in range(S)})
+    print('  TRACO 240 ticks (fracao das escolhas): ' + ' '.join(f'{k} {v:.2f}' for k, v in agg.items() if v > 0.005) + f' | deslocamento medio/tick {dist/T:.2f} u', flush=True)
 res = dict(politica=a.politica, cenario=a.cenario, predicao=cen.get('predicao'))
-res['linear_campeao'] = mede(Linear, Wc, 'linear campeao (q8)'); res['politica_res'] = mede(POL, torch.zeros(Linear.NP, device=DEV), 'politica do agente')
+res['linear_campeao'] = mede(Linear, Wc, 'linear campeao (q8)'); traco(POL, torch.zeros(Linear.NP, device=DEV)); res['politica_res'] = mede(POL, torch.zeros(Linear.NP, device=DEV), 'politica do agente')
 res['dif_mortos'] = res['politica_res']['mortos'] - res['linear_campeao']['mortos']
 json.dump(res, open(os.path.join(a.out, f'julga{a.tag}.json'), 'w'), indent=1); print(f"dif mortos (politica - linear) {res['dif_mortos']:+.3f}", flush=True)
