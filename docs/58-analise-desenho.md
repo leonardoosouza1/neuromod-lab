@@ -27,7 +27,7 @@ avaliação puro, sem evolução no meio. Já um campeão evoluído carrega os d
 | fonte | DP mediana | como reduzir |
 |---|---|---|
 | avaliação (política fixa, 72 medições) | **0.0147** | mais cópias/mapas/R — barato |
-| total (campeão evoluído, 76 medições) | **0.0262** | — |
+| total (campeão evoluído, 76 medições) | **0.0258** | — |
 | **evolução** (subtraindo em quadratura) | **0.0212** | **só com mais sementes** |
 
 **A evolução responde por 68 % da variância.** Nenhuma quantidade de cópias, réplicas ou
