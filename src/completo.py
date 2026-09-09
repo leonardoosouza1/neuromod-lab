@@ -40,6 +40,8 @@ class SerCompleto(Cerebro):
     def nomes_genes(): return nomes_genes_completos()   # [spec I1a] usado por dof_por_bloco
     def reset(s, m, W):
         Cerebro.reset(s, m, W); B = m.B; L = s.liga
+        if not L.get('rapida', True): s.V = torch.zeros_like(s.V)
+        if not L.get('lenta', True): s.M = torch.zeros_like(s.M); s.P = torch.zeros_like(s.P)
         if not L['livre']: s.V = torch.zeros_like(s.V); s.M = torch.zeros_like(s.M); s.P = torch.zeros_like(s.P)
         o = s.O_REF; s.tau_r = 1. + 200.*torch.sigmoid(W[:, o] - 4.); s.w = W[:, o+1]; s.v = W[:, o+2]; s.theta = torch.sigmoid(W[:, o+3])
         if not L['reflexo']: s.w = torch.zeros_like(s.w); s.v = torch.zeros_like(s.v)
@@ -115,6 +117,7 @@ def _parte(nome, **off):
     P.nome = nome; P.liga = {**SerCompleto.liga, **off}; P.__name__ = nome; return P
 SemTalamo = _parte('sem-talamo', talamo=False); SemCortex = _parte('sem-cortex', cortex=False); SemHipocampo = _parte('sem-hipocampo', hipocampo=False)
 SemReflexo = _parte('sem-reflexo', reflexo=False); SemLivre = _parte('sem-livre', livre=False)
+SemRapida = _parte('sem-rapida', rapida=False); SemLenta = _parte('sem-lenta', lenta=False)
 SoCamadas = _parte('so-camadas', livre=False)     # talamo+cortex+hipocampo+reflexo (o SerCamadas do grafo, no campo)
 
 def nomes_genes_cerebro():

@@ -22,5 +22,14 @@ def test_custo_ativacao_gene_morto():
 def test_metab_monotono():
     m1 = rodar(SerCompleto, W, mapas, cfg('ativacao', .3), T=200, seed=3, R=1); m2 = rodar(SerCompleto, W, mapas, cfg('ativacao', .6), T=200, seed=3, R=1)
     r = float((m2.metab - 1.).mean())/max(float((m1.metab - 1.).mean()), 1e-9); print(f'test_metab_monotono: (metab-1) lam .6 / lam .3 = {r:.3f} (esperado 2.0)', 'OK' if abs(r - 2.) < .05 else 'FALHOU', '| ativacao_bloco:', {b: round(float((v/m1.ativ_n).mean()), 3) for b, v in m1.ativ_soma.items()}, flush=True); assert abs(r - 2.) < .05
+def test_basal_impede_catatonia():
+    nomes = nomes_genes_completos(); Wd = torch.zeros(32, SerCompleto.NP, device=DEV); Wd[:, :Linear.NP] = W[:, :Linear.NP]; Wd[:, SerCompleto.O_HIP+1] = 0.
+    ih = [i for i, n in enumerate(nomes) if n.startswith('hipM')]; Wd[:, Linear.NP + torch.tensor(ih, device=DEV)] = 3.
+    W0 = torch.zeros(32, SerCompleto.NP, device=DEV); W0[:, :Linear.NP] = W[:, :Linear.NP]
+    c1 = cfg('ativacao', .3); c1.custo_basal = .15; c0 = cfg('ativacao', .3); c0.custo_basal = 0.
+    md = rodar(SerCompleto, Wd, mapas, c1, T=200, seed=3, R=1); m0 = rodar(SerCompleto, W0, mapas, c1, T=200, seed=3, R=1); mb0 = rodar(SerCompleto, Wd, mapas, c0, T=200, seed=3, R=1)
+    d, z, b0 = float(md.metab.mean()), float(m0.metab.mean()), float(mb0.metab.mean())
+    ok = d > z + .10 and abs(b0 - 1.) < .02
+    print(f'test_basal_impede_catatonia: 87 genes ligados e mudos: metab {d:.3f} vs genoma vazio {z:.3f} (basal .15 cobra o tecido em repouso); sem basal {b0:.3f} (~1.0)', 'OK' if ok else 'FALHOU', flush=True); assert ok
 if __name__ == '__main__':
-    test_custo_identidade(); test_custo_ativacao_gene_morto(); test_metab_monotono()
+    test_custo_identidade(); test_custo_ativacao_gene_morto(); test_metab_monotono(); test_basal_impede_catatonia()
