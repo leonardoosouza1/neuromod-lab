@@ -32,7 +32,7 @@ def chama(prompt, model, timeout=900):
 def bloco(txt, lang):
     if lang == 'python':   # tolerante: ```python, ```py ou ``` sem linguagem, desde que tenha def fabrica; pega o MAIOR bloco
         cands = [b for b in re.findall(r'```(?:python|py)?[ \t]*\n(.*?)```', txt, re.S) if 'def fabrica' in b]
-        return max(cands, key=len).strip() if cands else None
+        return cands[-1].strip() if cands else None   # o ULTIMO: respostas sujas pelo hook ecoam o prompt (com o codigo-base) antes da resposta
     m = re.search(r'```' + lang + r'\s*(.*?)```', txt, re.S); return m.group(1).strip() if m else None
 def melhor_politica():
     pj = os.path.join(DA, 'placar.json'); P = json.load(open(pj)) if os.path.exists(pj) else []
@@ -45,9 +45,10 @@ def gerar(a):
         pr = f"{ctx}\n# SUA TAREFA (lote {a.lote}, agente {i})\n{tarefa}\nSUA ALAVANCA: **{al}**. Mude so isso na politica base abaixo (copie o resto). Justifique os numeros com os DADOS medidos.\nFORMATO: uma linha `PREDICAO: ...` e depois UM bloco ```python``` com o arquivo completo.\n\n```python\n{open(base).read()}\n```"
         open(os.path.join(out, f'p{i}.prompt.md'), 'w').write(pr)
         if a.dry_run: return i, 'dry', al
-        txt = chama(pr, a.model); open(os.path.join(out, f'p{i}.resposta.md'), 'w').write(txt); py = bloco(txt, 'python'); pm = re.search(r'PREDICAO:(.*)', txt)
+        txt = chama(pr, a.model); open(os.path.join(out, f'p{i}.resposta.md'), 'w').write(txt); py = bloco(txt, 'python'); pms = re.findall(r'PREDICAO:(.*)', txt); pm = pms[-1] if pms else ''
         if not py: return i, 'RECUSADO: sem bloco python', al
-        open(os.path.join(out, f'p{i}.politica.py'), 'w').write(py); json.dump({'alavanca': al, 'predicao': pm.group(1).strip() if pm else ''}, open(os.path.join(out, f'p{i}.meta.json'), 'w'), ensure_ascii=False)
+        if re.sub(r'\s+', '', py) == re.sub(r'\s+', '', open(base).read()): return i, 'RECUSADO: igual a base (sem mudanca)', al
+        open(os.path.join(out, f'p{i}.politica.py'), 'w').write(py); json.dump({'alavanca': al, 'predicao': pm.strip()}, open(os.path.join(out, f'p{i}.meta.json'), 'w'), ensure_ascii=False)
         return i, 'ok', al
     t0 = time.time()
     with ThreadPoolExecutor(max_workers=a.n) as ex: rs = list(ex.map(um, range(1, a.n + 1)))

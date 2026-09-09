@@ -1,0 +1,143 @@
+import torch
+
+
+def fabrica():
+    class PoliticaL5Noite:
+        def reset(self, m, W):
+            self.reparando_vida = torch.zeros(m.B, dtype=torch.bool, device=DEV)
+            self.comeu_ultimo_tick = torch.zeros(m.B, dtype=torch.bool, device=DEV)
+            self.descansando = torch.zeros(m.B, dtype=torch.bool, device=DEV)
+
+        def extra(self, m, W, F):
+            self.F = F
+            return torch.zeros(m.B, F.shape[1], device=DEV, dtype=F.dtype)
+
+        def decidir(self, tudo, m):
+            F = self.F
+            G = F.shape[1]
+            S = tudo.shape[1] - G
+            device = tudo.device
+            dtype = tudo.dtype
+            B = tudo.shape[0]
+
+            e_fuel = F[:, 0, 10]
+            e_agua = F[:, 0, 11]
+            e_fome = F[:, 0, 12]
+            e_fadiga = F[:, 0, 13]
+            e_calor = F[:, 0, 14]
+            e_vida = F[:, 0, 15]
+            e_dinh = F[:, 0, 16]
+            e_pax = F[:, 0, 18]
+            e_noite = F[:, 0, 21]
+            dinh = e_dinh * 150.0
+            tem_pax = e_pax > 0.5
+
+            disp = tudo[:, G:G + S] > -1e8
+            no_posto = disp[:, 0]
+            no_oficina = disp[:, 9]
+            no_descanso = disp[:, 8]
+
+            # ALAVANCA RUA (herdada de p7, intacta): score de mover ao alvo pondera d_alvo +
+            # peso*custo_frente. peso pequeno de proposito: L1 p7 usou peso=5.0 e a penalidade
+            # (5*2=10) dominou o d_alvo (diff maxima ~2), paralisando o taxi (0.99, 1.7 corridas).
+            # Aqui peso=.15 da penalidade maxima .15*2=.3, so' desempata direcoes quase
+            # equivalentes sem nunca virar a decisao principal de ir ao alvo.
+            PESO_RUA = 0.15
+            mover = torch.argmin(F[:, :, 0] + PESO_RUA * F[:, :, 6], dim=1)
+            ir_oficina = torch.argmin(F[:, :, 4], dim=1)
+            ir_comida_mov = torch.argmin(F[:, :, 2], dim=1)
+            ir_descanso_mov = torch.argmin(F[:, :, 5], dim=1)
+
+            score = torch.full((B, S), -1e9, device=device, dtype=dtype)
+
+            quer_agua = e_agua < 0.80  # gate original de p7 (nao mexido — alavanca aqui e' fadiga)
+            quer_comida = e_fome > 0.15
+            quer_fuel = e_fuel < 0.95
+
+            # ORDEM DE COMPRA NO POSTO: comida > agua > fuel (inalterado da base p7).
+            score[:, 7] = torch.where(no_posto & quer_comida, 30.0 + (e_fome - 0.15), score[:, 7])
+
+            val_agua = torch.where(
+                no_posto & quer_agua & disp[:, 5],
+                20.0 + (0.80 - e_agua),
+                torch.full((B,), -1e9, device=device, dtype=dtype),
+            )
+            score[:, 5] = torch.where(no_posto & quer_agua & disp[:, 5], val_agua, score[:, 5])
+
+            idx_pref = torch.where(
+                dinh > 40,
+                torch.full((B,), 3, device=device, dtype=torch.long),
+                torch.full((B,), 1, device=device, dtype=torch.long),
+            )
+            disp_pref = disp.gather(1, idx_pref.unsqueeze(1)).squeeze(1)
+            idx_fuel = torch.where(disp_pref, idx_pref, torch.zeros_like(idx_pref))
+            disp_fuel = torch.where(disp_pref, disp_pref, disp[:, 0])
+            val_fuel = torch.where(
+                no_posto & quer_fuel & disp_fuel,
+                10.0 + (1.0 - e_fuel),
+                torch.full((B,), -1e9, device=device, dtype=dtype),
+            )
+            score.scatter_(1, idx_fuel.unsqueeze(1), val_fuel.unsqueeze(1))
+
+            melhor = torch.argmax(score, dim=1)
+            comprar = no_posto & (score.gather(1, melhor.unsqueeze(1)).squeeze(1) > -1e8)
+
+            # segunda refeicao: se comeu no tick anterior e ainda ta com fome e tem grana, come de novo
+            segunda = no_posto & self.comeu_ultimo_tick & (e_fome > 0.15) & (dinh > 30) & disp[:, 7]
+
+            # NOITE (comida): posto fecha de noite -> desvia pro ponto de comida mais perto (raio 25).
+            # Nunca desvia com passageiro a bordo (~tem_pax) — corrida termina primeiro. (H15, intacto)
+            buscar_comida = (~no_posto) & (~tem_pax) & ((e_noite > 0.5) | (e_fome > 0.6)) & (F[:, G - 1, 2] < 25)
+
+            # emergencia fora do posto: so' se ja esta ao lado (inalterado da base — backstop, nao a alavanca)
+            fora_agua = (~no_posto) & (e_agua < 0.15) & (F[:, G - 1, 3] < 8) & disp[:, 5]
+            fora_comida = (~no_posto) & (e_fome > 0.85) & (F[:, G - 1, 2] < 8) & disp[:, 7]
+
+            # REPARO: (1) vida baixa com histerese .5/.8, (2) calor alto sem passageiro (inalterado)
+            ini_vida = (e_vida < 0.5) & (dinh > 20)
+            self.reparando_vida = (self.reparando_vida | ini_vida) & (e_vida < 0.8) & (dinh > 10)
+            quer_calor = (e_calor > 0.75) & (~tem_pax)
+            quer_oficina = self.reparando_vida | quer_calor
+
+            comprar_oficina = no_oficina & quer_oficina & (tudo[:, G + 9] > -1e8)
+            ir_oficina_mov = quer_oficina & (~comprar_oficina)
+
+            # ALAVANCA NOITE/FADIGA (unica mudanca vs p7, que ignorava e_fadiga por completo):
+            # p7 ja bate 0.66 sem ler fadiga -> nao ha evidencia de que fadiga sozinha mate (causa
+            # de morte medida e' so' fome/dano). Duas tentativas anteriores de mexer nisso
+            # regrediram: H20 (parar de rodar) foi pra 0.88 porque cortou renda sem resolver fome
+            # (fome virou 73% das mortes); L4 p6 (descanso/fadiga) foi pra 0.78 porque o desvio ao
+            # hotel comeu tempo de corrida/comida (fome subiu pra 58%). Por isso o gate aqui e'
+            # deliberadamente apertado (histerese .75 liga / .35 desliga, nunca com passageiro) e a
+            # prioridade e' A MAIS BAIXA de todas as acoes de desvio: comida noturna (H15, validada)
+            # e oficina (dano, validada) sempre vencem o descanso quando competem pelo mesmo tick.
+            ini_fad = (e_fadiga > 0.75) & (dinh > 20) & (~tem_pax)
+            self.descansando = (self.descansando | ini_fad) & (e_fadiga > 0.35) & (dinh > 8) & (~tem_pax)
+            quer_descanso = self.descansando
+
+            comprar_descanso = no_descanso & quer_descanso & disp[:, 8]
+            ir_descanso_det = quer_descanso & (~comprar_descanso) & (~no_posto) & (~no_oficina)
+
+            # prioridade (menor pra maior, ultima escrita vence):
+            # mover base < descanso (fadiga, nova alavanca, prioridade minima) < buscar comida de
+            # longe < detour oficina < compra posto < compra oficina < compra descanso
+            # < emergencia agua/comida < segunda refeicao
+            acao = mover.clone()
+            acao = torch.where(ir_descanso_det, ir_descanso_mov, acao)
+            acao = torch.where(buscar_comida, ir_comida_mov, acao)
+            acao = torch.where(ir_oficina_mov, ir_oficina, acao)
+            acao = torch.where(comprar, G + melhor, acao)
+            acao = torch.where(comprar_oficina, torch.full_like(acao, G + 9), acao)
+            acao = torch.where(comprar_descanso, torch.full_like(acao, G + 8), acao)
+            acao = torch.where(fora_agua, torch.full_like(acao, G + 5), acao)
+            acao = torch.where(fora_comida, torch.full_like(acao, G + 7), acao)
+            acao = torch.where(segunda, torch.full_like(acao, G + 7), acao)
+
+            self.comeu_ultimo_tick = acao == (G + 7)
+
+            return acao.long()
+
+        def atualizar(self, m):
+            pass
+
+    return PoliticaL5Noite

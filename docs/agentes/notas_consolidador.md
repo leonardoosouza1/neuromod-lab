@@ -4,3 +4,4 @@
 - VALIDADO no lote 2: comer à noite em pontos de comida rende ~2 pp (0.74 → 0.72). Incorpore isso em TODA política daqui em diante, além da sua alavanca.
 - REFUTADO: penalizar custo_frente (paralisa), comer mais só na loja do posto (fome à noite), abastecer 100 L sempre (come o dinheiro da comida), tirar o 'ficar' (era compra em ticks seguidos).
 - Mortes atuais: metade fome, metade dano, dia ~5.7. O dano vem de ~7.5 panes × 6 + calor; a oficina (+25 vida por 10) é usada ~1.9×. Alavancas com dado a favor: (a) menos tempo parado no raio (compras em no máximo 3 ticks por visita: 100 L se dinheiro ≥ 35, uma comida, uma água); (b) reparar um pouco mais cedo se sobra dinheiro; (c) não desviar com passageiro a bordo.
+- (09:35) BASE agora = L4 p2 (0.62): p7 + água na hora certa. Lote 4 teve 6 políticas idênticas à base por bug meu de parser (corrigido). Predições continuam otimistas (0.60–0.64 previstos → 0.62–0.66 medidos): calibre.

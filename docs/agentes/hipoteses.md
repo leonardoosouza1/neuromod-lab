@@ -16,3 +16,13 @@
 | H13 | comer à noite em pontos de comida (posto fecha) | ✓ leve: 0.74 → 0.72 (5 sementes), fome ainda 47 % das mortes | L2 p6 |
 | H14 | lote 2: 6/8 respostas sem bloco ```python → recusadas | bug de formato do orquestrador (parser agora aceita ```py / ``` com def fabrica) | L2 |
 | H15 | rua como DESEMPATE (peso .15 em custo_frente, não 5.0) + comida à noite em ponto de comida + nunca desviar com passageiro a bordo + comida antes de água no posto | ✓ 0.66 (3 sementes): melhor da série; o agente calibrou o peso pelos dados do L1 p7 (que paralisou com peso 5) | L3 p7 |
+
+| H16 | AGUA: beber/comprar mais cedo | ✓ 0.71 mas sede era so 7% das mortes — ganho veio de menos paradas, nao de sede | L3 p2 |
+| H17 | REPARO mais cedo/mais barato (2o teste) | ✗ 0.82: reparo come caixa e ticks, corridas caem 16.4 → 12.7 | L1 p3, L3 p3 |
+| H18 | GASOLINA: mais litros por parada | ✓ 0.73 (empata com a base) — menos paradas nao basta sozinho | L3 p4 |
+| H19 | ORDEM das compras + ticks parado no posto (2o teste) | ✗ 0.99: uma acao por tick vira fila, 7.1 corridas | L3 p5 |
+| H20 | NOITE = descansar/parar de rodar | ✗ 0.88: corta renda e nao evita fome (fome vira 73% das mortes) | L3 p6 |
+| H21 | LIVRE: comida noturna + nao desviar com passageiro | ✓ 0.68, 2o melhor da serie | L3 p8 |
+| H22 | limiar de fome baixo de DIA (3o teste) | ✗ 0.73: refeicoes sobem 7.3 → 8.2 e mortos nao cai — comer de dia nao cobre 22h-6h | L3 p1 |
+| H16 | ÁGUA: comprar menos/na hora certa sobre a base p7 | ✓ 0.66 → 0.62 (5 s 0.63): sede sobe para 19 % das mortes mas fome/dano caem; renda 172 | L4 p2 |
+| H17 | (bug) parser pegava o maior bloco python: em respostas sujas pelo hook, era o código-base ecoado → 6/8 do lote 4 idênticos à base | corrigido: último bloco + recusa 'igual à base' | L4 |
