@@ -25,6 +25,10 @@ anda 82% do tempo, 67% com passageiro, espera livre 3%: no mundo antigo o passag
 fad_passo .15, calor sobe .15 andando e desce .6 parado (CALOR_MAX 92 = pane de calor), pane de gasolina = KCAL_PANE 8 de reserva + reboque ate o posto com 15 L,
 tarifa 3 + .25 por unidade x pmul do distrito de origem, aluguel 4 x alug do distrito-casa por dia, LIMITE_DIVIDA 60, HOTEL 8, oficina 10 (REPARO 25 de vida), dinh0 10.
 ## Bracos disponiveis: {BRACOS}
+## CALIBRACAO MEDIDA (rodada 1) — leia antes de escolher numeros
+linear e' o controle e TEM de ficar com mortos entre 0.40 e 0.80, senao a regua crava e o cenario e' recusado. Medidas: passageiro perto do taxi (pax_cidade false, npx 12) -> linear 0.83, 18 entregas, renda 165;
+cidade (pax_cidade true, npx 12, respawn 20) -> linear 0.93, 11 entregas, renda ~110, COMPLETO 0.91 (piso: todos morrem igual); cidade + npx 5 + respawn 80 + periferia dem .05 -> 1.00 e 3 entregas (letal).
+Politicas explicitas da rodada 1 (2 agentes) morreram 1.00 de FOME com 2-4 entregas: estacionaram e nunca compraram comida (refeicoes 0). O oraculo a mao tambem morre 1.00. O campeao evoluido, medido pelo mesmo juiz: 0.85, 17.7 entregas, 6.8 panes.
 """
 API_POL = """## Contrato politica.py (agente escreve; o juiz executa em GPU com 3 mundos de teste x 128 copias x 5 sementes)
 Defina `fabrica()` que devolve uma CLASSE com: reset(s, m, W) ; extra(s, m, W, F) -> torch.zeros(m.B, G) (guarde s.F = F) ; decidir(s, tudo, m) -> LongTensor (m.B,) ; atualizar(s, m).

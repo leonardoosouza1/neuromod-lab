@@ -42,6 +42,10 @@ Um cenário sem `predicao` é recusado pelo orquestrador.
 4. **Diário** por grupo em `docs/agentes/<rodada>/<grupo>.md`; ledger PREDICOES recebe uma linha por item julgado.
 
 ## Guardas
+- **Banda do controle (regra desde a rodada 1):** um cenário só é válido se o linear (controle) ficar com mortos entre **0.40 e 0.80**. Abaixo
+  disso o mundo é fácil demais; acima, a régua crava no teto e não separa nada (na rodada 1, 'ímã no centro' deu 1.00 em todos e a
+  cidade com 12 passageiros deu 0.91–0.95 em todos). Tabela de calibração medida: passageiro perto (npx 12) → linear 0.83 / 18 entregas;
+  cidade npx 12 → 0.93 / 11; cidade npx 5 + respawn 80 + periferia .05 → 1.00 / 3. A alavanca é a DENSIDADE (npx 20–40 na cidade).
 - Agente não avalia o próprio resultado; só o simulador. Cenário "fácil demais" é pego pelo controle linear (se o linear já
   resolve, o cenário não separa nada). Política que lê estado proibido (posição do passageiro além do sentido) é recusada pela API.
 - Sem GPU fora da fila. Sem Fable. Contar agentes antes de disparar.

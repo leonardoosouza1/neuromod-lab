@@ -1,0 +1,14 @@
+{
+ "lugar": {
+  "tipo": "cenario",
+  "tarefa": "Rodada 1: seu grupo errou a ESCALA para o lado letal (ima no centro com npx 5/respawn 80 -> 1.00 em todos, 3 entregas). Agora: cidade (pax_cidade true) CALIBRADA: escolha npx entre 20 e 40 e respawn entre 10 e 30 de modo que o linear fique entre 0.40 e 0.80 de mortos (a tabela de calibracao esta no contexto), e faca o LUGAR importar por contraste de demanda entre distritos (centro 3-4x a periferia), nao por escassez total. Bracos: linear, COMPLETO, bilinear risco+demanda+espera (esc 1). Predicao com numeros por braco e o mecanismo."
+ },
+ "construcao": {
+  "tipo": "politica",
+  "tarefa": "Rodada 1: as duas politicas morreram 1.00 de FOME: 2-4 entregas, refeicoes 0 — o ser estacionou e nunca comprou comida. Causa provavel: (1) so comprou quando 'tudo[:, G:] > -1e8' E o alvo era o posto, mas comida/agua so existem em alguns distritos (residencial/centro; industrial NAO tem comida) e a loja do posto vende comida/agua (loja_no_posto) — compre comida/agua no POSTO quando abastecer; (2) o passageiro pode estar a 30-60 unidades: nao pare quando d_alvo e' grande, va. Escreva a politica em 3 camadas: emergencia (autonomia < margem -> posto mais perto e ENCHER; fome > .7 -> comida/loja), oportunismo (ja no servico: compra tudo que esta acima de .3 de necessidade se tem dinheiro), trabalho (ir ao passageiro; a noite ir para o descanso se fadiga alta). Use a AUTOPSIA do juiz (refeicoes, abastecidas, fome_fim, dinheiro_fim) que vira no log. Predicao com numeros."
+ },
+ "minimo": {
+  "tipo": "cenario",
+  "tarefa": "Rodada 1: minimo_1 (so pax_cidade) levou todos a 0.91-0.95 (piso, nada separa); minimo_2 (deserto de descanso) aguarda juiz. Agora: encontre a DENSIDADE minima de passageiros na cidade (pax_cidade true; varie SO npx e respawn) em que o linear volta a 0.5-0.7 de mortos; predicao: nessa densidade o COMPLETO separa >= 10 pp porque le demanda/espera (ou diga por que nao). Bracos: linear, COMPLETO. Mude o menor numero de parametros."
+ }
+}
