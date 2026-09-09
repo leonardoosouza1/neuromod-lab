@@ -102,7 +102,22 @@ Escreva em portugues, direto: (1) para cada item: acertou/errou a predicao e POR
         try: json.dump(json.loads(js), open(os.path.join(REPO, 'scripts', 'agentes', f'grupos_r{a.rodada+1}.json'), 'w'), indent=1); print('grupos da proxima rodada gravados')
         except Exception as e: print('json das tarefas invalido:', e)
     print(txt[:1500])
+def reenviar(a):
+    """recria os pedidos de uma rodada a partir dos arquivos em docs/agentes/r<N>/ (apos desligamento da maquina); so os que NAO tem estado 'terminou'"""
+    import nmd_cliente as c; out = os.path.join(REPO, 'docs', 'agentes', f'r{a.rodada}'); env = {'NM_RISCO': '1', 'NM_PONTO': '1'}; feitos = []
+    for f in sorted(glob.glob(os.path.join(out, '*.cenario.json'))):
+        nome = os.path.basename(f).replace('.cenario.json', ''); grupo, i = nome.rsplit('_', 1); pid = f'r{a.rodada}_{grupo}{i}'
+        if c.estado(pid).get('fase') == 'terminou' and not a.forca: continue
+        pol = os.path.join(out, f'{nome}.politica.py')
+        if os.path.exists(pol): c.pedir(pid, 'julga_politica', out=f'agentes_r{a.rodada}', env=env, politica=pol, tag=f'_{pid}')
+        else:
+            cen = json.load(open(f))
+            if a.triagem: cen['protocolo'] = {'P': 512, 'G': 60, 'paciencia': 30, 'R': 4, 'seeds': [0, 1, 2, 3, 4]}; json.dump(cen, open(f, 'w'), indent=1)
+            c.pedir(pid, 'e43_campo', out=f'agentes_r{a.rodada}', env=env, preset='fumaca', cenario=f, tag=f'_{pid}', **{'init-from': [R + '/e64/e43_busca8x_L200.json', 'linear'], 'sigma-espinha': 0.05})
+        feitos.append(pid)
+    pp = os.path.join(out, 'pedidos.json'); antigos = json.load(open(pp)) if os.path.exists(pp) else []
+    json.dump(antigos + [x for x in feitos if x not in antigos], open(pp, 'w')); print('reenviados:', feitos)
 if __name__ == '__main__':
-    ap = argparse.ArgumentParser(); ap.add_argument('fase', choices=['gerar', 'consolidar']); ap.add_argument('--rodada', type=int, default=1); ap.add_argument('--n', type=int, default=2); ap.add_argument('--model', default='sonnet')
+    ap = argparse.ArgumentParser(); ap.add_argument('fase', choices=['gerar', 'consolidar', 'reenviar']); ap.add_argument('--forca', action='store_true', help='reenviar mesmo os que ja terminaram'); ap.add_argument('--rodada', type=int, default=1); ap.add_argument('--n', type=int, default=2); ap.add_argument('--model', default='sonnet')
     ap.add_argument('--grupos', default='grupos.json'); ap.add_argument('--so', nargs='*', default=None); ap.add_argument('--agentes', type=int, nargs='*', default=None, help='so estes indices de agente (ex.: 2)'); ap.add_argument('--dry-run', action='store_true'); ap.add_argument('--triagem', action='store_true', help='forca protocolo P512 G60 pac30 nos cenarios'); a = ap.parse_args()
-    gerar(a) if a.fase == 'gerar' else consolidar(a)
+    {'gerar': gerar, 'consolidar': consolidar, 'reenviar': reenviar}[a.fase](a)
