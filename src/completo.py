@@ -14,7 +14,11 @@ import torch
 from campo import *
 
 # grupos do talamo: indices em NOMES_F (NOMES_OP 0-9, NOMES_CORPO 10-23)
-GRUPOS = [('rota', [0, 6, 9, 18]), ('servicos', [1, 2, 3, 4, 5]), ('corpo', [10, 11, 12, 13, 14, 15, 24, 25] + list(range(26, NF))), ('economia', [7, 8, 16, 17]), ('tempo', [19, 20, 21, 22, 23])]   # [E57] +consumo, autonomia; [E61] +risco no corpo; [E68] demanda/espera tambem no corpo (range(26, NF))
+GRUPOS_NOMES = {'rota': ['d_alvo', 'custo_frente', 'casa_frente', 'e_tem_pax'], 'servicos': ['d_posto', 'd_comida', 'd_agua', 'd_oficina', 'd_descanso'],
+                'corpo': ['e_fuel', 'e_agua', 'e_fome', 'e_fadiga', 'e_calor', 'e_vida', 'e_consumo', 'e_autonomia'], 'economia': ['preco_frente', 'aliq_frente', 'e_dinheiro', 'e_reserva'],
+                'tempo': ['h_sin', 'h_cos', 'e_noite', 'custo_aqui', 'bias']}   # [pre-F3] grupos do talamo por NOME: sentido novo (risco, demanda, espera, retina...) cai em 'corpo' sem deslocar indice nenhum
+_TODOS = [n for ns in GRUPOS_NOMES.values() for n in ns]; _NOVOS = [n for n in NOMES_F[:NF] if n not in _TODOS]
+GRUPOS = [(g, sorted(NOMES_F.index(n) for n in ns + (_NOVOS if g == 'corpo' else []))) for g, ns in GRUPOS_NOMES.items()]   # [E57] +consumo, autonomia; [E61] +risco no corpo; [E68] demanda/espera tambem no corpo (range(26, NF))
 NOMES_G = [g for g, _ in GRUPOS]; NG = len(GRUPOS)
 assert sorted(i for _, ids in GRUPOS for i in ids) == list(range(NF)), 'grupos nao cobrem os 24 sentidos'
 _IG = [0]*NF

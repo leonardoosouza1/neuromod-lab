@@ -9,12 +9,19 @@ from completo import SerCompleto, SemTalamo, SemCortex, SemHipocampo, SemReflexo
 PRESETS = {'triagem': dict(P=1024, G=40, T_evo=1200, T_aval=1200, R=8, seeds=(0, 1, 2)),
            'honesto': dict(P=1024, G=120, T_evo=1200, T_aval=1200, R=16, seeds=(0, 1, 2, 3, 4)),
            'fumaca': dict(P=512, G=25, T_evo=1200, T_aval=1200, R=4, seeds=(0,))}
-def alinha_semente(v):
-    """[E68] semente de um JSON gerado com NF menor: os sentidos novos entram no FIM do bloco corpo, entao os genes de servico
-    escorregariam. Insere zeros nos sentidos novos. So para semente LINEAR (len == Linear.NP velho); maior que Linear.NP = devolve como esta."""
-    v = [float(x) for x in v]; falta = Linear.NP - len(v)
-    if falta <= 0: return v
-    nf_velho = NF - falta; return v[:nf_velho] + [0.]*falta + v[nf_velho:]
+_BASE_CORPO = ['e_fuel', 'e_agua', 'e_fome', 'e_fadiga', 'e_calor', 'e_vida', 'e_dinheiro', 'e_reserva', 'e_tem_pax', 'h_sin', 'h_cos', 'e_noite', 'custo_aqui', 'bias', 'e_consumo', 'e_autonomia']
+_LAYOUTS = {}   # NP linear antigo -> NOMES_F daquele layout (sem nomes_f gravado): base 26 sentidos; +risco; +risco+demanda+espera
+for _extra in ([], ['e_risco'], ['e_risco', 'e_demanda', 'e_espera'], ['e_demanda', 'e_espera']):
+    _nf = NOMES_OP + _BASE_CORPO + _extra; _LAYOUTS[len(_nf) + S + 1] = _nf + [f'sv_{a[0]}{int(a[1]) if a[1] else ""}' for a in ACOES] + ['sv_bias']
+def alinha_semente(v, nomes=None):
+    """[E68 → pre-F3] semente LINEAR de outro layout de sentidos: mapeia gene por NOME (nomes = NOMES_F do JSON de origem, ou tabela
+    por NP para JSONs antigos); sentido que nao existia nasce 0. Sentido novo em QUALQUER posicao (corpo ou opcao) fica correto.
+    Maior que Linear.NP (arquitetura nao-linear): devolve como esta."""
+    v = [float(x) for x in v]
+    if len(v) >= Linear.NP and nomes is None: return v
+    src = nomes or _LAYOUTS.get(len(v))
+    if src is None or len(src) != len(v): raise SystemExit(f'alinha_semente: layout de origem desconhecido (NP {len(v)}); grave nomes_f no JSON')
+    pos = {n: i for i, n in enumerate(src)}; return [v[pos[n]] if n in pos else 0. for n in NOMES_F]
 
 BRACOS = [('linear', Linear), ('reflexo', Reflexo), ('produto (need x dist, portao)', Produto), ('modos gaussianos K=3', Modos), ('produto trend (olho multi-escala)', ProdutoTrend), ('reflexo 2 raizes (histerese)', ReflexoRaizes), ('reflexo alcance (km ate esvaziar)', ReflexoAlcance), ('cerebro livre (rapida+lenta, sem pista)', Cerebro), ('COMPLETO (talamo+cortex+hipocampo+reflexo+livre)', SerCompleto), ('completo sem talamo', SemTalamo), ('completo sem cortex', SemCortex), ('completo sem hipocampo', SemHipocampo), ('completo sem reflexo', SemReflexo), ('completo sem livre (so camadas)', SoCamadas), ('minimo 3 (d_alvo, d_posto, e_fuel)', fabrica_minimo(['d_alvo', 'd_posto', 'e_fuel'])), ('minimo 4 (+autonomia)', fabrica_minimo(['d_alvo', 'd_posto', 'e_fuel', 'e_autonomia'])), ('bilinear (corpo x opcao)', Bilinear), ('bilinear autonomia+consumo', fabrica_bilinear(['e_autonomia', 'e_consumo']))] + ([('bilinear risco (esc 1)', fabrica_bilinear(['e_risco'], esc=1.)), ('bilinear risco (esc 3)', fabrica_bilinear(['e_risco'], esc=3.))] if 'e_risco' in NOMES_CORPO else []) + ([('bilinear risco+demanda+espera (esc 1)', fabrica_bilinear(['e_risco', 'e_demanda', 'e_espera'], esc=1.))] if 'e_demanda' in NOMES_CORPO and 'e_risco' in NOMES_CORPO else [])   # [E68]
 
@@ -56,7 +63,7 @@ def main(a):
         if a.so and nome not in a.so: continue
         t1 = time.time(); W0 = None
         if a.init_from:
-            J = json.load(open(a.init_from[0]))['bracos'][a.init_from[1]]['W']; W0 = {sd: alinha_semente(J.get(str(sd), J[sorted(J)[sd % len(J)]])) for sd in p['seeds']}   # semente sem campeao no JSON (ex.: 3 sementes -> 5): usa o campeao de outra semente (ciclico)
+            JJ = json.load(open(a.init_from[0])); J = JJ['bracos'][a.init_from[1]]['W']; W0 = {sd: alinha_semente(J.get(str(sd), J[sorted(J)[sd % len(J)]]), JJ.get('nomes_f')) for sd in p['seeds']}   # semente sem campeao no JSON (ex.: 3 sementes -> 5): usa o campeao de outra semente (ciclico)
         champs = (lab.evoluir_es(A, treino, cfg, P=p['P'], ger=p['G'], T=p['T_evo'], seeds=p['seeds'], R=p['R'], verbose=True, W0=W0, paciencia=a.paciencia, avaliar_fn=avaliar, sigma_es=a.es_sigma, lr=a.es_lr) if a.otim == 'es'   # [E65] gradiente estimado, mesmo orcamento
                   else evoluir(A, treino, cfg, P=p['P'], ger=p['G'], T=p['T_evo'], seeds=p['seeds'], R=p['R'], verbose=True, W0=W0, paciencia=a.paciencia, sigma_espinha=a.sigma_espinha))
         med = {}; por = {}
