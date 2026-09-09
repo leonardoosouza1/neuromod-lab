@@ -15,3 +15,4 @@
 | H12 | comer mais no posto (limiar de fome mais baixo) sem mudar onde come | ✗ 0.78, fome 74 % das mortes: o posto fecha à noite; comer mais de dia não cobre a noite | L1 p1 |
 | H13 | comer à noite em pontos de comida (posto fecha) | ✓ leve: 0.74 → 0.72 (5 sementes), fome ainda 47 % das mortes | L2 p6 |
 | H14 | lote 2: 6/8 respostas sem bloco ```python → recusadas | bug de formato do orquestrador (parser agora aceita ```py / ``` com def fabrica) | L2 |
+| H15 | rua como DESEMPATE (peso .15 em custo_frente, não 5.0) + comida à noite em ponto de comida + nunca desviar com passageiro a bordo + comida antes de água no posto | ✓ 0.66 (3 sementes): melhor da série; o agente calibrou o peso pelos dados do L1 p7 (que paralisou com peso 5) | L3 p7 |
