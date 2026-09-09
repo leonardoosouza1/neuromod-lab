@@ -70,3 +70,5 @@
 | H50 | dois ganhos independentes do MESMO lote somam (calor 0.53 + tier por preço 0.55) | ⏳ L13 p1 — primeira fusão testada em 13 lotes; se não somar, o platô é de corpo e não de política | L13 |
 | H51 | parar para esfriar (e_calor > .667, histerese .55) sobre L6 p4 | ✓ 0.53 (5 s 0.55): primeira alavanca que reduz o DANO (39 % vs 46–48 %); custa 0.4 corrida/dia | L12 p8 |
 | H52 | ganho por lote do laço v2 (12 lotes, 86 políticas): 0.73 → 0.66 → 0.62 → 0.57 → 0.56 → platô (5 lotes) → 0.55 (esfriar). Rendimento decrescente: os últimos 6 lotes (48 políticas) renderam 2 pp | fechado 13:40 |
+| H53 | (portão) testes_completo imprime SYNC! para o SerCompleto — e JÁ imprimia ontem (q7c, 09-08), que eu aprovei sem ler a última linha | dívida pré-existente, não regressão do F2 (g9 e o resto de g8 verdes); diag_sync.py na fila para apontar a operação | g8 |
+| H54 | lote 13 (tarefa Opus: reserva/água noturna/calor): p7 = p8 = base exata (0.53/0.55), p1/p2/p4 0.54, p5 parada mínima 0.95 (3ª vez), p3 erro de forma | ✗ platô em 0.53–0.55; parada mínima refutada 3× — retirar a alavanca | L13 |
