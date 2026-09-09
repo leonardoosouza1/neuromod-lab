@@ -190,3 +190,50 @@ v1. E pela regra N5 (uso ≠ contribuição, quatro aparições), fazer **knock-
 [ ] B5  cenario unico + hash + indice
 [ ] B6  ablacao das camadas genericas, n=10, de nascenca
 ```
+
+---
+
+## §E. Alternativa ao B1: orçamento de atividade em vez de imposto
+
+*(origem: analogia com o termo de pressão de Navier–Stokes, 2026-09-09)*
+
+O B1 conserta o imposto somando um basal. Há uma formulação **estruturalmente diferente**
+que vale testar em paralelo, porque ataca a causa em vez do sintoma.
+
+**O problema do imposto.** Custo subtraído da aptidão é evitável: o ser não age e não
+paga. Foi o que o v2 mostrou — três arquiteturas caindo no mesmo atrator de não-ação e
+ficando idênticas entre si (`sem hipocampo − COMPLETO = −0.000`).
+
+**A formulação por orçamento.** Em vez de cobrar por atividade, **limitar** a atividade:
+
+```
+a cada tick:  soma_blocos ||saida_bloco||  <=  B
+```
+imposta por projeção (reescalar as saídas quando a soma passa de B) ou por softmax com
+temperatura evoluída. `B` é um gene.
+
+Isto é o análogo do termo de pressão: um vínculo global, imposto instantaneamente por um
+multiplicador que **redistribui** em vez de punir.
+
+**Por que deve funcionar onde o imposto falhou:**
+- orçamento é por tick e não acumula — **não gastar não devolve nada**, então congelar
+  deixa de ser ótimo;
+- a competição vira **interna**: tálamo, córtex e hipocampo disputam o mesmo B, e o
+  multiplicador é literalmente o preço de um ponto de atenção naquele instante. É a
+  formulação limpa do que o tálamo tenta fazer com portões escritos à mão;
+- é mais fiel à fisiologia que o imposto: o cérebro opera com orçamento energético
+  aproximadamente fixo e **redistribui** fluxo entre áreas.
+
+**Contrato:** `cfg.orcamento_ativ : None (padrão, = hoje) | float`. Portão: `None`
+reproduz bit a bit.
+
+**Teste:** `test_orcamento_nao_premia_parar` — um genoma que zera todas as saídas não deve
+ter aptidão maior que o mesmo genoma ativo num mundo sem escassez.
+
+**Critério de aceite:** sob orçamento, as arquiteturas **voltam a diferir entre si**
+(|diferença| ≥ 0.2 em pelo menos um par), que é exatamente o que o custo por ativação
+apagou.
+
+**Como escolher entre B1 e §E:** rodar os dois como braços do mesmo cenário, n=10. Se o
+orçamento separar as arquiteturas e o basal não, o vínculo é melhor que o imposto — e
+isso vira um achado de método, não só uma escolha de implementação.

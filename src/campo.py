@@ -48,6 +48,7 @@ class CfgCampo:
         s.regime = None   # [spec F4] None = hoje; dict(periodo_dias, amp, canais): multiplicador 1 + amp*sin(fase) por canal, media 1 no ciclo (muda o QUANDO, nao o QUANTO)
         s.retina = None   # [spec F3] None = RETINA_PADRAO quando NM_RETINA=1; dict(R_dia, R_noite, passo, custo, k_cego)
         s.custo_basal = 0.
+        s.orcamento_ativ = None
         s.custo_modo = 'existencia'; s.amostra_ativ = 10; s.ativ_ref = 1.   # [spec F2] 'ativacao' = o gene custa pelo SINAL que emite (por bloco: |saida do bloco na nota| media, amostrada a cada amostra_ativ ticks; bloco com saida >= ativ_ref conta cheio); 'existencia' = hoje
         s.horizonte = 'fixo'; s.T_max = None; s.w_trab = 1.   # [spec Mundo Vivo F1] 'aberto' = roda ate todos morrerem (checa vivo.any() 1x por dia simulado) ou T_max; fitness 'vida' = dias vividos + w_trab*renda/300 (sem pena de morte, sem teto)
         s.ponto = 0.   # [E68] ponto de taxi: parado+livre recebe passageiro no lugar com prob demanda/ponto por tick (0 = desligado, mundo identico ao anterior); 30 => centro ~15 ticks, periferia ~100
@@ -717,19 +718,24 @@ class Cerebro(Linear):
         off = torch.tensor(s.OFF_TAU, device=DEV); s.tau = 1. + 200.*torch.sigmoid(W[:, s.O_TAU:s.O_M] + off - 4.)   # gene 0 -> ~4.6 / ~24 / ~101 ticks
         s.M = W[:, s.O_M:s.O_P].view(-1, K, NF); s.P = W[:, s.O_P:Cerebro.NP].view(-1, K, S)     # Cerebro.NP, nao s.NP: subclasses (completo) tem genes depois
         s.z = torch.zeros(m.B, K, device=DEV); s.corpo = torch.zeros(m.B, s.NC_, device=DEV); s.h = None
-        s.ATIV = getattr(m.cfg, 'custo_modo', 'existencia') == 'ativacao' or getattr(m.cfg, 'medir_ativ', False)   # [spec F2] constante em Python: o grafo compilado so ganha os caches neste modo
+        s.ORC = getattr(m.cfg, 'orcamento_ativ', None)
+        s.ATIV = getattr(m.cfg, 'custo_modo', 'existencia') == 'ativacao' or getattr(m.cfg, 'medir_ativ', False) or s.ORC is not None   # [spec F2] constante em Python: o grafo compilado so ganha os caches neste modo
     def extra(s, m, W, F):
         s.corpo = F[:, G - 1, len(NOMES_OP):]                                                # sentidos do corpo (iguais nas 9 opcoes): opcao 'ficar'
         h = torch.relu(torch.einsum('bgf,bhf->bgh', F, s.U) + s.bU[:, None, :]); s.h = h         # (B,G,H) camada rapida
         rapida = torch.einsum('bgh,bh->bg', h, s.V)*s.ESC
         Wm = torch.einsum('bk,bkf->bf', s.z, s.M)*s.ESC; lenta = torch.einsum('bgf,bf->bg', F, Wm)      # pesos modulados pelo estado lento
         if s.ATIV: s._blk = {'rap': rapida, 'len': lenta}   # [spec F2] saidas por bloco (B,G), lidas por ativ_blocos() fora do grafo
+        if s.ORC is not None: return (rapida + lenta)*s._fator_orc()
         return rapida + lenta
     def extra_serv(s, m): return torch.einsum('bk,bks->bs', s.z, s.P)*s.ESC_S
     def atualizar(s, m):
         x = torch.relu(torch.einsum('bf,bkf->bk', s.corpo, s.U2) + s.b2)                          # (B,K)
         s.z = s.z + (x - s.z)/s.tau
     def ativacao(s, m): return s.z
+    def _fator_orc(s):
+        soma = sum(v.abs().mean(1) for v in s._blk.values())
+        return (float(s.ORC)/(soma + 1e-6)).clamp(max=1.)[:, None]
     def ativ_blocos(s, m):   # [spec F2] |saida do bloco| media sobre as opcoes -> {bloco: (B,)}
         return {b: v.abs().mean(1) for b, v in getattr(s, '_blk', {}).items()}
 

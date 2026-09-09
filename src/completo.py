@@ -83,7 +83,9 @@ class SerCompleto(Cerebro):
             s._blk = {'rap': torch.einsum('bgh,bh->bg', h, s.V)*s.ESC, 'len': torch.einsum('bgf,bf->bg', F, torch.einsum('bk,bkf->bf', s.z, s.M)*s.ESC),
                       'tal': torch.einsum('bgf,bf->bg', F, W[:, :NF]*(gf - 1.)), 'cor': torch.einsum('bgf,bf->bg', F, zc.index_add(1, s.IDXC, W[:, s.IDXC]*delta)),
                       'hip': torch.einsum('bgf,bf->bg', F, torch.einsum('bk,bkf->bf', mem, s.M_h)*Cerebro.ESC), 'ref': torch.einsum('bgf,bf->bg', F, zc.index_add(1, s.IDX1, -(s.w*a)[:, None]))}   # ref = contribuicao REAL na nota (revisao 09-09)
-        return torch.einsum('bgh,bh->bg', h, s.V)*s.ESC + torch.einsum('bgf,bf->bg', F, Wtot)
+        out = torch.einsum('bgh,bh->bg', h, s.V)*s.ESC + torch.einsum('bgf,bf->bg', F, Wtot)
+        if s.ORC is not None: out = out*s._fator_orc()
+        return out
     def extra_serv(s, m):
         ss = Cerebro.extra_serv(s, m)
         mem = s.MEM.gather(1, s.dn[:, None, None].expand(-1, 1, NM)).squeeze(1)*s.g_hip
