@@ -28,3 +28,16 @@
 | H17 | (bug) parser pegava o maior bloco python: em respostas sujas pelo hook, era o código-base ecoado → 6/8 do lote 4 idênticos à base | corrigido: último bloco + recusa 'igual à base' | L4 |
 | H18 | GASOLINA: paradas mais frequentes com menos litros (abast 11.4 vs 8) sobre L4 p2 | ✓ 0.62 → 0.57 (5 s 0.58): o agente previu empate (0.65–0.68) e errou para MELHOR | L5 p4 |
 | H19 | (bug do laço) relançamento usava tarefa_L1 e lote 6 rodou com tarefa vazia (fallback para arquivo inexistente) | corrigido: tarefa mais recente existente | L5–L6 |
+
+| H23 | GASOLINA: paradas ainda mais frequentes com menos litros (3o teste, sobre L5 p4) | ✓ 0.57 → 0.56, corridas 18.9 → 19.0 — melhor global; unica direcao que pagou 3 lotes seguidos | L6 p4 |
+| H24 | ORDEM das compras + ticks parado (3o teste, base nova) | ~ 0.57: empata com a base — alavanca saturada, nao repetir sem mudar de eixo | L6 p5 |
+| H25 | NOITE/descanso/fadiga | ✗ 3 lotes: 0.78 / 0.74 / 0.78, corridas 15.0 / 16.0 / 14.3 — corta renda e nao mexe na fome. APOSENTAR a alavanca | L4 p6, L5 p6, L6 p6 |
+| H26 | AGUA mais agressiva sobre a base de gasolina | ✗ 0.56 → 0.62: sede sobe de 21 % para 34 % das mortes. Agua chegou ao fim do curso util | L6 p2 |
+| H27 | REPARO mais cedo/mais barato (4o teste) | ~ 0.63: dano cai de 48 % para 42 % mas corridas caem para 17.8 — o caixa gasto na oficina falta depois | L6 p3 |
+| H28 | mortalidade e' funcao do throughput: mortos ≈ 1.48 − 0.047 × corridas (r = −0.97, n=19) | ✓ regressao sobre placar+feedbacks; explica por que noite/reparo/fila sempre perdem | L3–L6 |
+| H29 | LIVRE sem eixo proprio (agente escolheu fadiga de novo) | ✗ 0.77, corridas 14.9 — slot LIVRE precisa de eixo prescrito, senao repete alavanca morta | L6 p8 |
+| H30 | ficar parado no raio do servico so' enquanto ha' compra pendente (livre = cacar passageiro): 42.8 % → ~26 % do campeao | ⏳ a testar — previsao −0.05 a −0.08 de mortos via +1.5 corridas | L7 |
+| H31 | comida estocada antes das 21h para cobrir 1h-5h (27 refeicoes contra ~400 do campeao) | ⏳ a testar — fome e' 47 % e o furo e' noturno, nao diurno (H12/H22 ja' mostraram) | L7 |
+| H32 | RUA com peso dependente da vida (0.15 normal, 0.30 com vida < 40) | ⏳ a testar — primeira tentativa de atacar dano sem gastar caixa na oficina | L7 |
+| H20 | (regra medida pelo Opus em 19 políticas) mortos ≈ 1.48 − 0.047 × corridas, r = −0.97: quem corre mais morre menos; alavanca = tempo livre parado no raio (43 % vs 26 % do campeão) | em teste (lote 7) | L6 consolidação |
+| H21 | config limpa (CLAUDE_CONFIG_DIR sem plugins) para os agentes | ✓ lote 7: 8/8 respostas válidas, 0 contaminação (lotes 2–5: 25–75 % perdidas) | L7 |
