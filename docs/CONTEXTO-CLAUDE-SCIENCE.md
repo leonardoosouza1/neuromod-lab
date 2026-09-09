@@ -81,3 +81,13 @@ Repositório privado `leonardoosouza1/neuromod-lab`; docs em `docs/44-campo.md` 
   Perguntas abertas para o CS: (a) um teste que separe "seleção não compõe" de "a régua não vê" (ex.: fitness
   moldada por etapas, ou professor de um passo + seleção); (b) critério de parada para declarar uma linha morta.
 - Fila `_nmd/` VAZIA e daemon ativo: qualquer pedido dentro da whitelist roda em ~1 h por braço (P=512, L=200).
+
+## Atualização 2026-09-08 21:15 — linha "peça que paga no táxi" FECHADA por três lados
+- E65 (ES antitético, mesmo orçamento): −5/−2 pp = empate (pred 92 ✗). E66 (`diag_snr.py`, mesma população em
+  3 mundos): a nota enxerga o genoma na escala do GA (corr 0.81, elite mantida 45 %; pred 93 ✗); fitness média cai
+  com σ (−2.14 → −3.23) = o campeão é PICO local. E67 (ES com R=16, ruído /2): 0.78, −4 pp (pred 94 ✗).
+- Conclusão: não é peça, orçamento, otimizador nem ruído. É o par régua+mundo: "riqueza em 10 dias" premia dirigir
+  pouco. Painel: `docs/painel-55-pico.html`. Ferramentas novas na whitelist: `testes_es`, `diag_snr`.
+- Pergunta aberta para o CS: que régua/mundo faz "dirigir E abastecer" valer mais que "parar" SEM portão desenhado
+  à mão (veto do Leonardo)? Candidatos: horizonte com vida GANHA por trabalho (não dada), demanda que cresce com
+  serviço prestado, custo fixo de existir (aluguel) maior que a renda de parar. Precisa de predição antes de rodar.
