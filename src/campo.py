@@ -127,6 +127,7 @@ class Campo:
         s.pd_ = torch.full((B,), -1., device=DEV); s.dest = torch.zeros(B, 2, device=DEV); s.orig_d = torch.zeros(B, dtype=torch.long, device=DEV); s.emb = torch.zeros(B, 2, device=DEV)
         s.px_ok = torch.ones(B, c.NPX, dtype=torch.bool, device=DEV)   # [E44 v2] demanda: slot de passageiro ativo; tarifa alta = reaparece devagar
         s.t_ult = torch.zeros(B, device=DEV)   # [E68] ticks desde o ultimo embarque (sentido e_espera)
+        s.n_vem = torch.zeros(B, device=DEV)   # [E68 diag] embarques que VIERAM ate o taxi parado (ponto)
         s.t = torch.zeros((), dtype=torch.long, device=DEV)
         s.recusa = torch.zeros(B, dtype=torch.bool, device=DEV); s.ARB = torch.arange(B, device=DEV)
         s.n_agua = torch.zeros(B, device=DEV); s.parado_dia = torch.zeros(B, device=DEV); s.imp = torch.zeros(B, device=DEV); s.subs = torch.zeros(B, device=DEV)   # [E44] sentidos do prefeito; subs = subsidio pago
@@ -307,6 +308,7 @@ class Campo:
             vem = esp & (torch.rand(B, generator=s.g, device=DEV) < (s.demanda[ci, s.distrito(s.pos)]/c.ponto))
             kx0 = (s.px - s.pos[:, None, :]).norm(dim=-1).argmin(1); novo_d0 = s._destino(s.pos[:, None, :])[:, 0]
             s.px[ar, kx0] = torch.where(vem[:, None], s.pos, s.px[ar, kx0]); s.pxd[ar, kx0] = torch.where(vem[:, None], novo_d0, s.pxd[ar, kx0]); s.px_ok[ar, kx0] = s.px_ok[ar, kx0] | vem
+            s.n_vem = s.n_vem + vem.float()
         dpx = (s.px - s.pos[:, None, :]).norm(dim=-1).masked_fill(~s.px_ok, 1e9); kx = dpx.argmin(1); ar = s.ARB
         pega = livre & (s.pd_ < 0) & (dpx[ar, kx] <= c.raio) & ~s.recusa & ~pode
         s.dest = torch.where(pega[:, None], s.pxd[ar, kx], s.dest); s.emb = torch.where(pega[:, None], s.pos, s.emb)
