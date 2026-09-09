@@ -7,6 +7,10 @@ SRC = os.path.dirname(os.path.abspath(__file__)); PY = sys.executable
 ap = argparse.ArgumentParser(); ap.add_argument('--cenario', default=os.path.join(os.path.dirname(SRC), 'cenarios', 'base.json')); ap.add_argument('--out', default='/media/llm-data/universe-runs/neuromod-lab-taxi/portao'); ap.add_argument('--banda', type=float, nargs=2, default=[.40, .80])
 ap.add_argument('--so', nargs='*', default=None); ap.add_argument('--tag', default=''); a = ap.parse_args(); os.makedirs(a.out, exist_ok=True)
 ENV = {**os.environ, 'NM_RISCO': '1', 'NM_PONTO': '1', 'NM_COMPILE': os.environ.get('NM_COMPILE', '1')}
+_cen = json.load(open(a.cenario)) if os.path.exists(a.cenario) else {}
+if (_cen.get('mundo') or {}).get('retina'): ENV['NM_RETINA'] = '1'   # [revisao 09-09] o portao roda com as flags que o cenario pede
+if (_cen.get('mundo') or {}).get('regime'): ENV['NM_REGIME'] = '1'
+if a.so and 'escala' in a.so and 'sensibilidade' not in a.so: a.so = list(a.so) + ['sensibilidade']   # escala le o log do sensibilidade
 def roda(args, timeout=1800):
     t0 = time.time(); r = subprocess.run([PY] + args, capture_output=True, text=True, env=ENV, timeout=timeout, cwd=SRC); out = (r.stdout + '\n' + r.stderr); return out, r.returncode, time.time() - t0
 def julga(nome, out, rc, regras):

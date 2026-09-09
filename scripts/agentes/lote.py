@@ -99,6 +99,7 @@ def espera(pid, tmax=3600):
 def loop(a):
     for lote in range(a.de, a.ate + 1):
         a.lote = lote; existentes = [k for k in range(lote, 0, -1) if os.path.exists(os.path.join(DA, f'tarefa_L{k}.md'))]
+        if not existentes and not a.tarefa: raise SystemExit('nenhuma tarefa_L*.md existe; passe --tarefa')
         a.tarefa = (a.tarefa if lote == a.de and a.tarefa else None) or os.path.join(DA, f'tarefa_L{existentes[0]}.md')   # a mais recente que existe (bug: lote 6 rodou com tarefa vazia)
         print(f'===== LOTE {lote} ({time.strftime("%H:%M")}) tarefa {os.path.basename(a.tarefa)} =====', flush=True); a.base = None
         import nmd_cliente as c

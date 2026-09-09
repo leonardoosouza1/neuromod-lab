@@ -2,6 +2,9 @@
 import os, re, json, inspect, argparse, hashlib
 import torch; from campo import *; from e43_campo import aplica_cenario, alinha_semente
 PROIBIDO = [r'\bimport\s+(?!torch\b|math\b)', r'\bfrom\s+(?!torch\b|math\b)', r'\b(os|sys|subprocess|open|exec|eval|__import__|compile|globals|locals|getattr|setattr)\s*\(', r'\.px\b', r'\.pxd\b', r'\.serv\[', r'\.serv_msk', r'\.g\b', r'\.dest\b']
+_OLD29 = [n for n in NOMES_F[:NF] if n != 'livre' and not n.startswith('ret_') and n not in ('est_sin', 'est_cos')]
+assert not (RETINA or REGIME) or len(_OLD29) == 29, f'layout antigo de 29 colunas exige NM_RISCO=1 NM_PONTO=1 (achei {len(_OLD29)})'
+IDX_LAYOUT29 = torch.tensor([NOMES_F.index(n) for n in _OLD29], device=DEV)
 def carrega(path):
     """devolve (classe involucrada, erro). Nunca levanta: erro vira string para o placar."""
     try:
@@ -25,7 +28,7 @@ def carrega(path):
             return fn(*args)
         def reset(s, m, W): return s._call('reset', m, W)
         def extra(s, m, W, F):
-            if RETINA: F = torch.cat([F[:, :, :10], F[:, :, 11:30]], -1)   # [F3] a politica indexa F por numero fixo (layout de 29 colunas): tira 'livre' e os 16 raios; d_* ja vem 'onde o raio viu'
+            if RETINA or REGIME: F = F.index_select(2, IDX_LAYOUT29)   # [F3/F4] a politica indexa F por numero fixo (layout de 29 colunas): corte POR NOME (revisao 09-09: [11:30] cravado)
             if hasattr(s.p, 'extra'): return s._call('extra', m, W, F)
             s.p.F = F; return torch.zeros(m.B, G, device=DEV)
         def decidir(s, tudo, m): return s._call('decidir', tudo, m)
@@ -36,6 +39,7 @@ def mundo(cenario_path=None, nevoa=None):
     fl = argparse.Namespace(regime=None, retina=None, L=200., dias=10., fitness='riqueza', nevoa=float('inf'), npx=12, respawn=20., pax_cidade=False, ponto=0., dinh0=10., fome_passo=None, kcal_pane=8., guincho=0., fuel_pane=15., P=None, G=None, paciencia=None, R=None, seeds=None, so=None, mundo='distinto')
     cen = json.load(open(cenario_path)) if cenario_path else {}; ex = aplica_cenario(fl, cen)
     if nevoa is not None: fl.nevoa = float(nevoa)
+    assert fl.retina in (None, 'off') or RETINA, 'cenario com retina exige NM_RETINA=1'; assert fl.regime in (None, 'off') or REGIME, 'cenario com regime exige NM_REGIME=1'
     cfg = CfgCampo(L=fl.L, fitness=fl.fitness); cfg.regime = (None if fl.regime in (None, 'off') else (dict(REGIME_PADRAO) if fl.regime == 'padrao' else json.loads(fl.regime))); cfg.retina = (None if fl.retina in (None, 'off') else (dict(RETINA_PADRAO) if fl.retina == 'padrao' else json.loads(fl.retina))); cfg.horizonte = getattr(fl, 'horizonte', 'fixo'); cfg.w_trab = getattr(fl, 'w_trab', 1.); cfg.KCAL_PANE = fl.kcal_pane; cfg.dinh0 = fl.dinh0; cfg.GUINCHO = fl.guincho; cfg.FUEL_POS_PANE = fl.fuel_pane; cfg.nevoa = fl.nevoa; cfg.ponto = fl.ponto; cfg.NPX = fl.npx; cfg.respawn = fl.respawn; cfg.pax_cidade = fl.pax_cidade
     if fl.fome_passo is not None: cfg.fome_passo = fl.fome_passo
     for k in ('amp_preco', 'periodo_preco', 'tarifa_base', 'tarifa_km'):
