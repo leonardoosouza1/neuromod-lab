@@ -14,3 +14,10 @@
 - **Grupo "construção" DOBRA** (4 agentes na r4/r5): é o item mais informativo — se existe política explícita ≤ 0.6, o mundo é solúvel e
   a evolução é que não acha; se não existe, o mundo base é insolúvel a 10 dias e a régua/mundo precisa mudar (decisão do Leonardo).
 - **Grupo "mínimo"** vive mais uma rodada só no eixo gasolina × lugar (resultado da r3 pendente).
+
+## Fechamento r3 (01:55)
+| minimo_1 (posto só no industrial) | risco/lugar ≥ 10 pp | linear 0.71, COMPLETO 0.71, bilinear-risco 0.78 | ✗ empate (válido) | menos postos = abastece mais de cada vez e vive mais; ler risco atrapalha |
+| minimo_2 (gasolina 3× no centro) | separação por risco | 0.85 / 0.82 / 0.83 | ✗ empate | — |
+
+**Grupo "mínimo" ENCERRADO** (nenhum efeito ≥ 5 pp em 4 cenários). Invariante das 3 rodadas: em 10 cenários desenhados por agentes, 4 válidos na
+banda, o cérebro em camadas empata ou perde para o linear em todos. Só "construção" segue.
