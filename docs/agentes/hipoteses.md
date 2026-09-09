@@ -68,3 +68,5 @@
 | H48 | calor > 60 raw multiplica a sede por 2.5 (agua_passo .08 + agua_calor .12); a histerese do p8 solta em raw 66, ainda dentro da faixa cara | ⏳ L13 p5 — soltar em raw 58 custa ~13 ticks parados e compra ~145 ticks de rodagem na rua abaixo do limiar | L13 |
 | H49 | COMIDA tem preço de distrito e de dia (2·pmul·fase: ≈1.2 industrial, ≈4.0 centro, ±50 % em ciclo de 3 dias); os 5 testes de limiar de fome (H5/H12/H22/L10-L12 p1) foram todos cegos ao preço | ⏳ L13 p6 — comer barato é a única forma de aumentar refeições sem disputar o caixa (H34) | L13 |
 | H50 | dois ganhos independentes do MESMO lote somam (calor 0.53 + tier por preço 0.55) | ⏳ L13 p1 — primeira fusão testada em 13 lotes; se não somar, o platô é de corpo e não de política | L13 |
+| H51 | parar para esfriar (e_calor > .667, histerese .55) sobre L6 p4 | ✓ 0.53 (5 s 0.55): primeira alavanca que reduz o DANO (39 % vs 46–48 %); custa 0.4 corrida/dia | L12 p8 |
+| H52 | ganho por lote do laço v2 (12 lotes, 86 políticas): 0.73 → 0.66 → 0.62 → 0.57 → 0.56 → platô (5 lotes) → 0.55 (esfriar). Rendimento decrescente: os últimos 6 lotes (48 políticas) renderam 2 pp | fechado 13:40 |
