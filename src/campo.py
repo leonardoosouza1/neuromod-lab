@@ -36,6 +36,7 @@ class CfgCampo:
         s.custo_gene = 0.; s.gene_min = .5; s.custo_suave = False; s.varredura = 'exata'; s.margem_risco = 30.; s.GUINCHO = 0.; s.FUEL_POS_PANE = 15.; s.nevoa = float('inf'); s.k_cego = 2.   # [E63] raio de VISIBILIDADE dos servicos: alem dele a distancia satura (gradiente zero) e o ser tem de LEMBRAR onde viu. inf = mundo onisciente de hoje (identico bit a bit)   # [E61b] guincho cobra dinheiro e deixa o ser no posto com FUEL_POS_PANE (15 = subsidio: 6 panes/vida = vive de guincho);
         s.pax_cidade = False   # [E70] passageiro nasce NA CIDADE (distrito ~ demanda, em volta do centro do distrito) e o taxi vai buscar; reposicao ~ demanda do lugar do passageiro (Leonardo 09-08: 'eles deveriam buscar o passageiro, nao o passageiro aparecer do nada')
         s.respawn = 20.   # [E69 escassez] slot de passageiro usado reaparece com prob demanda/(respawn*tarifa) por tick (20 = de hoje; 100 = escasso: periferia ~333 ticks por slot)
+        s.horizonte = 'fixo'; s.T_max = None; s.w_trab = 1.   # [spec Mundo Vivo F1] 'aberto' = roda ate todos morrerem (checa vivo.any() 1x por dia simulado) ou T_max; fitness 'vida' = dias vividos + w_trab*renda/300 (sem pena de morte, sem teto)
         s.ponto = 0.   # [E68] ponto de taxi: parado+livre recebe passageiro no lugar com prob demanda/ponto por tick (0 = desligado, mundo identico ao anterior); 30 => centro ~15 ticks, periferia ~100
         s.amp_preco = .5; s.periodo_preco = 3.   # [E56] precos oscilam +-50 % num ciclo de 3 dias por distrito (so em mapa distinto)        # [E55] cerebro que come: fome sobe x (1 + custo_gene*dof/100), dof = genes alem da espinha com |w| > gene_min (Lei do Metabolismo = AIC; acervo: 'custo e o que seleciona')
         s.preco_L = .3; s.preco_agua = .05; s.preco_comida = 2.; s.HOTEL = 8.; s.preco_oficina = 10.; s.REPARO = 25.
@@ -408,6 +409,7 @@ def rodar(Arq, W, mapas, cfg, T, seed, R=1):
     m = Campo(mapas, W.shape[0], cfg, seed=seed, R=R); Wb = W[m.gidx]; a = Arq(); a.reset(m, Wb); fn = _passo_fn()
     if cfg.custo_gene > 0.: m.metab = 1. + cfg.custo_gene*dof_de(Wb, cfg)/100.                    # [E55] cada gene ligado alem da espinha custa calorias
     for t in range(T):
+        if cfg.horizonte == 'aberto' and t % 240 == 239 and not bool((m.vida > 0).any()): break   # [spec F1] 1 sincronismo por dia simulado, so no horizonte aberto (fixo: curto-circuito em Python, identico)
         try: fn(m, a, Wb)
         except Exception as e:
             if fn is not um_passo and t == 0:
@@ -443,6 +445,8 @@ def dof_por_bloco(Wb, cfg, Arq):
 def _fit(m, cfg, T):
     morto = (m.vida <= 0).float(); vivo = 1. - morto
     tarde = morto*(0.5*m.t_vida/float(T) + 0.05*m.ent + 0.02*(m.n_come + m.n_agua + m.n_posto).clamp(max=10.))   # [G2] gradiente entre mortos que a PEDRA nao maximiza
+    if cfg.fitness == 'vida':   # [spec F1] regua sem teto: todo mundo morre, a pergunta e' QUANDO e QUANTO fez
+        return m.t_vida/240. + cfg.w_trab*(m.rec/300.)
     if cfg.fitness == 'sobrevive':
         fit = vivo*(1. + m.vida/100. + (m.dinh/100.).clamp(0., 1.) + 0.05*m.ent + 0.5*m.res/cfg.RES_MAX) - cfg.pena_morte*morto + tarde
     elif cfg.fitness == 'bemestar':
@@ -466,6 +470,8 @@ def medidas(Arq, W, mapas, cfg, T=1200, seed=7777, R=1, copias=128):
                panes=float(m.av_fuel.mean()), fome_fim=float(m.fome.mean()), agua_fim=float(m.agua.mean()), dinh=float(m.dinh.mean()), res=float(m.res.mean()),
                litros_por_abast=float((m.litros/m.n_posto.clamp(min=1)).mean()), n_posto=float(m.n_posto.mean()), n_come=float(m.n_come.mean()), oficina=float(m.n_oficina.mean()),
                vida_vivos=float(m.vida[m.vida > 0].mean()) if bool((m.vida > 0).any()) else 0., dof=float(dof_de(W[None, :], cfg)[0]), metab=float(m.metab.mean()))
+    tv = m.t_vida/240.; Tm = T   # [spec F1] relatorio de vida: media/mediana/p10/p90 e fracao no TETO (t_vida >= T): > 0.05 = horizonte amarrando, resultado invalido
+    med['t_vida'] = dict(media=float(tv.mean()), mediana=float(tv.median()), p10=float(tv.quantile(.1)), p90=float(tv.quantile(.9)), frac_teto=float((m.t_vida >= Tm).float().mean()))
     db = dof_por_bloco(W[None, :], cfg, Arq)   # [spec I1a] aditivo: chave nova, nenhuma medida existente muda
     if db: med['dof_bloco'] = db
     return med
