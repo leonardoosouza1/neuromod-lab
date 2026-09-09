@@ -1,0 +1,105 @@
+{
+ "nome": "contraste-demanda-conservado-r3-lugar1",
+ "predicao": "Ponto fixo (pax_cidade true, npx 48, respawn 20 \u2014 calibra\u00e7\u00e3o limpa: linear 0.78). \u00danico par\u00e2metro mudado: dem por distrito, mantendo sum(dem)=4.0 igual ao base (varia\u00e7\u00e3o 1: CONTRASTE PURO, sem inflar demanda total \u2014 diferente de s\u00f3 somar mais no centro). centro 2.0->3.0 (75% da demanda da cidade), residencial 1.0->0.7, industrial 0.7->0.2, periferia 0.3->0.1 (2.5%, quase morta). LINEAR (controle): n\u00e3o l\u00ea e_demanda/e_espera na dire\u00e7\u00e3o (achado 84) \u2014 continua rodando em industrial/periferia como se a demanda ainda fosse uniforme; essas viagens de busca agora batem em vazio (s\u00f3 7.5% da demanda fora do centro/residencial). Predi\u00e7\u00e3o: mortos sobe de 0.78 para 0.85-0.90, entregas cai de 20.9 para 10-13, renda cai >=35% (gasta fuel_passo/fad_passo/calor sem achar passageiro fora do centro). COMPLETO: usa e_demanda para se posicionar perto do centro, reduz viagem vazia -> bate linear em >=10pp mortos (ex.: 0.70-0.75) OU >=30% renda pareada. BILINEAR risco+demanda+espera (esc 1): mecanismo mais fino, pesa espera x demanda explicitamente -> prefere ESPERAR perto do centro (75% de chance de pax nascer ali) em vez de rodar at\u00e9 periferia \u00e0 toa; ganha o tempo que o linear perde andando; tamb\u00e9m >=10pp mortos ou >=30% renda sobre linear. RISCO/honestidade: se os pesos do linear (evolu\u00eddos em mundo uniforme) j\u00e1 favorecem ficar perto do centro por causa de pmul/aliq mais altos l\u00e1 (correla\u00e7\u00e3o esp\u00faria, n\u00e3o leitura de demanda), o efeito pode aparecer sozinho por acidente de treino, n\u00e3o por mecanismo causal \u2014 nesse caso contraste sozinho n\u00e3o prova nada. Se isso acontecer, o que separaria de verdade: reativar ponto=30 junto do contraste (paga esperar de prop\u00f3sito \u2014 achado 95 mostrou que espera s\u00f3 vale com escassez+ponto simult\u00e2neos). Mas o cen\u00e1rio abaixo muda s\u00f3 demanda, como pedido.",
+ "mundo": {
+  "L": 200,
+  "dias": 10,
+  "regua": "riqueza",
+  "K": 6,
+  "ruas": {
+   "dentro": 1,
+   "fora": 3
+  },
+  "precos": {
+   "amp": 0.5,
+   "periodo": 3
+  }
+ },
+ "distritos": {
+  "centro": {
+   "pmul": 2.0,
+   "aliq": 0.35,
+   "alug": 2.5,
+   "dem": 3.0,
+   "dens": [
+    1.0,
+    1.5,
+    1.0,
+    0.5,
+    1.0
+   ]
+  },
+  "industrial": {
+   "pmul": 0.6,
+   "aliq": 0.1,
+   "alug": 0.8,
+   "dem": 0.2,
+   "dens": [
+    2.5,
+    0.0,
+    1.0,
+    0.0,
+    2.0
+   ]
+  },
+  "residencial": {
+   "pmul": 1.0,
+   "aliq": 0.15,
+   "alug": 1.0,
+   "dem": 0.7,
+   "dens": [
+    0.0,
+    2.0,
+    1.5,
+    2.0,
+    0.0
+   ]
+  },
+  "periferia": {
+   "pmul": 0.5,
+   "aliq": 0.0,
+   "alug": 0.8,
+   "dem": 0.1,
+   "dens": [
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.0
+   ]
+  }
+ },
+ "passageiros": {
+  "npx": 48,
+  "respawn": 20,
+  "pax_cidade": true,
+  "ponto": 0,
+  "tarifa_base": 3,
+  "tarifa_km": 0.25
+ },
+ "corpo": {
+  "dinh0": 10,
+  "fome_passo": 0.32,
+  "kcal_pane": 8,
+  "guincho": 0,
+  "fuel_pos_pane": 15
+ },
+ "bracos": [
+  "linear",
+  "COMPLETO (talamo+cortex+hipocampo+reflexo+livre)",
+  "bilinear risco+demanda+espera (esc 1)"
+ ],
+ "protocolo": {
+  "P": 512,
+  "G": 60,
+  "paciencia": 30,
+  "R": 4,
+  "seeds": [
+   0,
+   1,
+   2,
+   3,
+   4
+  ]
+ }
+}
