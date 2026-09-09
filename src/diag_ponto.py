@@ -8,9 +8,9 @@ ap = argparse.ArgumentParser(); ap.add_argument('--campeao', required=True); ap.
 ap.add_argument('--seeds', type=int, nargs='*', default=[0, 1, 2, 3, 4]); ap.add_argument('--copias', type=int, default=128); ap.add_argument('--teste-seed', type=int, default=1000)
 ap.add_argument('--L', type=float, default=200.); ap.add_argument('--dias', type=float, default=10.); ap.add_argument('--fitness', default='riqueza'); ap.add_argument('--mundo', default='distinto')
 ap.add_argument('--kcal-pane', type=float, default=8.); ap.add_argument('--dinh0', type=float, default=10.); ap.add_argument('--guincho', type=float, default=0.); ap.add_argument('--fuel-pane', type=float, default=15.)
-ap.add_argument('--npx', type=int, default=12); ap.add_argument('--respawn', type=float, default=20.); ap.add_argument('--out', default='/media/llm-data/universe-runs/neuromod-lab-taxi/e68'); ap.add_argument('--tag', default='')
+ap.add_argument('--pax-cidade', action='store_true'); ap.add_argument('--npx', type=int, default=12); ap.add_argument('--respawn', type=float, default=20.); ap.add_argument('--out', default='/media/llm-data/universe-runs/neuromod-lab-taxi/e68'); ap.add_argument('--tag', default='')
 a = ap.parse_args(); os.makedirs(a.out, exist_ok=True)
-cfg = CfgCampo(L=a.L, fitness=a.fitness); cfg.KCAL_PANE = a.kcal_pane; cfg.dinh0 = a.dinh0; cfg.GUINCHO = a.guincho; cfg.FUEL_POS_PANE = a.fuel_pane; cfg.ponto = a.ponto; cfg.NPX = a.npx; cfg.respawn = a.respawn
+cfg = CfgCampo(L=a.L, fitness=a.fitness); cfg.KCAL_PANE = a.kcal_pane; cfg.dinh0 = a.dinh0; cfg.GUINCHO = a.guincho; cfg.FUEL_POS_PANE = a.fuel_pane; cfg.ponto = a.ponto; cfg.NPX = a.npx; cfg.respawn = a.respawn; cfg.pax_cidade = a.pax_cidade
 teste = [gerar_mapa(a.teste_seed + s, L=a.L, distinto=a.mundo == 'distinto') for s in range(3)]; T = int(240*a.dias)
 J = json.load(open(a.campeao))['bracos']; ARQ = dict(BRACOS); res = {}
 print(f'== diag_ponto | campeao {os.path.basename(a.campeao)} | mundo ponto={a.ponto} | {len(a.seeds)} sementes x {a.copias} copias x 3 mapas | T={T} ==', flush=True)

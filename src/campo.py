@@ -34,6 +34,7 @@ class CfgCampo:
         s.CALOR_MAX = 92.; s.D_QUENTE = 6.; s.D_PANE = 6.; s.D_RODAR = .15
         s.fome_mata = .15; s.FOME_CRIT = 90.; s.agua_mata = .15; s.AGUA_CRIT = 10.; s.KCAL_PANE = 20.
         s.custo_gene = 0.; s.gene_min = .5; s.custo_suave = False; s.varredura = 'exata'; s.margem_risco = 30.; s.GUINCHO = 0.; s.FUEL_POS_PANE = 15.; s.nevoa = float('inf'); s.k_cego = 2.   # [E63] raio de VISIBILIDADE dos servicos: alem dele a distancia satura (gradiente zero) e o ser tem de LEMBRAR onde viu. inf = mundo onisciente de hoje (identico bit a bit)   # [E61b] guincho cobra dinheiro e deixa o ser no posto com FUEL_POS_PANE (15 = subsidio: 6 panes/vida = vive de guincho);
+        s.pax_cidade = False   # [E70] passageiro nasce NA CIDADE (distrito ~ demanda, em volta do centro do distrito) e o taxi vai buscar; reposicao ~ demanda do lugar do passageiro (Leonardo 09-08: 'eles deveriam buscar o passageiro, nao o passageiro aparecer do nada')
         s.respawn = 20.   # [E69 escassez] slot de passageiro usado reaparece com prob demanda/(respawn*tarifa) por tick (20 = de hoje; 100 = escasso: periferia ~333 ticks por slot)
         s.ponto = 0.   # [E68] ponto de taxi: parado+livre recebe passageiro no lugar com prob demanda/ponto por tick (0 = desligado, mundo identico ao anterior); 30 => centro ~15 ticks, periferia ~100
         s.amp_preco = .5; s.periodo_preco = 3.   # [E56] precos oscilam +-50 % num ciclo de 3 dias por distrito (so em mapa distinto)        # [E55] cerebro que come: fome sobe x (1 + custo_gene*dof/100), dof = genes alem da espinha com |w| > gene_min (Lei do Metabolismo = AIC; acervo: 'custo e o que seleciona')
@@ -124,7 +125,7 @@ class Campo:
         s.ent = torch.zeros(B, device=DEV); s.rec = torch.zeros(B, device=DEV); s.avar = torch.zeros(B, device=DEV); s.av_fuel = torch.zeros(B, device=DEV)
         s.n_posto = torch.zeros(B, device=DEV); s.litros = torch.zeros(B, device=DEV); s.n_oficina = torch.zeros(B, device=DEV); s.n_come = torch.zeros(B, device=DEV)
         s.dano_soma = torch.zeros(B, device=DEV); s.t_vida = torch.zeros(B, device=DEV); s.bem_soma = torch.zeros(B, device=DEV)
-        s.px = s._perto(s.pos, c.NPX); s.pxd = s._destino(s.px)   # passageiros privados por ser, nascem perto
+        s.px = s._na_cidade(c.NPX) if c.pax_cidade else s._perto(s.pos, c.NPX); s.pxd = s._destino(s.px)   # passageiros privados por ser: [E70] na cidade (~demanda) ou perto (mundo antigo)
         s.pd_ = torch.full((B,), -1., device=DEV); s.dest = torch.zeros(B, 2, device=DEV); s.orig_d = torch.zeros(B, dtype=torch.long, device=DEV); s.emb = torch.zeros(B, 2, device=DEV)
         s.px_ok = torch.ones(B, c.NPX, dtype=torch.bool, device=DEV)   # [E44 v2] demanda: slot de passageiro ativo; tarifa alta = reaparece devagar
         s.t_ult = torch.zeros(B, device=DEV)   # [E68] ticks desde o ultimo embarque (sentido e_espera)
@@ -179,6 +180,11 @@ class Campo:
     def _perto(s, p, n):                        # n pontos por ser num anel [8, raio_px] em volta de p (B,2) -> (B,n,2)
         B = p.shape[0]; ang = torch.rand(B, n, generator=s.g, device=DEV)*2*math.pi; r = 8. + (s.cfg.raio_px - 8.)*torch.rand(B, n, generator=s.g, device=DEV)
         return (p[:, None, :] + torch.stack([r*torch.cos(ang), r*torch.sin(ang)], -1)).clamp(0., s.L)
+    def _na_cidade(s, n):                       # [E70] n passageiros por ser NA CIDADE: distrito sorteado ~ demanda, posicao gaussiana em volta do centro do distrito (sigma = L/(2*sqrt(K)))
+        ci = s.cidx; B = ci.shape[0]; K = s.demanda.shape[1]
+        k = torch.multinomial(s.demanda[ci], n, replacement=True, generator=s.g)                    # (B,n)
+        cen = s.centros[ci[:, None].expand(-1, n), k]                                                # (B,n,2)
+        return (cen + torch.randn(B, n, 2, generator=s.g, device=DEV)*(s.L/(2.*math.sqrt(K)))).clamp(0., s.L)
     def _destino(s, po):                        # destino do passageiro: prob ~ 1/(1+d) via ruido, >=30% outro distrito (aprox: raio aleatorio grande)
         B, N, _ = po.shape
         ang = torch.rand(B, N, generator=s.g, device=DEV)*2*math.pi
@@ -314,11 +320,12 @@ class Campo:
         pega = livre & (s.pd_ < 0) & (dpx[ar, kx] <= c.raio) & ~s.recusa & ~pode
         s.dest = torch.where(pega[:, None], s.pxd[ar, kx], s.dest); s.emb = torch.where(pega[:, None], s.pos, s.emb)
         s.orig_d = torch.where(pega, s.distrito(s.pos), s.orig_d); s.pd_ = torch.where(pega, torch.ones_like(s.pd_), s.pd_)
-        novo_px = s._perto(s.pos, 1)[:, 0]; novo_d = s._destino(novo_px[:, None, :])[:, 0]
+        novo_px = (s._na_cidade(1) if c.pax_cidade else s._perto(s.pos, 1))[:, 0]; novo_d = s._destino(novo_px[:, None, :])[:, 0]   # [E70] o proximo nasce noutro lugar da cidade
         s.px[ar, kx] = torch.where(pega[:, None], novo_px, s.px[ar, kx]); s.pxd[ar, kx] = torch.where(pega[:, None], novo_d, s.pxd[ar, kx])
         s.px_ok[ar, kx] = s.px_ok[ar, kx] & ~pega                                                   # slot usado fica inativo
         s.t_ult = torch.where(pega, torch.zeros_like(s.t_ult), s.t_ult + 1.)                        # [E68] relogio de espera
-        volta = torch.rand(B, c.NPX, generator=s.g, device=DEV) < (s.demanda[ci, s.distrito(s.pos)]/(c.respawn*s.pref_mult[ci, 5]))[:, None]   # elasticidade: tarifa x2 = espera 2x; [E56] demanda do distrito
+        dem_v = s.demanda[ci[:, None].expand(-1, c.NPX), s.distrito(s.px)] if c.pax_cidade else s.demanda[ci, s.distrito(s.pos)][:, None]   # [E70] demanda do LUGAR do passageiro (cidade) ou do taxi (antigo)
+        volta = torch.rand(B, c.NPX, generator=s.g, device=DEV) < dem_v/(c.respawn*s.pref_mult[ci, 5])[:, None]   # elasticidade: tarifa x2 = espera 2x; [E56] demanda do distrito
         s.px_ok = s.px_ok | volta
         cheg = livre & (s.pd_ >= 0) & ((s.pos - s.dest).norm(dim=-1) <= c.raio)
         pf = s.pref_mult[ci]; aliq = (s.aliq[ci, s.orig_d]*pf[:, 0]).clamp(0., .6)
