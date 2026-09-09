@@ -12,7 +12,8 @@ PRESETS = {'triagem': dict(P=1024, G=40, T_evo=1200, T_aval=1200, R=8, seeds=(0,
 _BASE_CORPO = ['e_fuel', 'e_agua', 'e_fome', 'e_fadiga', 'e_calor', 'e_vida', 'e_dinheiro', 'e_reserva', 'e_tem_pax', 'h_sin', 'h_cos', 'e_noite', 'custo_aqui', 'bias', 'e_consumo', 'e_autonomia']
 _LAYOUTS = {}   # NP linear antigo -> NOMES_F daquele layout (sem nomes_f gravado): base 26 sentidos; +risco; +risco+demanda+espera
 for _extra in ([], ['e_risco'], ['e_risco', 'e_demanda', 'e_espera'], ['e_demanda', 'e_espera']):
-    _nf = ['d_alvo', 'd_posto', 'd_comida', 'd_agua', 'd_oficina', 'd_descanso', 'custo_frente', 'preco_frente', 'aliq_frente', 'casa_frente'] + _BASE_CORPO + _extra;   # NOMES_OP fixo dos layouts antigos (revisao: com NM_RETINA o NOMES_OP atual tem 'livre') _LAYOUTS[len(_nf) + S + 1] = _nf + [f'sv_{a[0]}{int(a[1]) if a[1] else ""}' for a in ACOES] + ['sv_bias']
+    _nf = ['d_alvo', 'd_posto', 'd_comida', 'd_agua', 'd_oficina', 'd_descanso', 'custo_frente', 'preco_frente', 'aliq_frente', 'casa_frente'] + _BASE_CORPO + _extra   # NOMES_OP fixo dos layouts antigos
+    _LAYOUTS[len(_nf) + S + 1] = _nf + [f'sv_{a[0]}{int(a[1]) if a[1] else ""}' for a in ACOES] + ['sv_bias']
 def alinha_semente(v, nomes=None):
     """[E68 → pre-F3] semente LINEAR de outro layout de sentidos: mapeia gene por NOME (nomes = NOMES_F do JSON de origem, ou tabela
     por NP para JSONs antigos); sentido que nao existia nasce 0. Sentido novo em QUALQUER posicao (corpo ou opcao) fica correto.
