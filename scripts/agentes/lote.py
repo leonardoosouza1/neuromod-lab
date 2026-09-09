@@ -25,7 +25,7 @@ def contexto(lote):
     notas = ler(os.path.join(DA, 'notas_consolidador.md'), 5000)
     return f"# CONTEXTO (neuromod-lab, taxi na GPU — prova por construcao)\nTaxis com corpo sobrevivem 10 dias numa cidade com distritos, servicos e passageiros. O campeao EVOLUIDO morre 0.85. Politicas explicitas ja batem ele (0.73). Sua tarefa: uma politica MELHOR, mudando UMA alavanca.\n{api()}\n## DADOS MEDIDOS DO CAMPEAO E DA MELHOR POLITICA\n{dados}\n## PLACAR (melhores ate agora)\n{placar}\n## HIPOTESES JA TESTADAS (nao repita)\n{hip}\n## FEEDBACK DO LOTE ANTERIOR\n{fb}\n## NOTAS DO CONSOLIDADOR (leia: dados e ordens que valem para TODOS os lotes)\n{notas}\n"
 def chama(prompt, model, timeout=900):
-    try: r = subprocess.run([CLAUDE, '-p', prompt, '--model', model, '--output-format', 'json', '--no-session-persistence'], capture_output=True, text=True, timeout=timeout)
+    try: r = subprocess.run([CLAUDE, '-p', prompt, '--model', model, '--output-format', 'json', '--no-session-persistence'], capture_output=True, text=True, timeout=timeout, stdin=subprocess.DEVNULL)   # sem stdin: o hook do claude-mem esperava 3 s e falhava
     except subprocess.TimeoutExpired: return ''
     try: return json.loads(r.stdout).get('result', r.stdout)
     except Exception: return r.stdout or r.stderr

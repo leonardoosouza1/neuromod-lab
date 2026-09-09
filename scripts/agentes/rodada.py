@@ -48,7 +48,7 @@ def prompt_de(grupo, g, i, rod):
              else API_POL + '\nResponda com UM bloco ```python``` com o politica.py completo, e antes dele UMA linha `PREDICAO: ...` com mortos, entregas e o que mata.')
     return f"{base}\n# SUA TAREFA (grupo '{grupo}', agente {i}, rodada {rod})\n{g['tarefa']}\nSeja diferente dos outros agentes do grupo: agente {i} deve escolher uma abordagem distinta (variacao {i}).\n{saida}"
 def chama(prompt, model, timeout=900):
-    try: r = subprocess.run([CLAUDE, '-p', prompt, '--model', model, '--output-format', 'json', '--no-session-persistence'], capture_output=True, text=True, timeout=timeout)
+    try: r = subprocess.run([CLAUDE, '-p', prompt, '--model', model, '--output-format', 'json', '--no-session-persistence'], capture_output=True, text=True, timeout=timeout, stdin=subprocess.DEVNULL)   # sem stdin: o hook do claude-mem esperava 3 s e falhava
     except subprocess.TimeoutExpired: return ''   # agente lento demais: vira RECUSADO, o laco segue
     try: return json.loads(r.stdout).get('result', r.stdout)
     except Exception: return r.stdout or r.stderr
