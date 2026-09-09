@@ -60,10 +60,13 @@ def main(a):
         med = {}; por = {}
         for sd in p['seeds']:
             por[sd] = medidas(A, champs[sd][0], teste, cfg, T=p['T_aval'], seed=7777, R=1, copias=128)
-        for k in por[p['seeds'][0]]: med[k] = sum(por[sd][k] for sd in p['seeds'])/len(p['seeds'])
+        for k in por[p['seeds'][0]]:
+            if isinstance(por[p['seeds'][0]][k], dict): med[k] = {b: sum(por[sd][k].get(b, 0.) for sd in p['seeds'])/len(p['seeds']) for b in por[p['seeds'][0]][k]}   # [spec I1a] dof_bloco: media por bloco
+            else: med[k] = sum(por[sd][k] for sd in p['seeds'])/len(p['seeds'])
         # [regua pareada] por-semente para TODAS as medidas, nao so fit/mortos: as sementes sao as MESMAS em
         # todos os bracos, e comparar medias joga o pareamento fora (a variancia entre sementes entra duas vezes).
-        for k in list(med): med[k + '_por_semente'] = [round(por[sd][k], 3) for sd in p['seeds']]
+        for k in list(med):
+            if isinstance(med[k], (int, float)): med[k + '_por_semente'] = [round(por[sd][k], 3) for sd in p['seeds']]   # dof_bloco (dict) fica so na media
         med['W'] = {sd: [round(float(x), 5) for x in champs[sd][0]] for sd in p['seeds']}; med['segundos'] = round(time.time() - t1); med['otim'] = a.otim
         res['bracos'][nome] = med
         print(f'  {nome:<36} NP {A.NP:3d} fit {med["fit"]:6.2f} {med["fit_por_semente"]} ent {med["ent"]:5.1f} mortos {med["mortos"]:.2f} {med["mortos_por_semente"]} '

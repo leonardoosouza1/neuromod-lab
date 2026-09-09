@@ -32,6 +32,8 @@ class SerCompleto(Cerebro):
     O_HIP = O_COR + N_COR; N_HIP = 2 + NM*NF + NM*S      # tau_h, ganho, M_h (3xNF), P_h (3xS)
     NP = O_HIP + N_HIP
     liga = dict(talamo=True, cortex=True, hipocampo=True, reflexo=True, livre=True)
+    @staticmethod
+    def nomes_genes(): return nomes_genes_completos()   # [spec I1a] usado por dof_por_bloco
     def reset(s, m, W):
         Cerebro.reset(s, m, W); B = m.B; L = s.liga
         if not L['livre']: s.V = torch.zeros_like(s.V); s.M = torch.zeros_like(s.M); s.P = torch.zeros_like(s.P)
@@ -105,6 +107,17 @@ def _parte(nome, **off):
 SemTalamo = _parte('sem-talamo', talamo=False); SemCortex = _parte('sem-cortex', cortex=False); SemHipocampo = _parte('sem-hipocampo', hipocampo=False)
 SemReflexo = _parte('sem-reflexo', reflexo=False); SemLivre = _parte('sem-livre', livre=False)
 SoCamadas = _parte('so-camadas', livre=False)     # talamo+cortex+hipocampo+reflexo (o SerCamadas do grafo, no campo)
+
+def nomes_genes_cerebro():
+    """[spec I1a] os 304 genes do Cerebro (livre) na ORDEM dos offsets: rapida (U, bU, V) e lenta (U2, b2, tau, M, P)"""
+    H, K, NC_ = Cerebro.H, Cerebro.K, Cerebro.NC_
+    rap = [f'rap_U_h{h}_{f}' for h in range(H) for f in NOMES_F[:NF]] + [f'rap_bU_h{h}' for h in range(H)] + [f'rap_V_h{h}' for h in range(H)]
+    len_ = [f'len_U2_k{k}_{c}' for k in range(K) for c in NOMES_CORPO] + [f'len_b2_k{k}' for k in range(K)] + [f'len_tau_k{k}' for k in range(K)] + [f'len_M_k{k}_{f}' for k in range(K) for f in NOMES_F[:NF]] + [f'len_P_k{k}_{a}' for k in range(K) for a in NOMES_F[NF:NF+S]]
+    return rap + len_
+
+def nomes_genes_completos():
+    """[spec I1a] TODOS os genes alem da espinha linear, na ordem dos offsets: cerebro (rap, len) + ref + tal + cor + hip. len == SerCompleto.NP - Linear.NP"""
+    return nomes_genes_cerebro() + nomes_genes()
 
 def nomes_genes():
     ref = ['ref_tau', 'ref_w', 'ref_v', 'ref_theta']; tal = [f'tal_{k}_{p}' for k in NOMES_G for p in ('a', 'b', 'c')]

@@ -425,6 +425,21 @@ def dof_de(Wb, cfg):
     if getattr(cfg, 'custo_suave', False): w2 = w*w; return (w2/(w2 + cfg.gene_min**2)).sum(1)
     return (w.abs() > cfg.gene_min).float().sum(1)
 
+BLOCOS = ('rap', 'len', 'ref', 'tal', 'cor', 'hip')
+def dof_por_bloco(Wb, cfg, Arq):
+    """[spec Mundo Vivo I1a] dof (genes ligados alem da espinha) DECOMPOSTO por bloco, pelo prefixo do nome do gene. A soma dos blocos == dof_de
+    (mesma regra: degrau |w| > gene_min ou custo_suave). Exige Arq.nomes_genes() com len == Arq.NP - Linear.NP; senao devolve {}."""
+    if not hasattr(Arq, 'nomes_genes') or Wb.shape[1] <= Linear.NP: return {}
+    nomes = Arq.nomes_genes()
+    if len(nomes) != Wb.shape[1] - Linear.NP: return {'_erro': f'nomes {len(nomes)} != genes {Wb.shape[1] - Linear.NP}'}
+    w = Wb[:, Linear.NP:]; w2 = w*w
+    liga = (w2/(w2 + cfg.gene_min**2)) if getattr(cfg, 'custo_suave', False) else (w.abs() > cfg.gene_min).float()
+    out = {}
+    for b in BLOCOS:
+        ix = torch.tensor([i for i, n in enumerate(nomes) if n.startswith(b)], device=DEV, dtype=torch.long)
+        if ix.numel(): out[b] = float(liga.index_select(1, ix).sum(1).mean())
+    return out
+
 def _fit(m, cfg, T):
     morto = (m.vida <= 0).float(); vivo = 1. - morto
     tarde = morto*(0.5*m.t_vida/float(T) + 0.05*m.ent + 0.02*(m.n_come + m.n_agua + m.n_posto).clamp(max=10.))   # [G2] gradiente entre mortos que a PEDRA nao maximiza
@@ -451,6 +466,8 @@ def medidas(Arq, W, mapas, cfg, T=1200, seed=7777, R=1, copias=128):
                panes=float(m.av_fuel.mean()), fome_fim=float(m.fome.mean()), agua_fim=float(m.agua.mean()), dinh=float(m.dinh.mean()), res=float(m.res.mean()),
                litros_por_abast=float((m.litros/m.n_posto.clamp(min=1)).mean()), n_posto=float(m.n_posto.mean()), n_come=float(m.n_come.mean()), oficina=float(m.n_oficina.mean()),
                vida_vivos=float(m.vida[m.vida > 0].mean()) if bool((m.vida > 0).any()) else 0., dof=float(dof_de(W[None, :], cfg)[0]), metab=float(m.metab.mean()))
+    db = dof_por_bloco(W[None, :], cfg, Arq)   # [spec I1a] aditivo: chave nova, nenhuma medida existente muda
+    if db: med['dof_bloco'] = db
     return med
 
 
