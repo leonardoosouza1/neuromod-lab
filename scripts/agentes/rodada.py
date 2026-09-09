@@ -44,8 +44,9 @@ def prompt_de(grupo, g, i, rod):
     base = contexto(); saida = ('Responda com UM bloco ```json``` contendo o cenario.json completo (campo "predicao" obrigatorio, com numeros e mecanismo) e nada mais.' if g['tipo'] == 'cenario'
              else API_POL + '\nResponda com UM bloco ```python``` com o politica.py completo, e antes dele UMA linha `PREDICAO: ...` com mortos, entregas e o que mata.')
     return f"{base}\n# SUA TAREFA (grupo '{grupo}', agente {i}, rodada {rod})\n{g['tarefa']}\nSeja diferente dos outros agentes do grupo: agente {i} deve escolher uma abordagem distinta (variacao {i}).\n{saida}"
-def chama(prompt, model, timeout=420):
-    r = subprocess.run([CLAUDE, '-p', prompt, '--model', model, '--output-format', 'json', '--no-session-persistence'], capture_output=True, text=True, timeout=timeout)
+def chama(prompt, model, timeout=900):
+    try: r = subprocess.run([CLAUDE, '-p', prompt, '--model', model, '--output-format', 'json', '--no-session-persistence'], capture_output=True, text=True, timeout=timeout)
+    except subprocess.TimeoutExpired: return ''   # agente lento demais: vira RECUSADO, o laco segue
     try: return json.loads(r.stdout).get('result', r.stdout)
     except Exception: return r.stdout or r.stderr
 def bloco(txt, lang):
@@ -62,6 +63,7 @@ def gerar(a):
             pr = prompt_de(nome, g, i, a.rodada); open(os.path.join(out, f'{nome}_{i}.prompt.md'), 'w').write(pr)
             if a.dry_run: print(f'[dry] {nome}_{i}: prompt {len(pr)} chars'); continue
             t0 = time.time(); txt = chama(pr, a.model); open(os.path.join(out, f'{nome}_{i}.resposta.md'), 'w').write(txt); print(f'{nome}_{i}: resposta {len(txt)} chars em {time.time()-t0:.0f}s', flush=True)
+            if not txt: print('  RECUSADO: sem resposta (timeout)', flush=True); continue
             env = {'NM_RISCO': '1', 'NM_PONTO': '1'}; pid = f'r{a.rodada}_{nome}{i}'
             if g['tipo'] == 'cenario':
                 js = bloco(txt, 'json')

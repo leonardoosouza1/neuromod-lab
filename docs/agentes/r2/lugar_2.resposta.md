@@ -1,0 +1,37 @@
+```json
+{
+  "nome": "cidade-polos-calibrada-viario",
+  "predicao": "npx=32 (2.7x o q13's 12) + respawn=15 tira a cidade da letalidade 0.93 medida em pax_cidade=true/npx=12: (a) linear mortos 0.55-0.70, ~13-15 entregas, renda ~90-110 (mais passageiros simultaneos reduz busca, mas fora=4 [subiu de 3] pune desvio de rota sem direcao, entao fica pior que passageiro-perto 0.83/18); (b) bilinear risco+demanda+espera bate linear >= 10pp em mortos OU >= 20% renda pareada, porque le e_demanda (contraste centro/periferia = 2.4/0.6 = 4x) e posiciona-se perto do polo quente amortizando o custo fora=4, enquanto linear roda cego e paga fora=4 sem bonus; (c) COMPLETO >= bilinear (sensores mais ricos) mas pode empatar como em rodadas anteriores. Diferenca desta variacao (agente 2): o lever nao e so escassez/dem, e' o custo de viario (fora 3->4) que converte 'ler o lugar' em economia de deslocamento, nao so em escolher onde esperar. Risco assumido: se o path-finder calcula a rota automatico (sem decisao do cerebro sobre estrada x fora), fora=4 penaliza todos igual e o contraste de dem fica sendo o unico mecanismo real -> nesse caso mecanismo cai so em (b).",
+  "mundo": {
+    "L": 200,
+    "dias": 10,
+    "regua": "riqueza",
+    "K": 6,
+    "ruas": { "dentro": 1, "fora": 4 },
+    "precos": { "amp": 0.5, "periodo": 3 }
+  },
+  "distritos": {
+    "centro":      { "pmul": 2.0, "aliq": 0.35, "alug": 2.5, "dem": 2.4, "dens": [1.0, 1.5, 1.0, 0.5, 1.0] },
+    "industrial":  { "pmul": 0.6, "aliq": 0.10, "alug": 0.8, "dem": 1.0, "dens": [2.5, 0.0, 1.0, 0.0, 2.0] },
+    "residencial": { "pmul": 1.0, "aliq": 0.15, "alug": 1.0, "dem": 1.4, "dens": [0.0, 2.0, 1.5, 2.0, 0.0] },
+    "periferia":   { "pmul": 0.5, "aliq": 0.00, "alug": 0.8, "dem": 0.6, "dens": [0.5, 0.5, 0.5, 0.5, 0.0] }
+  },
+  "passageiros": {
+    "npx": 32,
+    "respawn": 15,
+    "pax_cidade": true,
+    "ponto": 0,
+    "tarifa_base": 3,
+    "tarifa_km": 0.25
+  },
+  "corpo": {
+    "dinh0": 10,
+    "fome_passo": 0.32,
+    "kcal_pane": 8,
+    "guincho": 0,
+    "fuel_pos_pane": 15
+  },
+  "bracos": ["linear", "COMPLETO (talamo+cortex+hipocampo+reflexo+livre)", "bilinear risco+demanda+espera (esc 1)"],
+  "protocolo": { "P": 1024, "G": 120, "paciencia": 40, "R": 4, "seeds": [0, 1, 2, 3, 4] }
+}
+```
