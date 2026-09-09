@@ -30,9 +30,11 @@ def carrega(path):
         def decidir(s, tudo, m): return s._call('decidir', tudo, m)
         def atualizar(s, m): return s._call('atualizar', m)
     return POL, None
-def mundo(cenario_path=None):
+def mundo(cenario_path=None, nevoa=None):
+    """[spec Mundo Vivo I1b] nevoa=None = hoje (onisciente); o cenario.json (mundo.nevoa) tambem chega aqui via aplica_cenario"""
     fl = argparse.Namespace(L=200., dias=10., fitness='riqueza', nevoa=float('inf'), npx=12, respawn=20., pax_cidade=False, ponto=0., dinh0=10., fome_passo=None, kcal_pane=8., guincho=0., fuel_pane=15., P=None, G=None, paciencia=None, R=None, seeds=None, so=None, mundo='distinto')
     cen = json.load(open(cenario_path)) if cenario_path else {}; ex = aplica_cenario(fl, cen)
+    if nevoa is not None: fl.nevoa = float(nevoa)
     cfg = CfgCampo(L=fl.L, fitness=fl.fitness); cfg.KCAL_PANE = fl.kcal_pane; cfg.dinh0 = fl.dinh0; cfg.GUINCHO = fl.guincho; cfg.FUEL_POS_PANE = fl.fuel_pane; cfg.nevoa = fl.nevoa; cfg.ponto = fl.ponto; cfg.NPX = fl.npx; cfg.respawn = fl.respawn; cfg.pax_cidade = fl.pax_cidade
     if fl.fome_passo is not None: cfg.fome_passo = fl.fome_passo
     for k in ('amp_preco', 'periodo_preco', 'tarifa_base', 'tarifa_km'):
@@ -49,7 +51,9 @@ def mede(Arq, W, cfg, teste, T, seeds, copias=128):
         r['dia_morte'].append(float((m.t_vida[morto]/240.).mean()) if bool(morto.any()) else 10.)
         fome = morto & (m.fome >= cfg.FOME_CRIT); sede = morto & (m.agua <= cfg.AGUA_CRIT); div = morto & (m.dinh < -cfg.LIMITE_DIVIDA)
         r['c_fome'].append(float(fome.float().sum()/nm)); r['c_sede'].append(float(sede.float().sum()/nm)); r['c_divida'].append(float(div.float().sum()/nm)); r['c_dano'].append(float((morto & ~fome & ~sede & ~div).float().sum()/nm))
-    med = {k: sum(v)/len(v) for k, v in r.items()}; med['mortos_por_seed'] = [round(x, 3) for x in r['mortos']]; return med
+    med = {k: sum(v)/len(v) for k, v in r.items()}; med['mortos_por_seed'] = [round(x, 3) for x in r['mortos']]
+    for k, v in r.items(): med[k + '_por_semente'] = [round(x, 4) for x in v]   # [spec I1c] regua pareada (analise_campo.py) sobre o placar
+    return med
 def traco(Arq, W, cfg, teste, T=2400, B=64):
     """histograma das escolhas na vida inteira + 'ficar' separado em NO RAIO de um servico (funcional) vs FORA (desperdicio)"""
     m = Campo(teste, B, cfg, seed=7777, R=1); Wb = W[None, :].repeat(B, 1)[m.gidx]; ar = Arq(); ar.reset(m, Wb); cont = torch.zeros(G + S, device=DEV); fic_raio = 0.; fic_fora = 0.

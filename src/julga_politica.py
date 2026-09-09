@@ -4,7 +4,7 @@ import sys, os, json, argparse, re; sys.path.insert(0, os.path.dirname(os.path.a
 os.environ['NM_COMPILE'] = '0'
 import torch; from campo import *; from e43_campo import aplica_cenario, alinha_semente
 ap = argparse.ArgumentParser(); ap.add_argument('--politica', required=True); ap.add_argument('--cenario', default=None); ap.add_argument('--campeao', default='/media/llm-data/universe-runs/neuromod-lab-taxi/e64/e43_busca8x_L200.json')
-ap.add_argument('--copias', type=int, default=128); ap.add_argument('--seeds', type=int, nargs='*', default=[7777, 7778, 7779, 7780, 7781]); ap.add_argument('--out', default='/media/llm-data/universe-runs/neuromod-lab-taxi/agentes'); ap.add_argument('--tag', default='')
+ap.add_argument('--nevoa', type=float, default=None, help='[spec I1b] raio de visibilidade; None = hoje'); ap.add_argument('--copias', type=int, default=128); ap.add_argument('--seeds', type=int, nargs='*', default=[7777, 7778, 7779, 7780, 7781]); ap.add_argument('--out', default='/media/llm-data/universe-runs/neuromod-lab-taxi/agentes'); ap.add_argument('--tag', default='')
 a = ap.parse_args(); os.makedirs(a.out, exist_ok=True)
 src = open(a.politica).read()
 PROIBIDO = [r'\bimport\s+(?!torch\b|math\b)', r'\bfrom\s+(?!torch\b|math\b)', r'\b(os|sys|subprocess|open|exec|eval|__import__|compile|globals|locals|getattr|setattr)\s*\(', r'\.px\b', r'\.pxd\b', r'\.serv\[', r'\.serv_msk', r'\.g\b', r'\.dest\b']
@@ -33,6 +33,7 @@ class POL:   # invólucro por COMPOSICAO, ciente da assinatura: agentes copiaram
     def atualizar(s, m): return s._call('atualizar', m)
 fl = argparse.Namespace(L=200., dias=10., fitness='riqueza', nevoa=float('inf'), npx=12, respawn=20., pax_cidade=False, ponto=0., dinh0=10., fome_passo=None, kcal_pane=8., guincho=0., fuel_pane=15., P=None, G=None, paciencia=None, R=None, seeds=None, so=None, mundo='distinto')
 cen = json.load(open(a.cenario)) if a.cenario else {}; ex = aplica_cenario(fl, cen)
+if a.nevoa is not None: fl.nevoa = float(a.nevoa)
 cfg = CfgCampo(L=fl.L, fitness=fl.fitness); cfg.KCAL_PANE = fl.kcal_pane; cfg.dinh0 = fl.dinh0; cfg.GUINCHO = fl.guincho; cfg.FUEL_POS_PANE = fl.fuel_pane; cfg.nevoa = fl.nevoa; cfg.ponto = fl.ponto; cfg.NPX = fl.npx; cfg.respawn = fl.respawn; cfg.pax_cidade = fl.pax_cidade
 if fl.fome_passo is not None: cfg.fome_passo = fl.fome_passo
 for k in ('amp_preco', 'periodo_preco', 'tarifa_base', 'tarifa_km'):

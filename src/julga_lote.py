@@ -6,10 +6,10 @@ import torch; from campo import *; from politica_util import *
 ap = argparse.ArgumentParser(); ap.add_argument('--politicas', nargs='+', required=True, help='arquivos .py ou globs'); ap.add_argument('--cenario', default=None)
 ap.add_argument('--campeao', default='/media/llm-data/universe-runs/neuromod-lab-taxi/e64/e43_busca8x_L200.json'); ap.add_argument('--seeds', type=int, nargs='*', default=[7777, 7778, 7779])
 ap.add_argument('--copias', type=int, default=128); ap.add_argument('--confirma', type=int, default=0, help='re-mede as k melhores com 5 sementes'); ap.add_argument('--sem-traco', action='store_true')
-ap.add_argument('--out', default='/media/llm-data/universe-runs/neuromod-lab-taxi/agentes'); ap.add_argument('--tag', default='')
+ap.add_argument('--nevoa', type=float, default=None, help='[spec I1b] raio de visibilidade dos servicos; None = onisciente (hoje)'); ap.add_argument('--out', default='/media/llm-data/universe-runs/neuromod-lab-taxi/agentes'); ap.add_argument('--tag', default='')
 a = ap.parse_args(); os.makedirs(a.out, exist_ok=True)
 arqs = sorted(set(f for p in a.politicas for f in (glob.glob(p) if any(c in p for c in '*?[') else [p])))
-cfg, teste, T, chave = mundo(a.cenario); J = json.load(open(a.campeao))['bracos']['linear']['W']; Wc = torch.tensor(alinha_semente(J['0']), device=DEV); Wz = torch.zeros(Linear.NP, device=DEV)
+cfg, teste, T, chave = mundo(a.cenario, nevoa=a.nevoa); chave = chave + (f'_nv{a.nevoa:g}' if a.nevoa is not None else ''); J = json.load(open(a.campeao))['bracos']['linear']['W']; Wc = torch.tensor(alinha_semente(J['0']), device=DEV); Wz = torch.zeros(Linear.NP, device=DEV)
 cache = os.path.join(a.out, f'baseline_{chave}_{"-".join(map(str, a.seeds))}_{a.copias}.json')
 if os.path.exists(cache): base = json.load(open(cache))
 else: base = mede(Linear, Wc, cfg, teste, T, a.seeds, a.copias); json.dump(base, open(cache, 'w'))
@@ -30,5 +30,8 @@ if a.confirma and ok:
     print('  ' + linha('CAMPEAO (5 sementes)', b5), flush=True)
     for r in ok[:a.confirma]:
         POL, _ = carrega(r['politica']); m5 = mede(POL, Wz, cfg, teste, T, s5, a.copias); m5['dif_mortos'] = m5['mortos'] - b5['mortos']; r['med5'] = m5; print('  ' + linha(r['nome'] + ' (5s)', m5), flush=True)
-json.dump(dict(cenario=a.cenario, seeds=a.seeds, copias=a.copias, device=torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'cpu', baseline=base, res=res), open(os.path.join(a.out, f'lote{a.tag}.json'), 'w'), indent=1)
+# [spec I1c/I1d] 'dispositivo' completo e vista 'bracos' (para analise_campo.py --ref 'linear campeao')
+json.dump(dict(cenario=a.cenario, nevoa=a.nevoa, seeds=a.seeds, copias=a.copias, device=torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'cpu',
+               dispositivo=dict(gpu=torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'cpu', torch=torch.__version__, hip_ou_cuda=(torch.version.hip or torch.version.cuda)),
+               baseline=base, res=res, bracos={'linear campeao': base, **{r['nome']: r['med'] for r in res if 'med' in r}}), open(os.path.join(a.out, f'lote{a.tag}.json'), 'w'), indent=1)
 print(f'== fim: {len(ok)}/{len(arqs)} medidas; melhor {ok[0]["nome"] if ok else "-"} {ok[0]["med"]["mortos"] if ok else ""} ==', flush=True)
