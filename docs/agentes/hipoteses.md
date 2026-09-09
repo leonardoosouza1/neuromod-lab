@@ -41,3 +41,6 @@
 | H32 | RUA com peso dependente da vida (0.15 normal, 0.30 com vida < 40) | ⏳ a testar — primeira tentativa de atacar dano sem gastar caixa na oficina | L7 |
 | H20 | (regra medida pelo Opus em 19 políticas) mortos ≈ 1.48 − 0.047 × corridas, r = −0.97: quem corre mais morre menos; alavanca = tempo livre parado no raio (43 % vs 26 % do campeão) | em teste (lote 7) | L6 consolidação |
 | H21 | config limpa (CLAUDE_CONFIG_DIR sem plugins) para os agentes | ✓ lote 7: 8/8 respostas válidas, 0 contaminação (lotes 2–5: 25–75 % perdidas) | L7 |
+| H22 | (Opus, lote 7) top-up voluntário de 20–25 L ao passar perto de posto com tanque < 60 | ✗ 0.65 (base 0.56): contradiz H2/H3 — o campeão nunca abastece por vontade | L7 p4 |
+| H23 | (Opus, lote 7) reparo só com vida < 35 e caixa > 40 | ✗ 0.76 (pior do lote): o campeão repara com vida ~42; reparo tardio mata | L7 p3 |
+| H24 | (Opus) "cada corrida a mais vale ~5 pp" (mortos ≈ 1.48 − 0.047·corridas) | correlação confirmada por mim (n=37: r = −0.96), mas é metade causalidade invertida: quem vive mais corre mais. Variável honesta: corridas por dia vivo | auditoria Fable |
