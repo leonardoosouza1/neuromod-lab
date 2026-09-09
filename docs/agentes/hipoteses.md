@@ -26,3 +26,5 @@
 | H22 | limiar de fome baixo de DIA (3o teste) | ✗ 0.73: refeicoes sobem 7.3 → 8.2 e mortos nao cai — comer de dia nao cobre 22h-6h | L3 p1 |
 | H16 | ÁGUA: comprar menos/na hora certa sobre a base p7 | ✓ 0.66 → 0.62 (5 s 0.63): sede sobe para 19 % das mortes mas fome/dano caem; renda 172 | L4 p2 |
 | H17 | (bug) parser pegava o maior bloco python: em respostas sujas pelo hook, era o código-base ecoado → 6/8 do lote 4 idênticos à base | corrigido: último bloco + recusa 'igual à base' | L4 |
+| H18 | GASOLINA: paradas mais frequentes com menos litros (abast 11.4 vs 8) sobre L4 p2 | ✓ 0.62 → 0.57 (5 s 0.58): o agente previu empate (0.65–0.68) e errou para MELHOR | L5 p4 |
+| H19 | (bug do laço) relançamento usava tarefa_L1 e lote 6 rodou com tarefa vazia (fallback para arquivo inexistente) | corrigido: tarefa mais recente existente | L5–L6 |

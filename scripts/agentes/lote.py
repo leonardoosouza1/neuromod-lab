@@ -93,7 +93,8 @@ def espera(pid, tmax=3600):
     return False
 def loop(a):
     for lote in range(a.de, a.ate + 1):
-        a.lote = lote; a.tarefa = a.tarefa if lote == a.de and a.tarefa else (os.path.join(DA, f'tarefa_L{lote}.md') if os.path.exists(os.path.join(DA, f'tarefa_L{lote}.md')) else os.path.join(DA, f'tarefa_L{lote-1}.md'))
+        a.lote = lote; existentes = [k for k in range(lote, 0, -1) if os.path.exists(os.path.join(DA, f'tarefa_L{k}.md'))]
+        a.tarefa = (a.tarefa if lote == a.de and a.tarefa else None) or os.path.join(DA, f'tarefa_L{existentes[0]}.md')   # a mais recente que existe (bug: lote 6 rodou com tarefa vazia)
         print(f'===== LOTE {lote} ({time.strftime("%H:%M")}) tarefa {os.path.basename(a.tarefa)} =====', flush=True); a.base = None
         import nmd_cliente as c
         if c.estado(f'l{lote}_lote').get('fase') in ('rodando', 'terminou', 'na fila') or os.path.exists(os.path.join(R, 'agentes', f'lote_l{lote}.json')): print(f'lote {lote} ja gerado/julgado: pulando gerar', flush=True); n = 1
@@ -105,6 +106,6 @@ def loop(a):
     print('===== FIM DO LACO =====', flush=True)
 if __name__ == '__main__':
     ap = argparse.ArgumentParser(); ap.add_argument('fase', choices=['gerar', 'placar', 'consolidar', 'loop']); ap.add_argument('--lote', type=int, default=1); ap.add_argument('--de', type=int, default=1); ap.add_argument('--ate', type=int, default=6)
-    ap.add_argument('--n', type=int, default=8); ap.add_argument('--K', type=int, default=3); ap.add_argument('--model', default='sonnet'); ap.add_argument('--tarefa', default=os.path.join(DA, 'tarefa_L1.md')); ap.add_argument('--base', default=None); ap.add_argument('--cenario', default=None)
+    ap.add_argument('--n', type=int, default=8); ap.add_argument('--K', type=int, default=3); ap.add_argument('--model', default='sonnet'); ap.add_argument('--tarefa', default=None); ap.add_argument('--base', default=None); ap.add_argument('--cenario', default=None)
     ap.add_argument('--confirma', type=int, default=2); ap.add_argument('--dry-run', action='store_true'); a = ap.parse_args()
     {'gerar': gerar, 'placar': placar, 'consolidar': consolidar, 'loop': loop}[a.fase](a)
