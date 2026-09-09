@@ -22,6 +22,10 @@ RISCO = os.environ.get('NM_RISCO', '0') == '1'   # [E61] luz de reserva: e_risco
 if RISCO: NOMES_CORPO = NOMES_CORPO + ['e_risco']
 PONTO = os.environ.get('NM_PONTO', '0') == '1'   # [E68 ponto de taxi] sentidos 'demanda daqui' e 'ha quanto tempo espero' (Leonardo 09-08: 'parar pode ser esperar passageiro'). Ligado por NM_PONTO=1 (muda NF)
 if PONTO: NOMES_CORPO = NOMES_CORPO + ['e_demanda', 'e_espera']
+RETINA = os.environ.get('NM_RETINA', '0') == '1'   # [spec F3] visao de verdade: 8 raios de bussola (o taxi nao tem proa), oclusao por quadra, alcance de dia/noite. Sem NM_RETINA nada muda (identidade)
+KR = 8
+if RETINA: NOMES_OP = NOMES_OP + ['livre']; NOMES_CORPO = NOMES_CORPO + [f'ret_d_{k}' for k in range(KR)] + [f'ret_t_{k}' for k in range(KR)]   # livre = ate onde consigo ir nesta direcao (POR OPCAO: achado 84); ret_d/ret_t = distancia e rotulo do 1o servico visivel por raio
+RETINA_PADRAO = dict(R_dia=60., R_noite=15., passo=4., custo=0., k_cego=2.)
 NF = len(NOMES_OP) + len(NOMES_CORPO)   # 24 (+2 painel, +1 risco)
 NOMES_F = NOMES_OP + NOMES_CORPO + [f'sv_{a[0]}{int(a[1]) if a[1] else ""}' for a in ACOES] + ['sv_bias']
 
@@ -36,6 +40,7 @@ class CfgCampo:
         s.custo_gene = 0.; s.gene_min = .5; s.custo_suave = False; s.varredura = 'exata'; s.margem_risco = 30.; s.GUINCHO = 0.; s.FUEL_POS_PANE = 15.; s.nevoa = float('inf'); s.k_cego = 2.   # [E63] raio de VISIBILIDADE dos servicos: alem dele a distancia satura (gradiente zero) e o ser tem de LEMBRAR onde viu. inf = mundo onisciente de hoje (identico bit a bit)   # [E61b] guincho cobra dinheiro e deixa o ser no posto com FUEL_POS_PANE (15 = subsidio: 6 panes/vida = vive de guincho);
         s.pax_cidade = False   # [E70] passageiro nasce NA CIDADE (distrito ~ demanda, em volta do centro do distrito) e o taxi vai buscar; reposicao ~ demanda do lugar do passageiro (Leonardo 09-08: 'eles deveriam buscar o passageiro, nao o passageiro aparecer do nada')
         s.respawn = 20.   # [E69 escassez] slot de passageiro usado reaparece com prob demanda/(respawn*tarifa) por tick (20 = de hoje; 100 = escasso: periferia ~333 ticks por slot)
+        s.retina = None   # [spec F3] None = RETINA_PADRAO quando NM_RETINA=1; dict(R_dia, R_noite, passo, custo, k_cego)
         s.custo_modo = 'existencia'; s.amostra_ativ = 10; s.ativ_ref = 1.   # [spec F2] 'ativacao' = o gene custa pelo SINAL que emite (por bloco: |saida do bloco na nota| media, amostrada a cada amostra_ativ ticks; bloco com saida >= ativ_ref conta cheio); 'existencia' = hoje
         s.horizonte = 'fixo'; s.T_max = None; s.w_trab = 1.   # [spec Mundo Vivo F1] 'aberto' = roda ate todos morrerem (checa vivo.any() 1x por dia simulado) ou T_max; fitness 'vida' = dias vividos + w_trab*renda/300 (sem pena de morte, sem teto)
         s.ponto = 0.   # [E68] ponto de taxi: parado+livre recebe passageiro no lugar com prob demanda/ponto por tick (0 = desligado, mundo identico ao anterior); 30 => centro ~15 ticks, periferia ~100
@@ -92,7 +97,15 @@ def gerar_mapa(seed, L=400., K=None, tex=64, distinto=False, perfis=None, ruas=(
     # campos pre-computados (grade GR x GR): distancia ao servico mais perto por tipo, e distrito da celula
     ax = (torch.arange(GR, device=DEV).float() + .5)*(L/GR); gy, gx = torch.meshgrid(ax, ax, indexing='ij'); cel = torch.stack([gx, gy], -1).view(-1, 2)   # (GR*GR,2) (x,y)
     campo_dist = (cel[:, None, :] - centros[None]).norm(dim=-1).argmin(1).view(GR, GR)                                        # (GR,GR) long
-    return dict(L=L, custo=custo, serv=serv, centros=centros, aliq=aliq, pmul=pmul, alug=alug, seed=int(seed), campo_dist=campo_dist, demanda=demanda, fase_preco=fase_preco, perfil=perfil, distinto=bool(distinto))
+    # [spec F3] grades da retina (sem RNG): tipo_g = servico na celula (1..5 na ordem TIPOS); opac = quadra edificada = fora da rua (mapa distinto) e sem servico
+    tipo_g = torch.zeros(GR, GR, dtype=torch.int8, device=DEV)
+    for j, t in enumerate(TIPOS):
+        pts = serv[t]; ix = (pts[:, 0]/L*GR).long().clamp(0, GR - 1); iy = (pts[:, 1]/L*GR).long().clamp(0, GR - 1); tipo_g[iy, ix] = j + 1
+    if distinto:
+        cg = custo.repeat_interleave(GR//tex, 0).repeat_interleave(GR//tex, 1); opac = (cg >= float(ruas[1])) & (tipo_g == 0)
+        opac = opac & ~torch.nn.functional.max_pool2d(tipo_g[None, None].float(), 3, 1, 1)[0, 0].gt(0)   # 1 celula de folga em volta de cada servico
+    else: opac = torch.zeros(GR, GR, dtype=torch.bool, device=DEV)
+    return dict(L=L, custo=custo, serv=serv, centros=centros, aliq=aliq, pmul=pmul, alug=alug, seed=int(seed), campo_dist=campo_dist, demanda=demanda, fase_preco=fase_preco, perfil=perfil, distinto=bool(distinto), opac=opac, tipo_g=tipo_g)
 
 OBRAS_MAX = 16                          # slots livres por tipo e por mapa para o prefeito construir
 def _empilha(mapas, chave):
@@ -109,6 +122,7 @@ class Campo:
         g = torch.Generator(device=DEV); g.manual_seed(int(seed)); s.g = g
         s.custo_tex = torch.stack([m['custo'] for m in mapas])                              # (NC,tex,tex)
         s.campo_dist = torch.stack([m['campo_dist'] for m in mapas])                        # (NC,GR,GR)
+        if RETINA: s.opac = torch.stack([m['opac'] for m in mapas]); s.tipo_g = torch.stack([m['tipo_g'] for m in mapas]).long()   # [spec F3]
         s.serv = {}; s.serv_msk = {}
         for t in TIPOS: s.serv[t], s.serv_msk[t] = _empilha([{'p': m['serv'][t]} for m in mapas], 'p')
         s.centros = torch.stack([m['centros'] for m in mapas]); s.K = s.centros.shape[1]      # (NC,K,2)
@@ -222,22 +236,48 @@ class Campo:
         # raio 6, reboque da pane): nevoa e' percepcao, nao teleporte. Cego = PESSIMISTA (k_cego x nevoa): se nao vejo o
         # posto, o corpo assume longe — senao a nevoa BAIXA o risco percebido e a luz apaga justo quando devia acender.
         s._dist_v = torch.where(s._dist <= c.nevoa, s._dist, torch.full_like(s._dist, c.k_cego*c.nevoa))   # (B,5) percebida
-        for j in (0, 1, 2, 4, 3):
-            F.append((pn - s._ptos[:, j][:, None, :]).norm(dim=-1).clamp(max=c.nevoa)*esc)
+        if RETINA:   # [spec F3] o ser so' sabe do servico que um RAIO enxerga; o oraculo (_ptos/_dist) segue valendo para a fisica
+            rt = c.retina or RETINA_PADRAO; ret_d, ret_t, livre, Rd = s._retina(nv, rt); cego = rt['k_cego']*Rd
+            s._ret = (ret_d, ret_t, livre)
+            for j in (0, 1, 2, 4, 3):
+                mk = ret_t == (j + 1); dk = torch.where(mk, ret_d, torch.full_like(ret_d, 1e9)); dmin, kmin = dk.min(1); viu = mk.any(1)
+                ponto = s.pos + s.dirs[kmin]*dmin[:, None]                                                       # onde o raio viu o servico
+                s._dist_v[:, j] = torch.where(viu, dmin, torch.full_like(dmin, cego))
+                F.append(torch.where(viu[:, None], (pn - ponto[:, None, :]).norm(dim=-1), torch.full_like(pn[..., 0], cego)).clamp(max=cego)*esc)
+        else:
+            for j in (0, 1, 2, 4, 3):
+                F.append((pn - s._ptos[:, j][:, None, :]).norm(dim=-1).clamp(max=c.nevoa)*esc)
         F.append(s.custo_em(pn)); dn = s.distrito(pn); ci = s.cidx[:, None].expand(-1, G)
         F.append(s.pmul[ci, dn]); F.append(s.aliq[ci, dn]); F.append((dn == s.casa[:, None]).float())
-        Fop = torch.stack(F, -1)                                                                 # (B,G,10)
+        if RETINA: F.append(torch.cat([livre, torch.zeros(s.B, 1, device=DEV)], 1)/100.)                   # livre POR OPCAO (ficar = 0)
+        Fop = torch.stack(F, -1)                                                                 # (B,G,10|11)
         h = s.hora()*2*math.pi/24.
         auton = (s.fuel/s.cons.clamp(min=1e-3) - s._dist_v[:, 0])/100.                                                    # [E57] quanto ainda anda menos a distancia ao posto mais perto (em 100 m)
         cols = [s.fuel/100., s.agua/100., s.fome/100., s.fad/100., s.calor/120., s.vida/100., (s.dinh/150.).clamp(-1., 1.), s.res/c.RES_MAX,
                 (s.pd_ >= 0).float(), torch.sin(h), torch.cos(h), nv.float(), s.custo_em(s.pos), torch.ones_like(s.fuel),
                 s.cons/(c.fuel_passo*3.), auton.clamp(-2., 4.)]
         if RISCO: cols.append(((s._dist_v[:, 0] + c.margem_risco - s.fuel/s.cons.clamp(min=1e-3))/100.).clamp(min=0., max=3.))   # [E61] zero enquanto ha margem; cresce quando o posto fica fora do alcance
+        if RETINA: cols += [s._ret[0][:, k]/100. for k in range(KR)] + [s._ret[1][:, k].float()/5. for k in range(KR)]   # [spec F3] raios: distancia (100 m = 1) e rotulo (1..5 -> .2..1)
         if PONTO: cols += [s.demanda[s.cidx, s.distrito(s.pos)]/2., (s.t_ult/100.).clamp(max=2.)]   # [E68] demanda do distrito onde estou (0.15..1) e tempo esperando (satura em 200 ticks)
         corpo = torch.stack(cols, -1)   # (B,16|17|19)
         Fo = torch.cat([Fop, corpo[:, None, :].expand(-1, G, -1)], -1)
         val = torch.ones(s.B, G, dtype=torch.bool, device=DEV)
         return Fo, val
+    def _retina(s, nv, rt):
+        """[spec F3] 8 raios de bussola (= as 8 direcoes de movimento), amostrados a cada `passo` ate R (dia/noite); a 1a celula OPACA bloqueia
+        o resto do raio; borda do mapa bloqueia. Devolve ret_d (B,8) distancia ao 1o servico visivel (k_cego*R se nenhum), ret_t (B,8) rotulo
+        1..5 (0 = nada), livre (B,8) distancia ate o 1o obstaculo (R se nenhum), e R por ser. Vetorizado, sem sync."""
+        Rd, Rn, passo = float(rt['R_dia']), float(rt['R_noite']), float(rt['passo']); n_s = int(math.ceil(Rd/passo))
+        dist_s = torch.arange(1, n_s + 1, device=DEV).float()*passo                                             # (n_s,)
+        Rb = torch.where(nv, torch.full_like(s.fuel, Rn), torch.full_like(s.fuel, Rd))                             # (B,)
+        p = s.pos[:, None, None, :] + s.dirs[None, :KR, None, :]*dist_s[None, None, :, None]                        # (B,8,n_s,2)
+        fora = ((p < 0.) | (p > s.L)).any(-1); p = p.clamp(0., s.L); ci, iy, ix = s._cel(p)
+        op = s.opac[ci, iy, ix] | fora | (dist_s[None, None, :] > Rb[:, None, None]); tp = s.tipo_g[ci, iy, ix]
+        bloq = op.cumsum(-1) > 0; vis = (~bloq) & (tp > 0)
+        achou = vis.any(-1); j1 = vis.float().argmax(-1); ret_d = torch.where(achou, dist_s[j1], torch.full_like(dist_s[j1], rt['k_cego']*Rd))
+        ret_t = torch.where(achou, tp.gather(-1, j1[..., None]).squeeze(-1), torch.zeros_like(j1))
+        tem_op = op.any(-1); jb = op.float().argmax(-1); livre = torch.where(tem_op, dist_s[jb] - passo, torch.full_like(dist_s[jb], Rd)).clamp(min=0.)
+        return ret_d, ret_t, livre, Rd
     def serv_ab(s):
         c = s.cfg; nv = s.noite_(); perto = {t: s._dist[:, j] <= c.raio for j, t in enumerate(TIPOS)}   # [G7] reusa a varredura do obs()
         if c.loja_no_posto:   # posto tem loja: vende comida e agua (o ser passa no posto 5x/vida e quase nunca num ponto de comida) — licao do grafo (comida_no_posto)
