@@ -51,11 +51,12 @@ PERFIL = {  # pmul, aliq, alug, demanda de passageiro, e multiplicador de densid
     'periferia':   dict(pmul=0.5, aliq=.00, alug=0.8, dem=0.3, dens=(0.5, 0.5, 0.5, 0.5, 0.0)),   # barato, vazio, pouco passageiro (alug 0.3 -> 0.8: com 0.3 a PEDRA vivia 10 dias parada na periferia, E59)
 }
 
-def gerar_mapa(seed, L=400., K=None, tex=64, distinto=False):
+def gerar_mapa(seed, L=400., K=None, tex=64, distinto=False, perfis=None, ruas=(1., 3.)):
     """tudo na GPU. devolve dict de tensores: custo (tex,tex), servicos {tipo: (N,2)}, centros (K,2), aliq/pmul/alug (K,).
     distinto=True [E56]: ruas (custo 1 na rua, 3 fora), distritos com PERFIL (precos, aluguel, demanda e servicos por distrito) e
     precos que mudam por dia (fase por distrito) — um mundo que exige memoria de lugar, atencao por contexto e politica por distrito."""
     g = torch.Generator(device=DEV); g.manual_seed(int(seed)); K = K or max(3, round(6*L/200.))
+    PF = perfis or PERFIL; NOMES_PF = list(PF)   # [E71 cenario] perfis de distrito por parametro (default = PERFIL: identico)
     ru = torch.rand(1, 1, tex, tex, generator=g, device=DEV)
     k = torch.ones(1, 1, 7, 7, device=DEV)/49.
     for _ in range(3): ru = torch.nn.functional.conv2d(torch.nn.functional.pad(ru, (3, 3, 3, 3), mode='replicate'), k)
@@ -63,12 +64,12 @@ def gerar_mapa(seed, L=400., K=None, tex=64, distinto=False):
     centros = torch.rand(K, 2, generator=g, device=DEV)*L
     if distinto:
         # ruas: K linhas verticais + K horizontais (2 celulas de largura) com custo 1; fora da rua custo 3
-        custo = torch.full((tex, tex), 3., device=DEV)
+        custo = torch.full((tex, tex), float(ruas[1]), device=DEV)
         for _ in range(K):
             c1 = int(torch.randint(0, tex, (1,), generator=g, device=DEV)); c2 = int(torch.randint(0, tex, (1,), generator=g, device=DEV))
-            custo[:, c1:c1+2] = 1.; custo[c2:c2+2, :] = 1.
-        perfil = torch.randint(0, len(PERFIS), (K,), generator=g, device=DEV); perfil[:len(PERFIS)] = torch.arange(len(PERFIS), device=DEV)[:K]   # todo perfil aparece
-        P = [PERFIL[PERFIS[int(i)]] for i in perfil]
+            custo[:, c1:c1+2] = float(ruas[0]); custo[c2:c2+2, :] = float(ruas[0])
+        perfil = torch.randint(0, len(NOMES_PF), (K,), generator=g, device=DEV); perfil[:len(NOMES_PF)] = torch.arange(len(NOMES_PF), device=DEV)[:K]   # todo perfil aparece
+        P = [PF[NOMES_PF[int(i)]] for i in perfil]
         pmul = torch.tensor([q['pmul'] for q in P], device=DEV); aliq = torch.tensor([q['aliq'] for q in P], device=DEV)
         alug = torch.tensor([q['alug'] for q in P], device=DEV); demanda = torch.tensor([q['dem'] for q in P], device=DEV)
         fase_preco = torch.rand(K, generator=g, device=DEV)
