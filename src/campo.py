@@ -719,6 +719,8 @@ class Cerebro(Linear):
         s.M = W[:, s.O_M:s.O_P].view(-1, K, NF); s.P = W[:, s.O_P:Cerebro.NP].view(-1, K, S)     # Cerebro.NP, nao s.NP: subclasses (completo) tem genes depois
         s.z = torch.zeros(m.B, K, device=DEV); s.corpo = torch.zeros(m.B, s.NC_, device=DEV); s.h = None
         s.ORC = getattr(m.cfg, 'orcamento_ativ', None)
+        assert s.ORC is None or float(s.ORC) > 0., 'orcamento_ativ deve ser > 0'
+        assert s.ORC is None or getattr(m.cfg, 'custo_modo', 'existencia') != 'ativacao', 'orcamento e custo por ativacao juntos nao: o imposto cobraria o sinal pre-projecao'
         s.ATIV = getattr(m.cfg, 'custo_modo', 'existencia') == 'ativacao' or getattr(m.cfg, 'medir_ativ', False) or s.ORC is not None   # [spec F2] constante em Python: o grafo compilado so ganha os caches neste modo
     def extra(s, m, W, F):
         s.corpo = F[:, G - 1, len(NOMES_OP):]                                                # sentidos do corpo (iguais nas 9 opcoes): opcao 'ficar'

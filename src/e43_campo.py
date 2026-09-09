@@ -68,6 +68,7 @@ def main(a):
     for nome, A in BRACOS:
         if a.so and nome not in a.so: continue
         t1 = time.time(); W0 = None
+        if cfg.orcamento_ativ is not None and not issubclass(A, Cerebro): print(f'  [aviso] orcamento_ativ={cfg.orcamento_ativ} nao se aplica ao braco {nome} (nao e Cerebro): roda sem orcamento', flush=True)
         if a.init_from:
             JJ = json.load(open(a.init_from[0])); J = JJ['bracos'][a.init_from[1]]['W']; W0 = {sd: alinha_semente(J.get(str(sd), J[sorted(J)[sd % len(J)]]), JJ.get('nomes_f')) for sd in p['seeds']}   # semente sem campeao no JSON (ex.: 3 sementes -> 5): usa o campeao de outra semente (ciclico)
         champs = (lab.evoluir_es(A, treino, cfg, P=p['P'], ger=p['G'], T=p['T_evo'], seeds=p['seeds'], R=p['R'], verbose=True, W0=W0, paciencia=a.paciencia, avaliar_fn=avaliar, sigma_es=a.es_sigma, lr=a.es_lr) if a.otim == 'es'   # [E65] gradiente estimado, mesmo orcamento
