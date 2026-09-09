@@ -1,0 +1,109 @@
+import torch
+
+
+def fabrica():
+    class PoliticaL6Agua(object):
+        def reset(self, m, W):
+            self.reparando_vida = torch.zeros(m.B, dtype=torch.bool, device=DEV)
+            self.comeu_ultimo_tick = torch.zeros(m.B, dtype=torch.bool, device=DEV)
+            self.resfriando = torch.zeros(m.B, dtype=torch.bool, device=DEV)
+
+        def extra(self, m, W, F):
+            self.F = F
+            return torch.zeros(m.B, F.shape[1], device=DEV, dtype=F.dtype)
+
+        def decidir(self, tudo, m):
+            F = self.F
+            G = F.shape[1]
+            S = tudo.shape[1] - G
+            device = tudo.device
+            dtype = tudo.dtype
+            B = tudo.shape[0]
+
+            e_fuel = F[:, 0, 10]
+            e_agua = F[:, 0, 11]
+            e_fome = F[:, 0, 12]
+            e_calor = F[:, 0, 14]
+            e_vida = F[:, 0, 15]
+            e_dinh = F[:, 0, 16]
+            e_pax = F[:, 0, 18]
+            e_noite = F[:, 0, 21]
+            e_espera = F[:, 0, 28]
+            dinh = e_dinh * 150.0
+            tem_pax = e_pax > 0.5
+
+            disp = tudo[:, G:G + S] > -1e8
+            no_posto = disp[:, 0]
+            no_oficina = disp[:, 9]
+
+            # ALAVANCA RUA (herdada de p7, intacta): score de mover ao alvo pondera d_alvo +
+            # peso*custo_frente. peso pequeno de proposito: L1 p7 usou peso=5.0 e a penalidade
+            # (5*2=10) dominou o d_alvo (diff maxima ~2), paralisando o taxi (0.99, 1.7 corridas).
+            # Aqui peso=.15 da penalidade maxima .15*2=.3, so' desempata direcoes quase
+            # equivalentes sem nunca virar a decisao principal de ir ao alvo.
+            PESO_RUA = 0.15
+            mover = torch.argmin(F[:, :, 0] + PESO_RUA * F[:, :, 6], dim=1)
+            ir_oficina = torch.argmin(F[:, :, 4], dim=1)
+            ir_comida_mov = torch.argmin(F[:, :, 2], dim=1)
+
+            # ALAVANCA LIVRE (unica mudanca vs L6 p4): p3/p6/p7 deste lote ja saturaram o
+            # eixo "enviesar a direcao por preco_frente/aliq_frente" (com e sem inversao por
+            # tanque baixo, com e sem gate por tem_pax) -- repetir seria o mesmo eixo, nao um
+            # eixo novo. Fui direto ao codigo do simulador (campo.py) atras de um mecanismo
+            # que NENHUMA das 60+ politicas ou hipoteses (H1-H38) tocou: calor tem DOIS canais
+            # de dano, nao um. custo_gene aparte, campo.py:296-297 mostra:
+            #   - D_RODAR=.15 de dano POR TICK enquanto anda com calor > 80 (raw; e_calor>.667)
+            #     -- um sangramento continuo que comeca ANTES do desligamento forcado.
+            #   - CALOR_MAX=92 (e_calor>.767) forca desligamento: D_QUENTE=6 + 10 ticks
+            #     travado (dano fixo, so' acontece uma vez por episodio).
+            # O gatilho atual desta politica (quer_calor, mais abaixo) so' reage em e_calor>.75,
+            # ja DENTRO da zona de sangramento D_RODAR, e ainda manda o taxi ANDAR ate a
+            # oficina -- andando, calor continua subindo (.15*custo/tick), entao a viagem ate
+            # a oficina e' exatamente o pior momento para essa viagem.
+            # calor_desce=.6 e' ~4x mais rapido que calor_sobe*custo~.28 (comentario do
+            # simulador: "sustentavel a ~70% de rodagem"), entao um resfriamento CEDO custa
+            # poucos ticks -- mas se disparasse toda vez que calor>.6, o taxi pararia com
+            # frequencia e cairia na mesma armadilha da H25/H29 (parar sempre que livre so'
+            # corta renda, nao muda a fome). Por isso o gatilho exige as DUAS caudas ao mesmo
+            # tempo: e_espera>.80 (perseguicao ja LONGA sem embarque -- cauda de H38, mediana
+            # e_espera e' .57, so' ~15-20% dos intervalos passam de .80) E e_calor>.60 (raw
+            # >72, ja' morno). So' nesse cruzamento raro o taxi "ficar" (opcao G-1) em vez de
+            # continuar perseguindo -- exatamente quando a perseguicao ja' nao esta' rendendo
+            # mesmo (espera longa) e o corpo ja' esta' esquentando, entao pausar custa pouca
+            # renda perdida e evita entrar na zona de sangramento D_RODAR antes de precisar da
+            # oficina. Para de resfriar em e_calor<=.50 (raw 60 -- o mesmo valor que o proprio
+            # simulador usa como reset apos desligamento forcado, campo.py:297). Nunca ativa
+            # com passageiro a bordo (regra do contrato).
+            quer_resfriar_inicio = (e_espera > 0.80) & (e_calor > 0.60) & (~tem_pax)
+            self.resfriando = (self.resfriando | quer_resfriar_inicio) & (e_calor > 0.50) & (~tem_pax)
+
+            score = torch.full((B, S), -1e9, device=device, dtype=dtype)
+
+            quer_agua = e_agua < 0.50
+            quer_comida = e_fome > 0.15
+            quer_fuel = e_fuel < 0.95
+
+            # ORDEM DE COMPRA NO POSTO: comida > agua > fuel (inalterado da base).
+            score[:, 7] = torch.where(no_posto & quer_comida, 30.0 + (e_fome - 0.15), score[:, 7])
+
+            # AGUA (inalterada da base): gatilho e_agua<0.50 e tier 50L salvo e_agua<0.25 -> 100L.
+            idx_pref_agua = torch.where(
+                (e_agua < 0.25) & (dinh > 40.0),
+                torch.full((B,), 6, device=device, dtype=torch.long),
+                torch.full((B,), 5, device=device, dtype=torch.long),
+            )
+            disp_pref_agua = disp.gather(1, idx_pref_agua.unsqueeze(1)).squeeze(1)
+            idx_agua = torch.where(disp_pref_agua, idx_pref_agua, torch.full_like(idx_pref_agua, 5))
+            disp_agua = torch.where(disp_pref_agua, disp_pref_agua, disp[:, 5])
+            val_agua = torch.where(
+                no_posto & quer_agua & disp_agua,
+                20.0 + (0.50 - e_agua),
+                torch.full((B,), -1e9, device=device, dtype=dtype),
+            )
+            score.scatter_(1, idx_agua.unsqueeze(1), val_agua.unsqueeze(1))
+
+            # GASOLINA (inalterada da base): tier = min(tier_por_caixa, tier_por_necessidade).
+            _gastar_oficina = e_calor  # placeholder removed below
+            score.scatter_(1, idx_agua.unsqueeze(1), val_agua.unsqueeze(1))
+
+            gasolina.py  # noqa
