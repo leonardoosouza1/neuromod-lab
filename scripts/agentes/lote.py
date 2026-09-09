@@ -22,13 +22,17 @@ Defina `fabrica()` que devolve uma CLASSE com EXATAMENTE: `def reset(self, m, W)
 def contexto(lote):
     placar = ler(os.path.join(DA, 'placar.md'), 6000); dados = ler(os.path.join(DA, 'dados_campeao.md'), 6000); hip = ler(os.path.join(DA, 'hipoteses.md'), 5000)
     fb = ler(os.path.join(DA, 'lotes', f'L{lote-1}', 'feedback.md'), 6000) if lote > 1 else ''
-    return f"# CONTEXTO (neuromod-lab, taxi na GPU — prova por construcao)\nTaxis com corpo sobrevivem 10 dias numa cidade com distritos, servicos e passageiros. O campeao EVOLUIDO morre 0.85. Politicas explicitas ja batem ele (0.73). Sua tarefa: uma politica MELHOR, mudando UMA alavanca.\n{api()}\n## DADOS MEDIDOS DO CAMPEAO E DA MELHOR POLITICA\n{dados}\n## PLACAR (melhores ate agora)\n{placar}\n## HIPOTESES JA TESTADAS (nao repita)\n{hip}\n## FEEDBACK DO LOTE ANTERIOR\n{fb}\n"
+    notas = ler(os.path.join(DA, 'notas_consolidador.md'), 5000)
+    return f"# CONTEXTO (neuromod-lab, taxi na GPU — prova por construcao)\nTaxis com corpo sobrevivem 10 dias numa cidade com distritos, servicos e passageiros. O campeao EVOLUIDO morre 0.85. Politicas explicitas ja batem ele (0.73). Sua tarefa: uma politica MELHOR, mudando UMA alavanca.\n{api()}\n## DADOS MEDIDOS DO CAMPEAO E DA MELHOR POLITICA\n{dados}\n## PLACAR (melhores ate agora)\n{placar}\n## HIPOTESES JA TESTADAS (nao repita)\n{hip}\n## FEEDBACK DO LOTE ANTERIOR\n{fb}\n## NOTAS DO CONSOLIDADOR (leia: dados e ordens que valem para TODOS os lotes)\n{notas}\n"
 def chama(prompt, model, timeout=900):
     try: r = subprocess.run([CLAUDE, '-p', prompt, '--model', model, '--output-format', 'json', '--no-session-persistence'], capture_output=True, text=True, timeout=timeout)
     except subprocess.TimeoutExpired: return ''
     try: return json.loads(r.stdout).get('result', r.stdout)
     except Exception: return r.stdout or r.stderr
 def bloco(txt, lang):
+    if lang == 'python':   # tolerante: ```python, ```py ou ``` sem linguagem, desde que tenha def fabrica; pega o MAIOR bloco
+        cands = [b for b in re.findall(r'```(?:python|py)?[ \t]*\n(.*?)```', txt, re.S) if 'def fabrica' in b]
+        return max(cands, key=len).strip() if cands else None
     m = re.search(r'```' + lang + r'\s*(.*?)```', txt, re.S); return m.group(1).strip() if m else None
 def melhor_politica():
     pj = os.path.join(DA, 'placar.json'); P = json.load(open(pj)) if os.path.exists(pj) else []
@@ -90,7 +94,9 @@ def loop(a):
     for lote in range(a.de, a.ate + 1):
         a.lote = lote; a.tarefa = a.tarefa if lote == a.de and a.tarefa else (os.path.join(DA, f'tarefa_L{lote}.md') if os.path.exists(os.path.join(DA, f'tarefa_L{lote}.md')) else os.path.join(DA, f'tarefa_L{lote-1}.md'))
         print(f'===== LOTE {lote} ({time.strftime("%H:%M")}) tarefa {os.path.basename(a.tarefa)} =====', flush=True); a.base = None
-        n = gerar(a)
+        import nmd_cliente as c
+        if c.estado(f'l{lote}_lote').get('fase') in ('rodando', 'terminou', 'na fila') or os.path.exists(os.path.join(R, 'agentes', f'lote_l{lote}.json')): print(f'lote {lote} ja gerado/julgado: pulando gerar', flush=True); n = 1
+        else: n = gerar(a)
         if n == 0: print('lote vazio; seguindo'); continue
         if not espera(f'l{lote}_lote'): print('juiz nao terminou em 1 h; seguindo', flush=True); continue
         placar(a)

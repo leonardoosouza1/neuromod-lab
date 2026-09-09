@@ -13,3 +13,5 @@
 | H10 | ler lugar/demanda/espera paga (cérebro em camadas) | ✗ em 10 cenários; no válido da cidade o linear é o melhor | r1–r3 |
 | H11 | penalizar sair da rua (custo_frente) ao escolher direção | ✗ 0.99: paralisa o táxi (1.7 corridas) — a penalidade domina a distância ao alvo | L1 p7 |
 | H12 | comer mais no posto (limiar de fome mais baixo) sem mudar onde come | ✗ 0.78, fome 74 % das mortes: o posto fecha à noite; comer mais de dia não cobre a noite | L1 p1 |
+| H13 | comer à noite em pontos de comida (posto fecha) | ✓ leve: 0.74 → 0.72 (5 sementes), fome ainda 47 % das mortes | L2 p6 |
+| H14 | lote 2: 6/8 respostas sem bloco ```python → recusadas | bug de formato do orquestrador (parser agora aceita ```py / ``` com def fabrica) | L2 |
