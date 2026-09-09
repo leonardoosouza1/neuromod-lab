@@ -12,17 +12,19 @@ for pat in PROIBIDO:
     if re.search(pat, src): raise SystemExit(f'POLITICA RECUSADA: padrao proibido {pat!r}')
 ns = {'torch': torch, 'math': __import__('math'), 'G': G, 'S': S, 'NF': NF, 'NOMES_OP': NOMES_OP, 'NOMES_CORPO': NOMES_CORPO, 'Linear': Linear, 'DEV': DEV}
 exec(compile(src, a.politica, 'exec'), ns); assert 'fabrica' in ns, 'politica.py precisa definir fabrica() -> classe com reset/extra/decidir/atualizar'
-POL0 = ns['fabrica'](); POL0.NP = Linear.NP
-class POL(POL0):   # shim: aceita reset(m) ou reset(m, W); extra pode faltar
+POL0 = ns['fabrica']()
+class POL:   # invólucro por COMPOSICAO (super() falhava): aceita reset(m) ou reset(m, W); extra/atualizar podem faltar
     NP = Linear.NP
+    def __init__(s): s.p = POL0() if isinstance(POL0, type) else POL0
     def reset(s, m, W):
-        try: return super().reset(m, W)
-        except TypeError: return super().reset(m)
+        try: return s.p.reset(m, W)
+        except TypeError: return s.p.reset(m)
     def extra(s, m, W, F):
-        if hasattr(POL0, 'extra'): return super().extra(m, W, F)
-        s.F = F; return torch.zeros(m.B, G, device=DEV)
+        if hasattr(s.p, 'extra'): return s.p.extra(m, W, F)
+        s.p.F = F; return torch.zeros(m.B, G, device=DEV)
+    def decidir(s, tudo, m): return s.p.decidir(tudo, m)
     def atualizar(s, m):
-        if hasattr(POL0, 'atualizar'): return super().atualizar(m)
+        if hasattr(s.p, 'atualizar'): return s.p.atualizar(m)
 fl = argparse.Namespace(L=200., dias=10., fitness='riqueza', nevoa=float('inf'), npx=12, respawn=20., pax_cidade=False, ponto=0., dinh0=10., fome_passo=None, kcal_pane=8., guincho=0., fuel_pane=15., P=None, G=None, paciencia=None, R=None, seeds=None, so=None, mundo='distinto')
 cen = json.load(open(a.cenario)) if a.cenario else {}; ex = aplica_cenario(fl, cen)
 cfg = CfgCampo(L=fl.L, fitness=fl.fitness); cfg.KCAL_PANE = fl.kcal_pane; cfg.dinh0 = fl.dinh0; cfg.GUINCHO = fl.guincho; cfg.FUEL_POS_PANE = fl.fuel_pane; cfg.nevoa = fl.nevoa; cfg.ponto = fl.ponto; cfg.NPX = fl.npx; cfg.respawn = fl.respawn; cfg.pax_cidade = fl.pax_cidade
