@@ -2,7 +2,7 @@
 — a regua ainda ordena onde 'mortos em 10 dias' crava em 1.00), test_teto_avisa (T_max pequeno -> frac_teto > .05)."""
 import sys, os; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 os.environ['NM_COMPILE'] = '0'
-import torch; from campo import *
+import torch; from campo import *; from campo import _fit   # _fit nao vem no import *: nome com underscore
 mapas = [gerar_mapa(1000, L=200., distinto=True)]; g = torch.Generator(device=DEV); g.manual_seed(5); W = torch.randn(64, Linear.NP, generator=g, device=DEV)*.5
 def test_horizonte_identidade():
     c1 = CfgCampo(L=200., fitness='riqueza'); c2 = CfgCampo(L=200., fitness='riqueza'); c2.horizonte = 'fixo'; c2.T_max = 300
