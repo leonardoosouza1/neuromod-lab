@@ -3,7 +3,7 @@ nao mudam a matematica). test_custo_ativacao_gene_morto: hipocampo com pesos ENO
 'existencia' e ~0 em 'ativacao'. test_metab_monotono: dobrar lambda dobra (metab-1)."""
 import sys, os; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 os.environ['NM_COMPILE'] = '0'
-import torch; from campo import *; from completo import SerCompleto, nomes_genes_completos
+import torch; from campo import *; from campo import _fit; from completo import SerCompleto, nomes_genes_completos
 mapas = [gerar_mapa(1000, L=200., distinto=True)]; g = torch.Generator(device=DEV); g.manual_seed(5)
 W = torch.randn(32, SerCompleto.NP, generator=g, device=DEV)*.3; W[:, :Linear.NP] = torch.randn(32, Linear.NP, generator=g, device=DEV)*.5
 def cfg(modo, lam):
@@ -31,5 +31,10 @@ def test_basal_impede_catatonia():
     d, z, b0 = float(md.metab.mean()), float(m0.metab.mean()), float(mb0.metab.mean())
     ok = d > z + .10 and abs(b0 - 1.) < .02
     print(f'test_basal_impede_catatonia: 87 genes ligados e mudos: metab {d:.3f} vs genoma vazio {z:.3f} (basal .15 cobra o tecido em repouso); sem basal {b0:.3f} (~1.0)', 'OK' if ok else 'FALHOU', flush=True); assert ok
+def test_medidas_identidade():
+    c = cfg('existencia', .3); T = 200; med = medidas(SerCompleto, W[0], mapas, c, T=T, seed=3, R=1, copias=32)
+    m = rodar(SerCompleto, W[0][None, :].repeat(32, 1), mapas, c, T, 3, R=1)
+    ok = med['metab'] == float(m.metab.mean()) and med['mortos'] == float((m.vida <= 0).float().mean()) and abs(med['fit'] - float(_fit(m, c, T).mean())) < 1e-6 and 'ativacao_bloco' in med
+    print(f"test_medidas_identidade: medidas() (medir_ativ ligado) == rodar() cru: metab {med['metab']:.4f} mortos {med['mortos']:.3f} fit {med['fit']:.4f}; ativacao_bloco presente", 'OK' if ok else 'FALHOU', flush=True); assert ok
 if __name__ == '__main__':
-    test_custo_identidade(); test_custo_ativacao_gene_morto(); test_metab_monotono(); test_basal_impede_catatonia()
+    test_custo_identidade(); test_custo_ativacao_gene_morto(); test_metab_monotono(); test_basal_impede_catatonia(); test_medidas_identidade()

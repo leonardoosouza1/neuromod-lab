@@ -8,12 +8,13 @@ Wc[:, A.O_REF+1:A.O_REF+3] = 0.; Wc[:, A.O_TAL:A.O_TAL+A.N_TAL] = 0.; Wc[:, A.O_
 m1 = rodar(Linear, Wl, mapas, c, T=300, seed=3, R=2); m2 = rodar(A, Wc, mapas, c, T=300, seed=3, R=2)
 print('completo transparente == linear:', float((m1.pos-m2.pos).abs().max())==0.0, '| NP', A.NP, flush=True)
 Wr = torch.randn(16, A.NP, device=DEV)*.8; Wr[:, :Linear.NP] = Wl
+_partes_ok = True
 for nome, P, blocos in (('sem-rapida', SemRapida, [(A.O_V, A.O_U2)]), ('sem-lenta', SemLenta, [(A.O_M, A.O_P), (A.O_P, Cerebro.NP)]), ('sem-talamo', SemTalamo, [(A.O_TAL, A.O_TAL+A.N_TAL)]), ('sem-cortex', SemCortex, [(A.O_COR, A.O_COR+A.N_COR)]), ('sem-hipocampo', SemHipocampo, [(A.O_HIP+1, A.O_HIP+2)]),
                         ('sem-reflexo', SemReflexo, [(A.O_REF+1, A.O_REF+3)]), ('sem-livre', SemLivre, [(A.O_V, A.O_U2), (A.O_M, Cerebro.NP)])):
     Wz = Wr.clone()
     for i0, i1 in blocos: Wz[:, i0:i1] = 0.
     ma = rodar(P, Wr, mapas, c, T=200, seed=3, R=2); mb = rodar(A, Wz, mapas, c, T=200, seed=3, R=2)
-    print(f'{nome:<14} desligado == genes zerados: {float((ma.pos-mb.pos).abs().max())==0.0}', flush=True)
+    print(f'{nome:<14} desligado == genes zerados: {float((ma.pos-mb.pos).abs().max())==0.0}', flush=True); _partes_ok = _partes_ok and float((ma.pos-mb.pos).abs().max()) == 0.0
 m = Campo(mapas, 32, c, seed=1, R=2); Wb = (torch.randn(32, A.NP, device=DEV)*.8)[m.gidx]; a = A(); a.reset(m, Wb)
 for t in range(300): um_passo(m, a, Wb); a.atualizar(m)
 at = a.ativacao(m); print('partes vivas: gates', [round(float(at[f'talamo_{k}'].mean()), 2) for k in NOMES_G], '| mem_renda', round(float(at['mem_renda_abs'].mean()), 3), 'mem_espera', round(float(at['mem_espera_abs'].mean()), 3),
@@ -23,4 +24,4 @@ try:
     for t in range(5): um_passo(m, a, Wb); a.atualizar(m)
 except RuntimeError as e: ok = False
 torch.cuda.set_sync_debug_mode("default"); print('SEM SYNC' if ok else 'SYNC!', flush=True)
-import sys; sys.exit(0 if ok else 1)   # [revisao 09-09] portao falha com exit code, nao so' com print
+import sys; sys.exit(0 if (ok and _partes_ok) else 1)
