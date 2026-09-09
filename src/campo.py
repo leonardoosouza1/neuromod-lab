@@ -257,8 +257,8 @@ class Campo:
                 (s.pd_ >= 0).float(), torch.sin(h), torch.cos(h), nv.float(), s.custo_em(s.pos), torch.ones_like(s.fuel),
                 s.cons/(c.fuel_passo*3.), auton.clamp(-2., 4.)]
         if RISCO: cols.append(((s._dist_v[:, 0] + c.margem_risco - s.fuel/s.cons.clamp(min=1e-3))/100.).clamp(min=0., max=3.))   # [E61] zero enquanto ha margem; cresce quando o posto fica fora do alcance
-        if RETINA: cols += [s._ret[0][:, k]/100. for k in range(KR)] + [s._ret[1][:, k].float()/5. for k in range(KR)]   # [spec F3] raios: distancia (100 m = 1) e rotulo (1..5 -> .2..1)
         if PONTO: cols += [s.demanda[s.cidx, s.distrito(s.pos)]/2., (s.t_ult/100.).clamp(max=2.)]   # [E68] demanda do distrito onde estou (0.15..1) e tempo esperando (satura em 200 ticks)
+        if RETINA: cols += [s._ret[0][:, k]/100. for k in range(KR)] + [s._ret[1][:, k].float()/5. for k in range(KR)]   # [spec F3] raios: distancia (100 m = 1) e rotulo (1..5 -> .2..1) — DEPOIS de demanda/espera, na ordem de NOMES_CORPO (g15 pegou o deslocamento)
         corpo = torch.stack(cols, -1)   # (B,16|17|19)
         Fo = torch.cat([Fop, corpo[:, None, :].expand(-1, G, -1)], -1)
         val = torch.ones(s.B, G, dtype=torch.bool, device=DEV)

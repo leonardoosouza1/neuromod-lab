@@ -25,6 +25,7 @@ def carrega(path):
             return fn(*args)
         def reset(s, m, W): return s._call('reset', m, W)
         def extra(s, m, W, F):
+            if RETINA: F = torch.cat([F[:, :, :10], F[:, :, 11:30]], -1)   # [F3] a politica indexa F por numero fixo (layout de 29 colunas): tira 'livre' e os 16 raios; d_* ja vem 'onde o raio viu'
             if hasattr(s.p, 'extra'): return s._call('extra', m, W, F)
             s.p.F = F; return torch.zeros(m.B, G, device=DEV)
         def decidir(s, tudo, m): return s._call('decidir', tudo, m)
