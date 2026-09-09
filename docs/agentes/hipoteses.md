@@ -44,3 +44,5 @@
 | H22 | (Opus, lote 7) top-up voluntário de 20–25 L ao passar perto de posto com tanque < 60 | ✗ 0.65 (base 0.56): contradiz H2/H3 — o campeão nunca abastece por vontade | L7 p4 |
 | H23 | (Opus, lote 7) reparo só com vida < 35 e caixa > 40 | ✗ 0.76 (pior do lote): o campeão repara com vida ~42; reparo tardio mata | L7 p3 |
 | H24 | (Opus) "cada corrida a mais vale ~5 pp" (mortos ≈ 1.48 − 0.047·corridas) | correlação confirmada por mim (n=37: r = −0.96), mas é metade causalidade invertida: quem vive mais corre mais. Variável honesta: corridas por dia vivo | auditoria Fable |
+| H25 | alavancas 'estruturais' de manutenção (parada ≤ 2 ticks, comida noturna forte, caça-passageiro) sobre L6 p4 | ✗ platô: parada mínima 0.94 (parou de comprar: abast 2.9, panes 9.8), comida 0.62, caça 0.60; melhor do lote 0.57 = base | L8 |
+| H26 | TETO provisório da busca local de uma alavanca = 0.56–0.58 (5 s, lotes 5–8, 55 políticas); predições calibradas (empate previsto = empate medido) | registrado (ledger 131); próximo eixo = camada de TRABALHO (lugar/preço), nunca tocada | consolidador |
