@@ -50,6 +50,7 @@ class CfgCampo:
         s.custo_basal = 0.
         s.orcamento_ativ = None
         s.limiar_disparo = .25
+        s.custo_canais = ('fome',)
         s.custo_modo = 'existencia'; s.amostra_ativ = 10; s.ativ_ref = 1.   # [spec F2] 'ativacao' = o gene custa pelo SINAL que emite (por bloco: |saida do bloco na nota| media, amostrada a cada amostra_ativ ticks; bloco com saida >= ativ_ref conta cheio); 'existencia' = hoje
         s.horizonte = 'fixo'; s.T_max = None; s.w_trab = 1.   # [spec Mundo Vivo F1] 'aberto' = roda ate todos morrerem (checa vivo.any() 1x por dia simulado) ou T_max; fitness 'vida' = dias vividos + w_trab*renda/300 (sem pena de morte, sem teto)
         s.ponto = 0.   # [E68] ponto de taxi: parado+livre recebe passageiro no lugar com prob demanda/ponto por tick (0 = desligado, mundo identico ao anterior); 30 => centro ~15 ticks, periferia ~100
@@ -347,7 +348,8 @@ class Campo:
         s.fuel = (s.fuel - c.fuel_passo*cu*peso*mov.float() - c.fuel_passo*.33*marcha.float()).clamp(min=0.)
         s.cons = torch.where(mov, s.cons + (c.fuel_passo*cu*peso/v.clamp(min=1e-3) - s.cons)*.05, s.cons)                # [E57] o carro mede o proprio consumo por metro (media movel 20 passos)
         s.calor = (s.calor + c.calor_sobe*cu*mov.float() - c.calor_desce*(~mov).float()).clamp(25., 120.)
-        s.agua = (s.agua - c.agua_passo*vivo.float() - c.agua_calor*(s.calor > 60.).float()*vivo.float()).clamp(min=0.)
+        if 'calor' in c.custo_canais: s.calor = (s.calor + c.calor_sobe*(s.metab - 1.)*vivo.float()).clamp(25., 120.)
+        s.agua = (s.agua - c.agua_passo*(s.metab if 'agua' in c.custo_canais else 1.)*vivo.float() - c.agua_calor*(s.calor > 60.).float()*vivo.float()).clamp(min=0.)
         s.fome = (s.fome + c.fome_passo*s.metab*vivo.float()).clamp(max=100.); s.fad = (s.fad + c.fad_passo*mov.float() - .1*(~mov).float()).clamp(0., 100.)
         exausto = livre & (s.fad >= 95.); s.tpar = torch.where(exausto, torch.full_like(s.tpar, 12.), s.tpar); s.fad = torch.where(exausto, torch.full_like(s.fad, 40.), s.fad); s.avar += exausto.float()   # [G6] fadiga para o taxi
         s.res = (s.res*(1. - c.perda_res)).clamp(min=0.)

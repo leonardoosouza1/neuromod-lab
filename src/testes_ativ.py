@@ -41,5 +41,11 @@ def test_disparo_evento():
     fd = {b: float((v/md.ativ_n).mean()) for b, v in md.ativ_soma.items()}; fa = {b: float((v/ma.ativ_n).mean()) for b, v in ma.ativ_soma.items()}
     ok = all(0. <= v <= 1. for v in fd.values()) and all(fd[b] <= 1e-6 or fa[b] > 0. for b in fd) and abs(float(md.metab.mean()) - 1.) < 1.5
     print(f'test_disparo_evento: fracao de amostras em que o bloco DISPAROU (> .25 de ativ_ref) {dict((k, round(v, 2)) for k, v in fd.items())} vs magnitude {dict((k, round(v, 2)) for k, v in fa.items())} | metab disparo {float(md.metab.mean()):.3f}', 'OK' if ok else 'FALHOU', flush=True); assert ok
+def test_custo_canais():
+    c1 = cfg('existencia', .3); c1.custo_basal = .15; c3 = cfg('existencia', .3); c3.custo_basal = .15; c3.custo_canais = ('fome', 'agua', 'calor'); c0 = cfg('existencia', .3); c0.custo_basal = .15; c0.custo_canais = ('fome',)
+    m1 = rodar(SerCompleto, W, mapas, c1, T=200, seed=3, R=1); m0 = rodar(SerCompleto, W, mapas, c0, T=200, seed=3, R=1); m3 = rodar(SerCompleto, W, mapas, c3, T=200, seed=3, R=1)
+    ident = torch.equal(m1.pos, m0.pos) and torch.equal(m1.agua, m0.agua) and torch.equal(m1.calor, m0.calor)
+    a1, a3, k1, k3 = float(m1.agua.mean()), float(m3.agua.mean()), float(m1.calor.mean()), float(m3.calor.mean()); ok = ident and a3 < a1 and k3 > k1
+    print(f'test_custo_canais: padrao == (fome,) bit a bit {ident} | 3 canais: agua {a1:.1f} -> {a3:.1f} (deve cair), calor {k1:.1f} -> {k3:.1f} (deve subir), metab {float(m3.metab.mean()):.3f}', 'OK' if ok else 'FALHOU', flush=True); assert ok
 if __name__ == '__main__':
-    test_custo_identidade(); test_custo_ativacao_gene_morto(); test_metab_monotono(); test_basal_impede_catatonia(); test_medidas_identidade(); test_disparo_evento()
+    test_custo_identidade(); test_custo_ativacao_gene_morto(); test_metab_monotono(); test_basal_impede_catatonia(); test_medidas_identidade(); test_disparo_evento(); test_custo_canais()
