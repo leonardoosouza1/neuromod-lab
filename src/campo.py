@@ -49,6 +49,7 @@ class CfgCampo:
         s.retina = None   # [spec F3] None = RETINA_PADRAO quando NM_RETINA=1; dict(R_dia, R_noite, passo, custo, k_cego)
         s.custo_basal = 0.
         s.orcamento_ativ = None
+        s.limiar_disparo = .25
         s.custo_modo = 'existencia'; s.amostra_ativ = 10; s.ativ_ref = 1.   # [spec F2] 'ativacao' = o gene custa pelo SINAL que emite (por bloco: |saida do bloco na nota| media, amostrada a cada amostra_ativ ticks; bloco com saida >= ativ_ref conta cheio); 'existencia' = hoje
         s.horizonte = 'fixo'; s.T_max = None; s.w_trab = 1.   # [spec Mundo Vivo F1] 'aberto' = roda ate todos morrerem (checa vivo.any() 1x por dia simulado) ou T_max; fitness 'vida' = dias vividos + w_trab*renda/300 (sem pena de morte, sem teto)
         s.ponto = 0.   # [E68] ponto de taxi: parado+livre recebe passageiro no lugar com prob demanda/ponto por tick (0 = desligado, mundo identico ao anterior); 30 => centro ~15 ticks, periferia ~100
@@ -476,8 +477,8 @@ def rodar(Arq, W, mapas, cfg, T, seed, R=1):
     basal = getattr(cfg, 'custo_basal', 0.)*dof_de(Wb, cfg)/100. if getattr(cfg, 'custo_basal', 0.) > 0. else 0.
     if cfg.custo_gene > 0.: m.metab = 1. + cfg.custo_gene*dof_de(Wb, cfg)/100.                    # [E55] cada gene ligado alem da espinha custa calorias
     if getattr(cfg, 'custo_basal', 0.) > 0.: m.metab = m.metab + basal
-    cobra_ativ = getattr(cfg, 'custo_modo', 'existencia') == 'ativacao' and cfg.custo_gene > 0.
-    ativ = hasattr(Arq, 'nomes_genes') and (getattr(cfg, 'custo_modo', 'existencia') == 'ativacao' or getattr(cfg, 'medir_ativ', False))
+    modo = getattr(cfg, 'custo_modo', 'existencia'); cobra_ativ = modo in ('ativacao', 'disparo') and cfg.custo_gene > 0.
+    ativ = hasattr(Arq, 'nomes_genes') and (modo in ('ativacao', 'disparo') or getattr(cfg, 'medir_ativ', False))
     if ativ:
         nomes = Arq.nomes_genes(); n_b = {b: float(sum(n.startswith(b) for n in nomes)) for b in BLOCOS}
         m.ativ_soma = {b: torch.zeros(m.B, device=DEV) for b in BLOCOS if n_b[b] > 0}; m.ativ_n = 0
@@ -486,7 +487,7 @@ def rodar(Arq, W, mapas, cfg, T, seed, R=1):
         if ativ and t % cfg.amostra_ativ == 0 and t > 0:
             ab = a.ativ_blocos(m); m.ativ_n += 1
             for b in m.ativ_soma:
-                if b in ab: m.ativ_soma[b] = m.ativ_soma[b] + (ab[b]/cfg.ativ_ref).clamp(max=1.)
+                if b in ab: m.ativ_soma[b] = m.ativ_soma[b] + ((ab[b] > cfg.ativ_ref*cfg.limiar_disparo).float() if modo == 'disparo' else (ab[b]/cfg.ativ_ref).clamp(max=1.))
             if cobra_ativ: m.metab = 1. + basal + cfg.custo_gene*sum(n_b[b]*m.ativ_soma[b] for b in m.ativ_soma)/m.ativ_n/100.
         if cfg.horizonte == 'aberto' and t % 240 == 239 and not bool((m.vida > 0).any()): break   # [spec F1] 1 sincronismo por dia simulado, so no horizonte aberto (fixo: curto-circuito em Python, identico)
         try: fn(m, a, Wb)
@@ -720,8 +721,8 @@ class Cerebro(Linear):
         s.z = torch.zeros(m.B, K, device=DEV); s.corpo = torch.zeros(m.B, s.NC_, device=DEV); s.h = None
         s.ORC = getattr(m.cfg, 'orcamento_ativ', None)
         assert s.ORC is None or float(s.ORC) > 0., 'orcamento_ativ deve ser > 0'
-        assert s.ORC is None or getattr(m.cfg, 'custo_modo', 'existencia') != 'ativacao', 'orcamento e custo por ativacao juntos nao: o imposto cobraria o sinal pre-projecao'
-        s.ATIV = getattr(m.cfg, 'custo_modo', 'existencia') == 'ativacao' or getattr(m.cfg, 'medir_ativ', False) or s.ORC is not None   # [spec F2] constante em Python: o grafo compilado so ganha os caches neste modo
+        assert s.ORC is None or getattr(m.cfg, 'custo_modo', 'existencia') not in ('ativacao', 'disparo'), 'orcamento e custo por ativacao/disparo juntos nao: o imposto cobraria o sinal pre-projecao'
+        s.ATIV = getattr(m.cfg, 'custo_modo', 'existencia') in ('ativacao', 'disparo') or getattr(m.cfg, 'medir_ativ', False) or s.ORC is not None   # [spec F2] constante em Python: o grafo compilado so ganha os caches neste modo
     def extra(s, m, W, F):
         s.corpo = F[:, G - 1, len(NOMES_OP):]                                                # sentidos do corpo (iguais nas 9 opcoes): opcao 'ficar'
         h = torch.relu(torch.einsum('bgf,bhf->bgh', F, s.U) + s.bU[:, None, :]); s.h = h         # (B,G,H) camada rapida

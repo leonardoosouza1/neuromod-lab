@@ -36,5 +36,10 @@ def test_medidas_identidade():
     m = rodar(SerCompleto, W[0][None, :].repeat(32, 1), mapas, c, T, 3, R=1)
     ok = med['metab'] == float(m.metab.mean()) and med['mortos'] == float((m.vida <= 0).float().mean()) and abs(med['fit'] - float(_fit(m, c, T).mean())) < 1e-6 and 'ativacao_bloco' in med
     print(f"test_medidas_identidade: medidas() (medir_ativ ligado) == rodar() cru: metab {med['metab']:.4f} mortos {med['mortos']:.3f} fit {med['fit']:.4f}; ativacao_bloco presente", 'OK' if ok else 'FALHOU', flush=True); assert ok
+def test_disparo_evento():
+    cd = cfg('disparo', .3); ca = cfg('ativacao', .3); md = rodar(SerCompleto, W, mapas, cd, T=200, seed=3, R=1); ma = rodar(SerCompleto, W, mapas, ca, T=200, seed=3, R=1)
+    fd = {b: float((v/md.ativ_n).mean()) for b, v in md.ativ_soma.items()}; fa = {b: float((v/ma.ativ_n).mean()) for b, v in ma.ativ_soma.items()}
+    ok = all(0. <= v <= 1. for v in fd.values()) and all(fd[b] <= 1e-6 or fa[b] > 0. for b in fd) and abs(float(md.metab.mean()) - 1.) < 1.5
+    print(f'test_disparo_evento: fracao de amostras em que o bloco DISPAROU (> .25 de ativ_ref) {dict((k, round(v, 2)) for k, v in fd.items())} vs magnitude {dict((k, round(v, 2)) for k, v in fa.items())} | metab disparo {float(md.metab.mean()):.3f}', 'OK' if ok else 'FALHOU', flush=True); assert ok
 if __name__ == '__main__':
-    test_custo_identidade(); test_custo_ativacao_gene_morto(); test_metab_monotono(); test_basal_impede_catatonia(); test_medidas_identidade()
+    test_custo_identidade(); test_custo_ativacao_gene_morto(); test_metab_monotono(); test_basal_impede_catatonia(); test_medidas_identidade(); test_disparo_evento()
