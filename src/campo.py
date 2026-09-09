@@ -29,6 +29,7 @@ RETINA_PADRAO = dict(R_dia=60., R_noite=15., passo=4., custo=0., k_cego=2.)
 REGIME = os.environ.get('NM_REGIME', '0') == '1'   # [spec F4] estacoes: sentidos est_sin/est_cos da fase (so' com a flag; NF muda)
 if REGIME: NOMES_CORPO = NOMES_CORPO + ['est_sin', 'est_cos']
 REGIME_PADRAO = dict(periodo_dias=5., amp=.5, canais=['consumo', 'preco', 'demanda', 'dia_curto'])
+REPRODUCAO_PADRAO = dict(custo_kcal=60., limiar_res=90.)
 NF = len(NOMES_OP) + len(NOMES_CORPO)   # 24 (+2 painel, +1 risco)
 NOMES_F = NOMES_OP + NOMES_CORPO + [f'sv_{a[0]}{int(a[1]) if a[1] else ""}' for a in ACOES] + ['sv_bias']
 
@@ -43,6 +44,7 @@ class CfgCampo:
         s.custo_gene = 0.; s.gene_min = .5; s.custo_suave = False; s.varredura = 'exata'; s.margem_risco = 30.; s.GUINCHO = 0.; s.FUEL_POS_PANE = 15.; s.nevoa = float('inf'); s.k_cego = 2.   # [E63] raio de VISIBILIDADE dos servicos: alem dele a distancia satura (gradiente zero) e o ser tem de LEMBRAR onde viu. inf = mundo onisciente de hoje (identico bit a bit)   # [E61b] guincho cobra dinheiro e deixa o ser no posto com FUEL_POS_PANE (15 = subsidio: 6 panes/vida = vive de guincho);
         s.pax_cidade = False   # [E70] passageiro nasce NA CIDADE (distrito ~ demanda, em volta do centro do distrito) e o taxi vai buscar; reposicao ~ demanda do lugar do passageiro (Leonardo 09-08: 'eles deveriam buscar o passageiro, nao o passageiro aparecer do nada')
         s.respawn = 20.   # [E69 escassez] slot de passageiro usado reaparece com prob demanda/(respawn*tarifa) por tick (20 = de hoje; 100 = escasso: periferia ~333 ticks por slot)
+        s.reproducao = None
         s.regime = None   # [spec F4] None = hoje; dict(periodo_dias, amp, canais): multiplicador 1 + amp*sin(fase) por canal, media 1 no ciclo (muda o QUANDO, nao o QUANTO)
         s.retina = None   # [spec F3] None = RETINA_PADRAO quando NM_RETINA=1; dict(R_dia, R_noite, passo, custo, k_cego)
         s.custo_modo = 'existencia'; s.amostra_ativ = 10; s.ativ_ref = 1.   # [spec F2] 'ativacao' = o gene custa pelo SINAL que emite (por bloco: |saida do bloco na nota| media, amostrada a cada amostra_ativ ticks; bloco com saida >= ativ_ref conta cheio); 'existencia' = hoje
@@ -152,6 +154,7 @@ class Campo:
         s.px_ok = torch.ones(B, c.NPX, dtype=torch.bool, device=DEV)   # [E44 v2] demanda: slot de passageiro ativo; tarifa alta = reaparece devagar
         s.t_ult = torch.zeros(B, device=DEV)   # [E68] ticks desde o ultimo embarque (sentido e_espera)
         s.n_vem = torch.zeros(B, device=DEV)   # [E68 diag] embarques que VIERAM ate o taxi parado (ponto)
+        s.filhos = torch.zeros(B, device=DEV); s.res_filhos = torch.zeros(B, device=DEV)
         s.t = torch.zeros((), dtype=torch.long, device=DEV)
         s.recusa = torch.zeros(B, dtype=torch.bool, device=DEV); s.ARB = torch.arange(B, device=DEV)
         s.n_agua = torch.zeros(B, device=DEV); s.parado_dia = torch.zeros(B, device=DEV); s.imp = torch.zeros(B, device=DEV); s.subs = torch.zeros(B, device=DEV)   # [E44] sentidos do prefeito; subs = subsidio pago
@@ -345,6 +348,9 @@ class Campo:
         s.fome = (s.fome + c.fome_passo*s.metab*vivo.float()).clamp(max=100.); s.fad = (s.fad + c.fad_passo*mov.float() - .1*(~mov).float()).clamp(0., 100.)
         exausto = livre & (s.fad >= 95.); s.tpar = torch.where(exausto, torch.full_like(s.tpar, 12.), s.tpar); s.fad = torch.where(exausto, torch.full_like(s.fad, 40.), s.fad); s.avar += exausto.float()   # [G6] fadiga para o taxi
         s.res = (s.res*(1. - c.perda_res)).clamp(min=0.)
+        if c.reproducao:
+            rp = c.reproducao; nasce = vivo & (s.res > float(rp['limiar_res'])); gasto = float(rp['custo_kcal'])*nasce.float()
+            s.res = s.res - gasto; s.filhos = s.filhos + nasce.float(); s.res_filhos = s.res_filhos + gasto
         # pane: reboque ate o posto mais perto, cobra calorias da reserva -> vida
         s.avar += pane.float(); s.av_fuel += pane.float(); s.tpar = torch.where(pane, torch.full_like(s.tpar, 18.), s.tpar)
         ci = s.cidx; posto_pos = s._ptos[:, 0]                                    # [auditoria 7] posto mais perto ja calculado no obs() (quem entra em pane nao moveu)
@@ -515,6 +521,8 @@ def _fit(m, cfg, T):
     tarde = morto*(0.5*m.t_vida/float(T) + 0.05*m.ent + 0.02*(m.n_come + m.n_agua + m.n_posto).clamp(max=10.))   # [G2] gradiente entre mortos que a PEDRA nao maximiza
     if cfg.fitness == 'vida':   # [spec F1] regua sem teto: todo mundo morre, a pergunta e' QUANDO e QUANTO fez
         return m.t_vida/240. + cfg.w_trab*(m.rec/300.)
+    if cfg.fitness == 'filhos':
+        return m.filhos + m.t_vida/240./100.
     if cfg.fitness == 'sobrevive':
         fit = vivo*(1. + m.vida/100. + (m.dinh/100.).clamp(0., 1.) + 0.05*m.ent + 0.5*m.res/cfg.RES_MAX) - cfg.pena_morte*morto + tarde
     elif cfg.fitness == 'bemestar':
@@ -542,6 +550,7 @@ def medidas(Arq, W, mapas, cfg, T=1200, seed=7777, R=1, copias=128):
     med['t_vida'] = dict(media=float(tv.mean()), mediana=float(tv.median()), p10=float(tv.quantile(.1)), p90=float(tv.quantile(.9)), frac_teto=float((m.t_vida >= Tm).float().mean()))
     db = dof_por_bloco(W[None, :], cfg, Arq)   # [spec I1a] aditivo: chave nova, nenhuma medida existente muda
     if db: med['dof_bloco'] = db
+    med['filhos'] = float(m.filhos.mean()); med['res_filhos'] = float(m.res_filhos.mean())
     if getattr(m, 'ativ_n', 0): med['ativacao_bloco'] = {b: float((v/m.ativ_n).mean()) for b, v in m.ativ_soma.items()}   # [spec F2] fracao do tempo em que o bloco emite sinal (0..1)
     return med
 

@@ -36,11 +36,11 @@ def carrega(path):
     return POL, None
 def mundo(cenario_path=None, nevoa=None):
     """[spec Mundo Vivo I1b] nevoa=None = hoje (onisciente); o cenario.json (mundo.nevoa) tambem chega aqui via aplica_cenario"""
-    fl = argparse.Namespace(regime=None, retina=None, L=200., dias=10., fitness='riqueza', nevoa=float('inf'), npx=12, respawn=20., pax_cidade=False, ponto=0., dinh0=10., fome_passo=None, kcal_pane=8., guincho=0., fuel_pane=15., P=None, G=None, paciencia=None, R=None, seeds=None, so=None, mundo='distinto')
+    fl = argparse.Namespace(reproducao=None, regime=None, retina=None, L=200., dias=10., fitness='riqueza', nevoa=float('inf'), npx=12, respawn=20., pax_cidade=False, ponto=0., dinh0=10., fome_passo=None, kcal_pane=8., guincho=0., fuel_pane=15., P=None, G=None, paciencia=None, R=None, seeds=None, so=None, mundo='distinto')
     cen = json.load(open(cenario_path)) if cenario_path else {}; ex = aplica_cenario(fl, cen)
     if nevoa is not None: fl.nevoa = float(nevoa)
     assert fl.retina in (None, 'off') or RETINA, 'cenario com retina exige NM_RETINA=1'; assert fl.regime in (None, 'off') or REGIME, 'cenario com regime exige NM_REGIME=1'
-    cfg = CfgCampo(L=fl.L, fitness=fl.fitness); cfg.regime = (None if fl.regime in (None, 'off') else (dict(REGIME_PADRAO) if fl.regime == 'padrao' else json.loads(fl.regime))); cfg.retina = (None if fl.retina in (None, 'off') else (dict(RETINA_PADRAO) if fl.retina == 'padrao' else json.loads(fl.retina))); cfg.horizonte = getattr(fl, 'horizonte', 'fixo'); cfg.w_trab = getattr(fl, 'w_trab', 1.); cfg.KCAL_PANE = fl.kcal_pane; cfg.dinh0 = fl.dinh0; cfg.GUINCHO = fl.guincho; cfg.FUEL_POS_PANE = fl.fuel_pane; cfg.nevoa = fl.nevoa; cfg.ponto = fl.ponto; cfg.NPX = fl.npx; cfg.respawn = fl.respawn; cfg.pax_cidade = fl.pax_cidade
+    cfg = CfgCampo(L=fl.L, fitness=fl.fitness); cfg.reproducao = (None if fl.reproducao in (None, 'off') else (dict(REPRODUCAO_PADRAO) if fl.reproducao == 'padrao' else json.loads(fl.reproducao))); cfg.regime = (None if fl.regime in (None, 'off') else (dict(REGIME_PADRAO) if fl.regime == 'padrao' else json.loads(fl.regime))); cfg.retina = (None if fl.retina in (None, 'off') else (dict(RETINA_PADRAO) if fl.retina == 'padrao' else json.loads(fl.retina))); cfg.horizonte = getattr(fl, 'horizonte', 'fixo'); cfg.w_trab = getattr(fl, 'w_trab', 1.); cfg.KCAL_PANE = fl.kcal_pane; cfg.dinh0 = fl.dinh0; cfg.GUINCHO = fl.guincho; cfg.FUEL_POS_PANE = fl.fuel_pane; cfg.nevoa = fl.nevoa; cfg.ponto = fl.ponto; cfg.NPX = fl.npx; cfg.respawn = fl.respawn; cfg.pax_cidade = fl.pax_cidade
     if fl.fome_passo is not None: cfg.fome_passo = fl.fome_passo
     for k in ('amp_preco', 'periodo_preco', 'tarifa_base', 'tarifa_km'):
         if ex.get(k) is not None: setattr(cfg, k, ex[k])
