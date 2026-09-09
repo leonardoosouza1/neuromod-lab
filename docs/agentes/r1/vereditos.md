@@ -27,7 +27,7 @@ Piso: com 12 passageiros na cidade toda, todo mundo morre 0.91–0.95. Lugar pas
 |---|---|---|---|---|
 | construcao_1 (política) | mortos .30–.40, 10–15 ent | **1.00**, 3.7 ent, fome_fim 100, panes .2 | ✗ | estacionou, nunca comprou comida (refeições 0); previsão ignorou que comida só existe em alguns distritos e que o passageiro está longe |
 | construcao_2 (política) | mortos .35–.45, 10–14 ent | **1.00**, 1.8 ent, fome_fim 100 | ✗ | idem |
-| lugar_1 (cenário ímã) | linear ≥ .60, ent ≤ 8 | bilinear-risco 1.00 / 3.2 ent (linear pendente) | ✗ (escala) | escassez total (npx 5, respawn 80, periferia .05) = letal para todos; régua crava |
+| lugar_1 (cenário ímã) | linear ≥ .60, ent ≤ 8 | linear 1.00/3.8 ent; COMPLETO (talamo+cor 1.00/3.6 ent; bilinear risco (esc  1.00/3.2 ent; bilinear risco+deman 1.00/2.9 ent | ✗ (escala) | escassez total (npx 5, respawn 80, periferia .05) = letal para todos; régua crava |
 | lugar_2, minimo_1, minimo_2 | — | pendente | — | — |
 
 ## Ajustes para a rodada 2 (feitos)
