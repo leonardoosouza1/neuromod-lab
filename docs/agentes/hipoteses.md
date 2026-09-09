@@ -59,3 +59,4 @@
 | H40 | parada mínima (≤ 2 ticks no raio) | ✗ pela 2ª vez colapsa (0.97, abast 1.0): a compra exige ficar no raio vários ticks; qualquer teto de ticks quebra o abastecimento | L10 p5 (e L8 p5) |
 | H41 | (análise externa) pane com preço (guincho 10, 5 L) separa o platô | ✗ todas em 0.95 idênticas; campeão 0.98; ninguém tem estratégia de combustível voluntária — o mundo do guincho grátis moldou todas | t1 |
 | H42 | lote 11 (tarefa L10 do Opus: caixa/renda): 8 alavancas, melhor 0.56 = base; comida 0.58, gasolina 0.58, corrida 0.66, rua 1.00 (paralisou de novo), 1 erro de exec | ✗ platô confirmado pela 7ª vez (lotes 5–11); com trabalho/lugar/renda/caixa testados, o espaço de uma alavanca sobre esta base está esgotado | L11 |
+| H43 | clone por forma fechada (ridge Φ→escolha) da política 0.56 num Linear | ✗ fidelidade 60 %, clone 1.00 (sede): regra com limiar/estado não cabe em nota linear centrada (achado 84 de novo: o corpo é invisível na direção) | t2, pred 134 |

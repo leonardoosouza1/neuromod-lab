@@ -1,0 +1,130 @@
+import torch
+
+
+def fabrica():
+    class PoliticaL6Agua(object):
+        def reset(self, m, W):
+            self.reparando_vida = torch.zeros(m.B, dtype=torch.bool, device=DEV)
+
+        def extra(self, m, W, F):
+            self.F = F
+            return torch.zeros(m.B, F.shape[1], device=DEV, dtype=F.dtype)
+
+        def decidir(self, tudo, m):
+            F = self.F
+            G = F.shape[1]
+            S = tudo.shape[1] - G
+            device = tudo.device
+            dtype = tudo.dtype
+            B = tudo.shape[0]
+
+            e_fuel = F[:, 0, 10]
+            e_agua = F[:, 0, 11]
+            e_fome = F[:, 0, 12]
+            e_calor = F[:, 0, 14]
+            e_vida = F[:, 0, 15]
+            e_dinh = F[:, 0, 16]
+            e_pax = F[:, 0, 18]
+            e_noite = F[:, 0, 21]
+            dinh = e_dinh * 150.0
+            tem_pax = e_pax > 0.5
+
+            disp = tudo[:, G:G + S] > -1e8
+            no_posto = disp[:, 0]
+            no_oficina = disp[:, 9]
+
+            # ALAVANCA RUA (herdada de p7, intacta): score de mover ao alvo pondera d_alvo +
+            # peso*custo_frente. peso pequeno de proposito: L1 p7 usou peso=5.0 e a penalidade
+            # (5*2=10) dominou o d_alvo (diff maxima ~2), paralisando o taxi (0.99, 1.7 corridas).
+            # Aqui peso=.15 da penalidade maxima .15*2=.3, so' desempata direcoes quase
+            # equivalentes sem nunca virar a decisao principal de ir ao alvo.
+            PESO_RUA = 0.15
+            mover = torch.argmin(F[:, :, 0] + PESO_RUA * F[:, :, 6], dim=1)
+            ir_oficina = torch.argmin(F[:, :, 4], dim=1)
+            ir_comida_mov = torch.argmin(F[:, :, 2], dim=1)
+
+            score = torch.full((B, S), -1e9, device=device, dtype=dtype)
+
+            quer_agua = e_agua < 0.50
+            # ALAVANCA PARADA MINIMA (unica mudanca vs base): H40 colapsou 2x (L8 p5=0.94,
+            # L10 p5=0.97) porque adicionava um CONTADOR de ticks que forcava sair do raio
+            # mesmo com compra pendente, travando o abastecimento. Aqui NAO ha contador: o
+            # teto de <=2 ticks por visita nasce so' de cortar a segunda compra de comida em
+            # sequencia (que so' existia pra "esticar" a parada) e de simplificar gasolina pra
+            # UM tier por caixa (sem a sub-tier por litros-que-faltam que podia gerar reavaliacao).
+            # Isso preserva agua (ja funciona, L10 p2 = 0.56) intocada. Limiar de comida sobe
+            # de .15 pra .30 (texto da tarefa) pra reduzir ainda mais visitas: o campeao come
+            # com fome mediana .64 e a melhor politica explicita .70 — .30 ainda e' cautelar
+            # mas gasta menos ticks/caixa que .15 sem chegar perto do 90 (morte).
+            quer_comida = e_fome > 0.30
+            quer_fuel = e_fuel < 0.95
+
+            # ORDEM DE COMPRA NO POSTO: comida > agua > fuel (inalterado da base).
+            score[:, 7] = torch.where(no_posto & quer_comida, 30.0 + (e_fome - 0.30), score[:, 7])
+
+            # ALAVANCA AGUA (herdada de L10 p2, intacta — "compras que ja funcionam"):
+            idx_pref_agua = torch.where(
+                (e_agua < 0.25) & (dinh > 40.0),
+                torch.full((B,), 6, device=device, dtype=torch.long),
+                torch.full((B,), 5, device=device, dtype=torch.long),
+            )
+            disp_pref_agua = disp.gather(1, idx_pref_agua.unsqueeze(1)).squeeze(1)
+            idx_agua = torch.where(disp_pref_agua, idx_pref_agua, torch.full_like(idx_pref_agua, 5))
+            disp_agua = torch.where(disp_pref_agua, disp_pref_agua, disp[:, 5])
+            val_agua = torch.where(
+                no_posto & quer_agua & disp_agua,
+                20.0 + (0.50 - e_agua),
+                torch.full((B,), -1e9, device=device, dtype=dtype),
+            )
+            score.scatter_(1, idx_agua.unsqueeze(1), val_agua.unsqueeze(1))
+
+            # ALAVANCA GASOLINA (PARADA MINIMA): tier UNICO por caixa (100 L se dinh>=35,
+            # senao 50 L) — sem a sub-tier por litros-que-faltam do L6 p4. Uma decisao, uma
+            # compra, sai. Risco assumido (predicao): pode sobrecomprar quando falta pouco
+            # combustivel (e_fuel<.95 ja dispara com tanque quase cheio), gastando caixa que
+            # a base evitava gastar (H34) — e' o trade-off declarado desta alavanca.
+            idx_fuel_pref = torch.where(
+                dinh >= 35.0,
+                torch.full((B,), 3, device=device, dtype=torch.long),
+                torch.full((B,), 1, device=device, dtype=torch.long),
+            )
+            disp_fuel_pref = disp.gather(1, idx_fuel_pref.unsqueeze(1)).squeeze(1)
+            idx_fuel = torch.where(disp_fuel_pref, idx_fuel_pref, torch.zeros_like(idx_fuel_pref))
+            disp_fuel = torch.where(disp_fuel_pref, disp_fuel_pref, disp[:, 0])
+            val_fuel = torch.where(
+                no_posto & quer_fuel & disp_fuel,
+                10.0 + (1.0 - e_fuel),
+                torch.full((B,), -1e9, device=device, dtype=dtype),
+            )
+            score.scatter_(1, idx_fuel.unsqueeze(1), val_fuel.unsqueeze(1))
+
+            melhor = torch.argmax(score, dim=1)
+            comprar = no_posto & (score.gather(1, melhor.unsqueeze(1)).squeeze(1) > -1e8)
+
+            buscar_comida = (~no_posto) & (~tem_pax) & ((e_noite > 0.5) | (e_fome > 0.6)) & (F[:, G - 1, 2] < 25)
+
+            fora_agua = (~no_posto) & (e_agua < 0.15) & (F[:, G - 1, 3] < 8) & disp[:, 5]
+            fora_comida = (~no_posto) & (e_fome > 0.85) & (F[:, G - 1, 2] < 8) & disp[:, 7]
+
+            ini_vida = (e_vida < 0.5) & (dinh > 20)
+            self.reparando_vida = (self.reparando_vida | ini_vida) & (e_vida < 0.8) & (dinh > 10)
+            quer_calor = (e_calor > 0.75) & (~tem_pax)
+            quer_oficina = self.reparando_vida | quer_calor
+
+            comprar_oficina = no_oficina & quer_oficina & (tudo[:, G + 9] > -1e8)
+            ir_oficina_mov = quer_oficina & (~comprar_oficina)
+
+            acao = mover.clone()
+            acao = torch.where(buscar_comida, ir_comida_mov, acao)
+            acao = torch.where(ir_oficina_mov, ir_oficina, acao)
+            acao = torch.where(comprar, G + melhor, acao)
+            acao = torch.where(comprar_oficina, torch.full_like(acao, G + 9), acao)
+            acao = torch.where(fora_agua, torch.full_like(acao, G + 5), acao)
+            acao = torch.where(fora_comida, torch.full_like(acao, G + 7), acao)
+
+            return acao.long()
+
+        def atualizar(self, m):
+            pass
+
+    return PoliticaL6Agua
