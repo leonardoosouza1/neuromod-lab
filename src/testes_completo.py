@@ -23,3 +23,4 @@ try:
     for t in range(5): um_passo(m, a, Wb); a.atualizar(m)
 except RuntimeError as e: ok = False
 torch.cuda.set_sync_debug_mode("default"); print('SEM SYNC' if ok else 'SYNC!', flush=True)
+import sys; sys.exit(0 if ok else 1)   # [revisao 09-09] portao falha com exit code, nao so' com print

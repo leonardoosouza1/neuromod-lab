@@ -27,3 +27,4 @@ try:
     for t in range(5): fn(m, a, Wb); a.atualizar(m)
 except RuntimeError as e: ok = False
 torch.cuda.set_sync_debug_mode("default"); print('SEM SYNC (compilado)' if ok else 'SYNC!', flush=True)
+import sys; sys.exit(0 if ok else 1)   # [revisao 09-09] exit code (ok = sem sync no passo compilado)
