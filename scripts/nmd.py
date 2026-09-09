@@ -54,6 +54,10 @@ def valida(p):
     if os.path.exists(wl):
         try: SCRIPTS = set(json.load(open(wl)))
         except Exception: pass
+    ev = os.path.join(SPOOL, 'envs.json')   # [09-09] lista de env tambem editavel sem reiniciar (F3/F4 exigiram 2 reinicios)
+    if os.path.exists(ev):
+        try: ENVS.update(json.load(open(ev)))
+        except Exception: pass
     if not isinstance(p, dict):                    raise ValueError('pedido não é objeto')
     pid = str(p.get('id', '')).strip()
     if not re.fullmatch(r'[\w-]{1,40}', pid):      raise ValueError('id inválido')

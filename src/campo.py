@@ -26,6 +26,9 @@ RETINA = os.environ.get('NM_RETINA', '0') == '1'   # [spec F3] visao de verdade:
 KR = 8
 if RETINA: NOMES_OP = NOMES_OP + ['livre']; NOMES_CORPO = NOMES_CORPO + [f'ret_d_{k}' for k in range(KR)] + [f'ret_t_{k}' for k in range(KR)]   # livre = ate onde consigo ir nesta direcao (POR OPCAO: achado 84); ret_d/ret_t = distancia e rotulo do 1o servico visivel por raio
 RETINA_PADRAO = dict(R_dia=60., R_noite=15., passo=4., custo=0., k_cego=2.)
+REGIME = os.environ.get('NM_REGIME', '0') == '1'   # [spec F4] estacoes: sentidos est_sin/est_cos da fase (so' com a flag; NF muda)
+if REGIME: NOMES_CORPO = NOMES_CORPO + ['est_sin', 'est_cos']
+REGIME_PADRAO = dict(periodo_dias=5., amp=.5, canais=['consumo', 'preco', 'demanda', 'dia_curto'])
 NF = len(NOMES_OP) + len(NOMES_CORPO)   # 24 (+2 painel, +1 risco)
 NOMES_F = NOMES_OP + NOMES_CORPO + [f'sv_{a[0]}{int(a[1]) if a[1] else ""}' for a in ACOES] + ['sv_bias']
 
@@ -40,6 +43,7 @@ class CfgCampo:
         s.custo_gene = 0.; s.gene_min = .5; s.custo_suave = False; s.varredura = 'exata'; s.margem_risco = 30.; s.GUINCHO = 0.; s.FUEL_POS_PANE = 15.; s.nevoa = float('inf'); s.k_cego = 2.   # [E63] raio de VISIBILIDADE dos servicos: alem dele a distancia satura (gradiente zero) e o ser tem de LEMBRAR onde viu. inf = mundo onisciente de hoje (identico bit a bit)   # [E61b] guincho cobra dinheiro e deixa o ser no posto com FUEL_POS_PANE (15 = subsidio: 6 panes/vida = vive de guincho);
         s.pax_cidade = False   # [E70] passageiro nasce NA CIDADE (distrito ~ demanda, em volta do centro do distrito) e o taxi vai buscar; reposicao ~ demanda do lugar do passageiro (Leonardo 09-08: 'eles deveriam buscar o passageiro, nao o passageiro aparecer do nada')
         s.respawn = 20.   # [E69 escassez] slot de passageiro usado reaparece com prob demanda/(respawn*tarifa) por tick (20 = de hoje; 100 = escasso: periferia ~333 ticks por slot)
+        s.regime = None   # [spec F4] None = hoje; dict(periodo_dias, amp, canais): multiplicador 1 + amp*sin(fase) por canal, media 1 no ciclo (muda o QUANDO, nao o QUANTO)
         s.retina = None   # [spec F3] None = RETINA_PADRAO quando NM_RETINA=1; dict(R_dia, R_noite, passo, custo, k_cego)
         s.custo_modo = 'existencia'; s.amostra_ativ = 10; s.ativ_ref = 1.   # [spec F2] 'ativacao' = o gene custa pelo SINAL que emite (por bloco: |saida do bloco na nota| media, amostrada a cada amostra_ativ ticks; bloco com saida >= ativ_ref conta cheio); 'existencia' = hoje
         s.horizonte = 'fixo'; s.T_max = None; s.w_trab = 1.   # [spec Mundo Vivo F1] 'aberto' = roda ate todos morrerem (checa vivo.any() 1x por dia simulado) ou T_max; fitness 'vida' = dias vividos + w_trab*renda/300 (sem pena de morte, sem teto)
@@ -128,6 +132,7 @@ class Campo:
         s.centros = torch.stack([m['centros'] for m in mapas]); s.K = s.centros.shape[1]      # (NC,K,2)
         s.aliq = torch.stack([m['aliq'] for m in mapas]); s.pmul0 = torch.stack([m['pmul'] for m in mapas]); s.alug = torch.stack([m['alug'] for m in mapas])
         s.demanda = torch.stack([m.get('demanda', torch.ones_like(m['pmul'])) for m in mapas]); s.fase_preco = torch.stack([m.get('fase_preco', torch.zeros_like(m['pmul'])) for m in mapas])
+        s.demanda0 = s.demanda.clone(); s.pmul_dia = s.pmul0.clone()   # [spec F4] bases que o regime multiplica a cada passo (sem compor)
         s.amp_preco = c.amp_preco if any(m.get('distinto', False) for m in mapas) else 0.; s.pmul = s.pmul0.clone()   # [E56] preco do dia = pmul0 x (1 + amp sin(2pi(dia/3 + fase)))
         s.fase = torch.rand(s.NC, generator=g, device=DEV)[s.cidx]*c.dia
         if getattr(c, 'varredura', 'exata') == 'grade': s._recalc_grade()   # [chunks]
@@ -216,8 +221,17 @@ class Campo:
         s.serv[t][ar, k] = torch.where(faz[:, None], novo, s.serv[t][ar, k]); s.serv_msk[t][ar, k] = msk[ar, k] | faz
         if getattr(s.cfg, 'varredura', 'exata') == 'grade': s._recalc_grade()   # [chunks] obra nova muda os vizinhos (1x por dia por mapa: barato)
     def hora(s):  return ((s.t.float() + s.fase) % s.cfg.dia)/s.cfg.dia*24.
+    def _fase_regime(s):   # [spec F4] fase da estacao em radianos (escalar tensor, sem sync)
+        rg = s.cfg.regime or REGIME_PADRAO; return 2*math.pi*(s.t.float()/s.cfg.dia)/float(rg['periodo_dias'])
+    def _mult_regime(s, canal):   # 1 + amp*sin(fase) se o canal esta no regime, senao 1 (escalar tensor)
+        rg = s.cfg.regime
+        if not rg or canal not in rg['canais']: return torch.ones((), device=DEV)
+        return 1. + float(rg['amp'])*torch.sin(s._fase_regime())
     def noite_(s):
-        h = s.hora(); return (h >= 22.) | (h < 6.)
+        h = s.hora()
+        if s.cfg.regime and 'dia_curto' in s.cfg.regime['canais']:   # [spec F4] noite centrada nas 2 h com meia-largura 4 h x (1 + amp sin fase): media 8 h no ciclo
+            d = (h - 2.).abs(); d = torch.minimum(d, 24. - d); return d < 4.*s._mult_regime('dia_curto')
+        return (h >= 22.) | (h < 6.)
     def capf(s):  return torch.full_like(s.fuel, 100.)
     def alvo(s):                                # (B,2) destino se carrega, senao passageiro mais perto
         dpx = (s.px - s.pos[:, None, :]).norm(dim=-1); k = dpx.argmin(1)
@@ -258,6 +272,7 @@ class Campo:
                 s.cons/(c.fuel_passo*3.), auton.clamp(-2., 4.)]
         if RISCO: cols.append(((s._dist_v[:, 0] + c.margem_risco - s.fuel/s.cons.clamp(min=1e-3))/100.).clamp(min=0., max=3.))   # [E61] zero enquanto ha margem; cresce quando o posto fica fora do alcance
         if PONTO: cols += [s.demanda[s.cidx, s.distrito(s.pos)]/2., (s.t_ult/100.).clamp(max=2.)]   # [E68] demanda do distrito onde estou (0.15..1) e tempo esperando (satura em 200 ticks)
+        if REGIME: fs = s._fase_regime(); cols += [torch.sin(fs).expand(s.B), torch.cos(fs).expand(s.B)]   # [spec F4] fase da estacao (como h_sin/h_cos para a hora)
         if RETINA: cols += [s._ret[0][:, k]/100. for k in range(KR)] + [s._ret[1][:, k].float()/5. for k in range(KR)]   # [spec F3] raios: distancia (100 m = 1) e rotulo (1..5 -> .2..1) — DEPOIS de demanda/espera, na ordem de NOMES_CORPO (g15 pegou o deslocamento)
         corpo = torch.stack(cols, -1)   # (B,16|17|19)
         Fo = torch.cat([Fop, corpo[:, None, :].expand(-1, G, -1)], -1)
@@ -310,12 +325,14 @@ class Campo:
         c = s.cfg; B = s.B; s.t += 1
         if s.amp_preco > 0.:
             dia = torch.floor((s.t.float() + s.fase[:1]*0.)/c.dia)                                              # dia inteiro (mesmo p/ todos os mapas)
-            s.pmul = s.pmul0*(1. + s.amp_preco*torch.sin(2*math.pi*(dia/c.periodo_preco + s.fase_preco)))
+            s.pmul = s.pmul0*(1. + s.amp_preco*torch.sin(2*math.pi*(dia/c.periodo_preco + s.fase_preco))); s.pmul_dia = s.pmul
+        if c.regime: s.pmul = s.pmul_dia*s._mult_regime('preco'); s.demanda = s.demanda0*s._mult_regime('demanda')   # [spec F4] a partir das BASES (nao compoe)
         vivo = s.vida > 0; livre = (s.tpar <= 0) & vivo; s.tpar = (s.tpar - 1).clamp(min=0)
         nv = s.noite_(); v = torch.where(nv, c.vel_noite, c.vel)
         mov = livre & (esc < G) & (esc != G - 1)
         d = s.dirs[esc.clamp(max=G-1)]                                       # (B,2)
         cu = s.custo_em(s.pos); peso = 1. + .15*(s.pd_ >= 0).float() + .002*s.res
+        if c.regime: cu = cu*s._mult_regime('consumo')   # [spec F4] estacao de consumo (inverno: gasta mais por metro)
         falta = mov & (s.fuel < c.fuel_passo*cu*peso)                         # pane: nao consegue andar
         pane = falta
         mov = mov & ~falta
