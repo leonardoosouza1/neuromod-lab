@@ -31,7 +31,7 @@ cidade (pax_cidade true, npx 12, respawn 20) -> linear 0.93, 11 entregas, renda 
 Politicas explicitas da rodada 1 (2 agentes) morreram 1.00 de FOME com 2-4 entregas: estacionaram e nunca compraram comida (refeicoes 0). O oraculo a mao tambem morre 1.00. O campeao evoluido, medido pelo mesmo juiz: 0.85, 17.7 entregas, 6.8 panes.
 """
 API_POL = """## Contrato politica.py (agente escreve; o juiz executa em GPU com 3 mundos de teste x 128 copias x 5 sementes)
-Defina `fabrica()` que devolve uma CLASSE com: reset(s, m, W) ; extra(s, m, W, F) -> torch.zeros(m.B, G) (guarde s.F = F) ; decidir(s, tudo, m) -> LongTensor (m.B,) ; atualizar(s, m).
+Defina `fabrica()` que devolve uma CLASSE (nao instancia) com EXATAMENTE estes metodos e assinaturas Python (self e' o objeto, como sempre): `def reset(self, m, W)`, `def extra(self, m, W, F)` -> devolve torch.zeros(m.B, G) e guarda self.F = F, `def decidir(self, tudo, m)` -> LongTensor (m.B,), `def atualizar(self, m)`. NAO acrescente parametros extras (na rodada 3 os agentes escreveram `def reset(self, s, m, W)` e crasharam).
 - F (B, G=9, NF) = observacao: para cada opcao de movimento g (8 direcoes + ficar = g 8), colunas 0..9 = NOMES_OP = ['d_alvo','d_posto','d_comida','d_agua','d_oficina','d_descanso','custo_frente','preco_frente','aliq_frente','casa_frente']
   (distancias em unidades andadas APOS a opcao; d_alvo = passageiro mais perto ou destino se carrega) e colunas 10.. = NOMES_CORPO (iguais nas 9 opcoes):
   ['e_fuel','e_agua','e_fome','e_fadiga','e_calor','e_vida','e_dinheiro','e_reserva','e_tem_pax','h_sin','h_cos','e_noite','custo_aqui','bias','e_consumo','e_autonomia','e_risco','e_demanda','e_espera'] (escalas 0..1; dinheiro /150; autonomia = (tanque/consumo - d_posto)/100).

@@ -13,18 +13,23 @@ for pat in PROIBIDO:
 ns = {'torch': torch, 'math': __import__('math'), 'G': G, 'S': S, 'NF': NF, 'NOMES_OP': NOMES_OP, 'NOMES_CORPO': NOMES_CORPO, 'Linear': Linear, 'DEV': DEV}
 exec(compile(src, a.politica, 'exec'), ns); assert 'fabrica' in ns, 'politica.py precisa definir fabrica() -> classe com reset/extra/decidir/atualizar'
 POL0 = ns['fabrica']()
-class POL:   # invólucro por COMPOSICAO (super() falhava): aceita reset(m) ou reset(m, W); extra/atualizar podem faltar
+import inspect
+class POL:   # invólucro por COMPOSICAO, ciente da assinatura: agentes copiaram 'reset(s, m, W)' como 'def reset(self, s, m, W)' -> passa o proprio objeto como s
     NP = Linear.NP
     def __init__(s): s.p = POL0() if isinstance(POL0, type) else POL0
-    def reset(s, m, W):
-        try: return s.p.reset(m, W)
-        except TypeError: return s.p.reset(m)
+    def _call(s, nome, *args):
+        fn = getattr(s.p, nome, None)
+        if fn is None: return None
+        n = len([q for q in inspect.signature(fn).parameters.values() if q.default is inspect._empty and q.kind in (q.POSITIONAL_ONLY, q.POSITIONAL_OR_KEYWORD)])
+        if n == len(args) + 1: return fn(s.p, *args)      # def f(self, s, ...): s = o proprio objeto
+        if n < len(args): return fn(*args[:n])            # def reset(self, m): sem W
+        return fn(*args)
+    def reset(s, m, W): return s._call('reset', m, W)
     def extra(s, m, W, F):
-        if hasattr(s.p, 'extra'): return s.p.extra(m, W, F)
+        if hasattr(s.p, 'extra'): return s._call('extra', m, W, F)
         s.p.F = F; return torch.zeros(m.B, G, device=DEV)
-    def decidir(s, tudo, m): return s.p.decidir(tudo, m)
-    def atualizar(s, m):
-        if hasattr(s.p, 'atualizar'): return s.p.atualizar(m)
+    def decidir(s, tudo, m): return s._call('decidir', tudo, m)
+    def atualizar(s, m): return s._call('atualizar', m)
 fl = argparse.Namespace(L=200., dias=10., fitness='riqueza', nevoa=float('inf'), npx=12, respawn=20., pax_cidade=False, ponto=0., dinh0=10., fome_passo=None, kcal_pane=8., guincho=0., fuel_pane=15., P=None, G=None, paciencia=None, R=None, seeds=None, so=None, mundo='distinto')
 cen = json.load(open(a.cenario)) if a.cenario else {}; ex = aplica_cenario(fl, cen)
 cfg = CfgCampo(L=fl.L, fitness=fl.fitness); cfg.KCAL_PANE = fl.kcal_pane; cfg.dinh0 = fl.dinh0; cfg.GUINCHO = fl.guincho; cfg.FUEL_POS_PANE = fl.fuel_pane; cfg.nevoa = fl.nevoa; cfg.ponto = fl.ponto; cfg.NPX = fl.npx; cfg.respawn = fl.respawn; cfg.pax_cidade = fl.pax_cidade
