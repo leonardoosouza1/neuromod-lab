@@ -1,0 +1,152 @@
+import torch
+
+
+def fabrica():
+    class PoliticaL10Corrida:
+        def reset(self, m, W):
+            self.reparando_vida = torch.zeros(m.B, dtype=torch.bool, device=DEV)
+            self.comeu_ultimo_tick = torch.zeros(m.B, dtype=torch.bool, device=DEV)
+
+        def extra(self, m, W, F):
+            self.F = F
+            return torch.zeros(m.B, F.shape[1], device=DEV, dtype=F.dtype)
+
+        def decidir(self, tudo, m):
+            F = self.F
+            G = F.shape[1]
+            S = tudo.shape[1] - G
+            device = tudo.device
+            dtype = tudo.dtype
+            B = tudo.shape[0]
+
+            e_fuel = F[:, 0, 10]
+            e_agua = F[:, 0, 11]
+            e_fome = F[:, 0, 12]
+            e_calor = F[:, 0, 14]
+            e_vida = F[:, 0, 15]
+            e_dinh = F[:, 0, 16]
+            e_pax = F[:, 0, 18]
+            e_noite = F[:, 0, 21]
+            dinh = e_dinh * 150.0
+            tem_pax = e_pax > 0.5
+
+            disp = tudo[:, G:G + S] > -1e8
+            no_posto = disp[:, 0]
+            no_oficina = disp[:, 9]
+
+            # ALAVANCA TRABALHO/CORRIDA (unica mudanca vs L6 p4): a base mandava sempre pro
+            # alvo mais perto (argmin d_alvo + PESO_RUA*custo_frente), com ou sem passageiro
+            # a bordo. So' d_alvo e' visivel (nao da pra escolher QUAL passageiro pegar), mas
+            # dois sinais do mapa dizem que nem todo passageiro vale o mesmo: tarifa =
+            # (3+.25*d)*preco*(1-aliq) do distrito de EMBARQUE, preco 0.50 (periferia) a 1.30
+            # (centro) = 2.6x, demanda 0.015 a 0.10/tick = 6.7x. Os genes do campeao evoluido
+            # fogem de aliq alto e do distrito-casa (H37) mas ele MORRE 0.85 - foge por medo
+            # do gasto, nunca calculou a renda. Aqui testamos o oposto so' na CACA por
+            # passageiro (tem_pax=False): puxa o rumo para preco_frente*(1-aliq_frente) alto,
+            # peso .6 (faixa .5-1.0 da alavanca LUGAR irma - preco_frente e' sinal de renda
+            # real, nao feature de fronteira que satura com peso <=.3, H33). COM passageiro a
+            # bordo o destino ja esta fixado: mantem so' d_alvo+PESO_RUA*custo_frente (segue
+            # reto, nunca desvia com passageiro).
+            PESO_RUA = 0.15
+            WEIGHT_CORRIDA = 0.6
+            custo_base = F[:, :, 0] + PESO_RUA * F[:, :, 6]
+            valor_liquido_frente = F[:, :, 7] * (1.0 - F[:, :, 8])
+            score_livre = custo_base - WEIGHT_CORRIDA * valor_liquido_frente
+            mover_pax = torch.argmin(custo_base, dim=1)
+            mover_livre = torch.argmin(score_livre, dim=1)
+            mover = torch.where(tem_pax, mover_pax, mover_livre)
+            ir_oficina = torch.argmin(F[:, :, 4], dim=1)
+            ir_comida_mov = torch.argmin(F[:, :, 2], dim=1)
+
+            score = torch.full((B, S), -1e9, device=device, dtype=dtype)
+
+            quer_agua = e_agua < 0.50
+            quer_comida = e_fome > 0.15
+            quer_fuel = e_fuel < 0.95
+
+            score[:, 7] = torch.where(no_posto & quer_comida, 30.0 + (e_fome - 0.15), score[:, 7])
+
+            idx_pref_agua = torch.where(
+                e_agua < 0.25,
+                torch.full((B,), 6, device=device, dtype=torch.long),
+                torch.full((B,), 5, device=device, dtype=torch.long),
+            )
+            disp_pref_agua = disp.gather(1, idx_pref_agua.unsqueeze(1)).squeeze(1)
+            idx_agua = torch.where(disp_pref_agua, idx_pref_agua, torch.full_like(idx_pref_agua, 5))
+            disp_agua = torch.where(disp_pref_agua, disp_pref_agua, disp[:, 5])
+            val_agua = torch.where(
+                no_posto & quer_agua & disp_agua,
+                20.0 + (0.50 - e_agua),
+                torch.full((B,), -1e9, device=device, dtype=dtype),
+            )
+            score.scatter_(1, idx_agua.unsqueeze(1), val_agua.unsqueeze(1))
+
+            liters_falta = (1.0 - e_fuel) * 100.0
+            idx_necessidade = torch.where(
+                liters_falta <= 25.0,
+                torch.full((B,), 0, device=device, dtype=torch.long),
+                torch.where(
+                    liters_falta <= 50.0,
+                    torch.full((B,), 1, device=device, dtype=torch.long),
+                    torch.where(
+                        liters_falta <= 75.0,
+                        torch.full((B,), 2, device=device, dtype=torch.long),
+                        torch.full((B,), 3, device=device, dtype=torch.long),
+                    ),
+                ),
+            )
+            idx_caixa = torch.where(
+                dinh > 50,
+                torch.full((B,), 3, device=device, dtype=torch.long),
+                torch.where(
+                    dinh > 25,
+                    torch.full((B,), 1, device=device, dtype=torch.long),
+                    torch.full((B,), 0, device=device, dtype=torch.long),
+                ),
+            )
+            idx_pref = torch.minimum(idx_caixa, idx_necessidade)
+            disp_pref = disp.gather(1, idx_pref.unsqueeze(1)).squeeze(1)
+            idx_fuel = torch.where(disp_pref, idx_pref, torch.zeros_like(idx_pref))
+            disp_fuel = torch.where(disp_pref, disp_pref, disp[:, 0])
+            val_fuel = torch.where(
+                no_posto & quer_fuel & disp_fuel,
+                10.0 + (1.0 - e_fuel),
+                torch.full((B,), -1e9, device=device, dtype=dtype),
+            )
+            score.scatter_(1, idx_fuel.unsqueeze(1), val_fuel.unsqueeze(1))
+
+            melhor = torch.argmax(score, dim=1)
+            comprar = no_posto & (score.gather(1, melhor.unsqueeze(1)).squeeze(1) > -1e8)
+
+            segunda = no_posto & self.comeu_ultimo_tick & (e_fome > 0.15) & (dinh > 30) & disp[:, 7]
+
+            buscar_comida = (~no_posto) & (~tem_pax) & ((e_noite > 0.5) | (e_fome > 0.6)) & (F[:, G - 1, 2] < 25)
+
+            fora_agua = (~no_posto) & (e_agua < 0.15) & (F[:, G - 1, 3] < 8) & disp[:, 5]
+            fora_comida = (~no_posto) & (e_fome > 0.85) & (F[:, G - 1, 2] < 8) & disp[:, 7]
+
+            ini_vida = (e_vida < 0.5) & (dinh > 20)
+            self.reparando_vida = (self.reparando_vida | ini_vida) & (e_vida < 0.8) & (dinh > 10)
+            quer_calor = (e_calor > 0.75) & (~tem_pax)
+            quer_oficina = self.reparando_vida | quer_calor
+
+            comprar_oficina = no_oficina & quer_oficina & (tudo[:, G + 9] > -1e8)
+            ir_oficina_mov = quer_oficina & (~comprar_oficina)
+
+            acao = mover.clone()
+            acao = torch.where(buscar_comida, ir_comida_mov, acao)
+            acao = torch.where(ir_oficina_mov, ir_oficina, acao)
+            acao = torch.where(comprar, G + melhor, acao)
+            acao = torch.where(comprar_oficina, torch.full_like(acao, G + 9), acao)
+            acao = torch.where(fora_agua, torch.full_like(acao, G + 5), acao)
+            acao = torch.where(fora_comida, torch.full_like(acao, G + 7), acao)
+            acao = torch.where(segunda, torch.full_like(acao, G + 7), acao)
+
+            self.comeu_ultimo_tick = acao == (G + 7)
+
+            return acao.long()
+
+        def atualizar(self, m):
+            pass
+
+    return PoliticaL10Corrida
