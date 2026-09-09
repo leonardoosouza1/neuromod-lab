@@ -72,6 +72,11 @@ class SerCompleto(Cerebro):
         Wtot = Wtot.index_add(1, s.IDXC, W[:, s.IDXC]*delta)                                                # cortex por distrito (4 colunas)
         Wtot = Wtot + torch.einsum('bk,bkf->bf', mem, s.M_h)*Cerebro.ESC                                    # hipocampo bilinear
         a = s._ativ(); Wtot = Wtot.index_add(1, torch.tensor([1], device=DEV), -(s.w*a)[:, None])            # reflexo: empurra pro posto (coluna d_posto)
+        if s.ATIV:   # [spec F2] saidas POR BLOCO na nota de movimento (so no modo ativacao; 5 einsums a mais a cada passo)
+            zc = torch.zeros_like(W[:, :NF])
+            s._blk = {'rap': torch.einsum('bgh,bh->bg', h, s.V)*s.ESC, 'len': torch.einsum('bgf,bf->bg', F, torch.einsum('bk,bkf->bf', s.z, s.M)*s.ESC),
+                      'tal': torch.einsum('bgf,bf->bg', F, W[:, :NF]*(gf - 1.)), 'cor': torch.einsum('bgf,bf->bg', F, zc.index_add(1, s.IDXC, W[:, s.IDXC]*delta)),
+                      'hip': torch.einsum('bgf,bf->bg', F, torch.einsum('bk,bkf->bf', mem, s.M_h)*Cerebro.ESC), 'ref': (s.w*a)[:, None].expand(-1, G)}
         return torch.einsum('bgh,bh->bg', h, s.V)*s.ESC + torch.einsum('bgf,bf->bg', F, Wtot)
     def extra_serv(s, m):
         ss = Cerebro.extra_serv(s, m)

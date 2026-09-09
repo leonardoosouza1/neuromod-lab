@@ -36,6 +36,7 @@ class CfgCampo:
         s.custo_gene = 0.; s.gene_min = .5; s.custo_suave = False; s.varredura = 'exata'; s.margem_risco = 30.; s.GUINCHO = 0.; s.FUEL_POS_PANE = 15.; s.nevoa = float('inf'); s.k_cego = 2.   # [E63] raio de VISIBILIDADE dos servicos: alem dele a distancia satura (gradiente zero) e o ser tem de LEMBRAR onde viu. inf = mundo onisciente de hoje (identico bit a bit)   # [E61b] guincho cobra dinheiro e deixa o ser no posto com FUEL_POS_PANE (15 = subsidio: 6 panes/vida = vive de guincho);
         s.pax_cidade = False   # [E70] passageiro nasce NA CIDADE (distrito ~ demanda, em volta do centro do distrito) e o taxi vai buscar; reposicao ~ demanda do lugar do passageiro (Leonardo 09-08: 'eles deveriam buscar o passageiro, nao o passageiro aparecer do nada')
         s.respawn = 20.   # [E69 escassez] slot de passageiro usado reaparece com prob demanda/(respawn*tarifa) por tick (20 = de hoje; 100 = escasso: periferia ~333 ticks por slot)
+        s.custo_modo = 'existencia'; s.amostra_ativ = 10; s.ativ_ref = 1.   # [spec F2] 'ativacao' = o gene custa pelo SINAL que emite (por bloco: |saida do bloco na nota| media, amostrada a cada amostra_ativ ticks; bloco com saida >= ativ_ref conta cheio); 'existencia' = hoje
         s.horizonte = 'fixo'; s.T_max = None; s.w_trab = 1.   # [spec Mundo Vivo F1] 'aberto' = roda ate todos morrerem (checa vivo.any() 1x por dia simulado) ou T_max; fitness 'vida' = dias vividos + w_trab*renda/300 (sem pena de morte, sem teto)
         s.ponto = 0.   # [E68] ponto de taxi: parado+livre recebe passageiro no lugar com prob demanda/ponto por tick (0 = desligado, mundo identico ao anterior); 30 => centro ~15 ticks, periferia ~100
         s.amp_preco = .5; s.periodo_preco = 3.   # [E56] precos oscilam +-50 % num ciclo de 3 dias por distrito (so em mapa distinto)        # [E55] cerebro que come: fome sobe x (1 + custo_gene*dof/100), dof = genes alem da espinha com |w| > gene_min (Lei do Metabolismo = AIC; acervo: 'custo e o que seleciona')
@@ -408,7 +409,17 @@ def rodar(Arq, W, mapas, cfg, T, seed, R=1):
     global _COMPILE_OK
     m = Campo(mapas, W.shape[0], cfg, seed=seed, R=R); Wb = W[m.gidx]; a = Arq(); a.reset(m, Wb); fn = _passo_fn()
     if cfg.custo_gene > 0.: m.metab = 1. + cfg.custo_gene*dof_de(Wb, cfg)/100.                    # [E55] cada gene ligado alem da espinha custa calorias
+    ativ = getattr(cfg, 'custo_modo', 'existencia') == 'ativacao' and hasattr(Arq, 'nomes_genes')   # [spec F2] custo por ATIVACAO: metab acompanha o sinal emitido por bloco
+    if ativ:
+        nomes = Arq.nomes_genes(); n_b = {b: float(sum(n.startswith(b) for n in nomes)) for b in BLOCOS}
+        m.ativ_soma = {b: torch.zeros(m.B, device=DEV) for b in BLOCOS if n_b[b] > 0}; m.ativ_n = 0
+        if cfg.custo_gene > 0.: m.metab = torch.ones(m.B, device=DEV)   # nasce sem custo: paga pelo que emitir
     for t in range(T):
+        if ativ and t % cfg.amostra_ativ == 0 and t > 0:
+            ab = a.ativ_blocos(m); m.ativ_n += 1
+            for b in m.ativ_soma:
+                if b in ab: m.ativ_soma[b] = m.ativ_soma[b] + (ab[b]/cfg.ativ_ref).clamp(max=1.)
+            if cfg.custo_gene > 0.: m.metab = 1. + cfg.custo_gene*sum(n_b[b]*m.ativ_soma[b] for b in m.ativ_soma)/m.ativ_n/100.
         if cfg.horizonte == 'aberto' and t % 240 == 239 and not bool((m.vida > 0).any()): break   # [spec F1] 1 sincronismo por dia simulado, so no horizonte aberto (fixo: curto-circuito em Python, identico)
         try: fn(m, a, Wb)
         except Exception as e:
@@ -474,6 +485,7 @@ def medidas(Arq, W, mapas, cfg, T=1200, seed=7777, R=1, copias=128):
     med['t_vida'] = dict(media=float(tv.mean()), mediana=float(tv.median()), p10=float(tv.quantile(.1)), p90=float(tv.quantile(.9)), frac_teto=float((m.t_vida >= Tm).float().mean()))
     db = dof_por_bloco(W[None, :], cfg, Arq)   # [spec I1a] aditivo: chave nova, nenhuma medida existente muda
     if db: med['dof_bloco'] = db
+    if getattr(m, 'ativ_n', 0): med['ativacao_bloco'] = {b: float((v/m.ativ_n).mean()) for b, v in m.ativ_soma.items()}   # [spec F2] fracao do tempo em que o bloco emite sinal (0..1)
     return med
 
 
@@ -632,17 +644,21 @@ class Cerebro(Linear):
         off = torch.tensor(s.OFF_TAU, device=DEV); s.tau = 1. + 200.*torch.sigmoid(W[:, s.O_TAU:s.O_M] + off - 4.)   # gene 0 -> ~4.6 / ~24 / ~101 ticks
         s.M = W[:, s.O_M:s.O_P].view(-1, K, NF); s.P = W[:, s.O_P:Cerebro.NP].view(-1, K, S)     # Cerebro.NP, nao s.NP: subclasses (completo) tem genes depois
         s.z = torch.zeros(m.B, K, device=DEV); s.corpo = torch.zeros(m.B, s.NC_, device=DEV); s.h = None
+        s.ATIV = getattr(m.cfg, 'custo_modo', 'existencia') == 'ativacao'   # [spec F2] constante em Python: o grafo compilado so ganha os caches neste modo
     def extra(s, m, W, F):
         s.corpo = F[:, G - 1, len(NOMES_OP):]                                                # sentidos do corpo (iguais nas 9 opcoes): opcao 'ficar'
         h = torch.relu(torch.einsum('bgf,bhf->bgh', F, s.U) + s.bU[:, None, :]); s.h = h         # (B,G,H) camada rapida
         rapida = torch.einsum('bgh,bh->bg', h, s.V)*s.ESC
         Wm = torch.einsum('bk,bkf->bf', s.z, s.M)*s.ESC; lenta = torch.einsum('bgf,bf->bg', F, Wm)      # pesos modulados pelo estado lento
+        if s.ATIV: s._blk = {'rap': rapida, 'len': lenta}   # [spec F2] saidas por bloco (B,G), lidas por ativ_blocos() fora do grafo
         return rapida + lenta
     def extra_serv(s, m): return torch.einsum('bk,bks->bs', s.z, s.P)*s.ESC_S
     def atualizar(s, m):
         x = torch.relu(torch.einsum('bf,bkf->bk', s.corpo, s.U2) + s.b2)                          # (B,K)
         s.z = s.z + (x - s.z)/s.tau
     def ativacao(s, m): return s.z
+    def ativ_blocos(s, m):   # [spec F2] |saida do bloco| media sobre as opcoes -> {bloco: (B,)}
+        return {b: v.abs().mean(1) for b, v in getattr(s, '_blk', {}).items()}
 
 
 class Bilinear(Linear):
