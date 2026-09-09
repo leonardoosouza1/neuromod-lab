@@ -5,10 +5,10 @@
  },
  "lugar": {
   "tipo": "cenario",
-  "tarefa": "Calibracao medida ate agora na cidade (pax_cidade true): npx 12/respawn 20 -> linear 0.93; npx 22/respawn 12 (contraste 4x) -> linear 0.89; npx 32/respawn 15 -> (chegando). A banda 0.40-0.80 provavelmente exige npx 36-48 com respawn 10-15. Escolha UM ponto dentro disso, mantenha contraste centro/periferia 3-4x, e faca a predicao por braco (linear, COMPLETO, bilinear risco+demanda+espera) com o mecanismo de POR QUE quem le demanda/espera ganha. Se voce acha que a densidade sozinha nao poe o linear na banda, diga qual outro parametro e por que (ex.: tarifa_km, dinh0)."
+  "tarefa": "Calibracao limpa: na cidade (pax_cidade true) npx 24/36/48 -> linear 0.82/0.81/0.78 — densidade NAO e' a alavanca; com npx 48 a cidade e' como o mundo antigo (0.83). Ponto de trabalho FIXO: pax_cidade true, npx 48, respawn 20. Agora mude UM parametro so: o CONTRASTE de demanda entre distritos (ex.: centro 4.0 / residencial 1.0 / industrial 0.5 / periferia 0.1, somando parecido com o base) — sem mexer em ruas, precos ou corpo. Predicao por braco (linear, COMPLETO, bilinear risco+demanda+espera): quem le demanda/espera ganha quanto, e POR QUE (onde o linear perde tempo). Se voce acredita que contraste sozinho nao separa, diga o que separaria e por que, mas entregue o cenario de um parametro."
  },
  "minimo": {
   "tipo": "cenario",
-  "tarefa": "Unico cenario valido da r1 foi 'deserto de descanso' (linear 0.81, COMPLETO 0.78, -3 pp): fadiga nao e' o eixo letal; panes de gasolina (6.4 por vida) dominam. Proponha o cenario MINIMO que faz o eixo LETAL depender de lugar: ex. posto so em um distrito (dens posto 0 nos outros) ou preco da gasolina muito diferente por distrito (pmul), com passageiro perto (pax_cidade false) para manter o linear na banda. Bracos: linear, COMPLETO, bilinear risco (esc 3). Predicao com numeros e mecanismo; mude o menor numero de parametros."
+  "tarefa": "O eixo letal e' o CORPO: o campeao morre 0.85 com 6.8 panes por vida e 4 abastecidas; densidade de passageiro nao muda isso (npx 48 -> 0.78). Proponha o cenario MINIMO (um parametro, passageiro perto: pax_cidade false) em que a morte por pane/gasolina depende do LUGAR: ex. posto so no distrito industrial (dens posto 0 nos outros) OU gasolina 3x mais cara no centro (pmul) OU guincho pago (corpo.guincho 4). Bracos: linear, COMPLETO, bilinear risco (esc 3). Predicao com numeros (mortos, panes, abastecidas por braco) e o mecanismo: por que quem le risco/lugar ganha."
  }
 }

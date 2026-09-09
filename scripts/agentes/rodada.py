@@ -28,6 +28,8 @@ tarifa 3 + .25 por unidade x pmul do distrito de origem, aluguel 4 x alug do dis
 ## CALIBRACAO MEDIDA (rodada 1) — leia antes de escolher numeros
 linear e' o controle e TEM de ficar com mortos entre 0.40 e 0.80, senao a regua crava e o cenario e' recusado. Medidas: passageiro perto do taxi (pax_cidade false, npx 12) -> linear 0.83, 18 entregas, renda 165;
 cidade (pax_cidade true, npx 12, respawn 20) -> linear 0.93, 11 entregas, renda ~110, COMPLETO 0.91 (piso: todos morrem igual); cidade + npx 5 + respawn 80 + periferia dem .05 -> 1.00 e 3 entregas (letal).
+CALIBRACAO LIMPA (so npx varia, cidade): npx 24 -> linear 0.82 / 16.5 entregas; 36 -> 0.81 / 19.3; 48 -> 0.78 / 20.9. DENSIDADE NAO E' A ALAVANCA: com 48 a cidade vira o mundo antigo. O que mata e' o corpo (pane/fome/divida), nao a falta de passageiro. Ponto de trabalho para cenarios na cidade: npx 48, respawn 20; mude UM parametro por vez.
+O CAMPEAO EVOLUIDO (medido pelo juiz): 17.7 entregas, 6 refeicoes, 4.2 abastecidas, 6.8 PANES por vida, dinheiro final 27, morre 0.85. Ele ACEITA a pane (guincho leva ao posto com 15 L e cobra 8 kcal de reserva) em vez de desviar por precaucao; come toda vez que abastece. A politica r3_1 (contrato certo) andou 95% do tempo, entregou 6, comeu 3x, 1 pane, e morreu 1.00 de fome/sede/divida: desviar demais e trabalhar de menos mata.
 Politicas explicitas da rodada 1 (2 agentes) morreram 1.00 de FOME com 2-4 entregas: estacionaram e nunca compraram comida (refeicoes 0). O oraculo a mao tambem morre 1.00. O campeao evoluido, medido pelo mesmo juiz: 0.85, 17.7 entregas, 6.8 panes.
 """
 API_POL = """## Contrato politica.py (agente escreve; o juiz executa em GPU com 3 mundos de teste x 128 copias x 5 sementes)

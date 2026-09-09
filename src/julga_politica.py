@@ -39,15 +39,18 @@ for k in ('amp_preco', 'periodo_preco', 'tarifa_base', 'tarifa_km'):
 teste = [gerar_mapa(1000 + s, L=fl.L, distinto=fl.mundo == 'distinto', perfis=ex['perfis'], K=ex['K'], ruas=ex['ruas']) for s in range(3)]; T = int(240*fl.dias)
 J = json.load(open(a.campeao))['bracos']['linear']['W']; Wc = torch.tensor(alinha_semente(J['0']), device=DEV)
 def mede(Arq, W, nome):
-    r = {k: [] for k in ('mortos', 'ent', 'rec', 'panes', 'fome_fim', 'n_come', 'n_posto', 'dinh_fim', 'agua_fim', 'vida_vivos')}
+    r = {k: [] for k in ('mortos', 'ent', 'rec', 'panes', 'fome_fim', 'n_come', 'n_posto', 'dinh_fim', 'agua_fim', 'vida_vivos', 'dia_morte', 'c_fome', 'c_sede', 'c_divida', 'c_dano')}
     for sd in a.seeds:
         m = rodar(Arq, W[None, :].repeat(a.copias, 1), teste, cfg, T, sd, R=1)
         r['mortos'].append(float((m.vida <= 0).float().mean())); r['ent'].append(float(m.ent.mean())); r['rec'].append(float(m.rec.mean())); r['panes'].append(float(m.av_fuel.mean())); r['fome_fim'].append(float(m.fome.mean()))
+        morto = m.vida <= 0; nm = morto.float().sum().clamp(min=1.); r['dia_morte'].append(float((m.t_vida[morto]/240.).mean()) if bool(morto.any()) else 10.)
+        r['c_fome'].append(float((morto & (m.fome >= cfg.FOME_CRIT)).float().sum()/nm)); r['c_sede'].append(float((morto & (m.agua <= cfg.AGUA_CRIT)).float().sum()/nm)); r['c_divida'].append(float((morto & (m.dinh < -cfg.LIMITE_DIVIDA)).float().sum()/nm))
+        r['c_dano'].append(float((morto & ~(m.fome >= cfg.FOME_CRIT) & ~(m.agua <= cfg.AGUA_CRIT) & ~(m.dinh < -cfg.LIMITE_DIVIDA)).float().sum()/nm))
         r['n_come'].append(float(m.n_come.mean())); r['n_posto'].append(float(m.n_posto.mean())); r['dinh_fim'].append(float(m.dinh.mean())); r['agua_fim'].append(float(m.agua.mean())); r['vida_vivos'].append(float(m.vida[m.vida > 0].mean()) if bool((m.vida > 0).any()) else 0.)
     med = {k: sum(v)/len(v) for k, v in r.items()}; med['por_seed'] = {k: [round(x, 3) for x in v] for k, v in r.items()}
-    print(f"  {nome:<28} mortos {med['mortos']:.2f} {med['por_seed']['mortos']} ent {med['ent']:5.1f} renda {med['rec']:5.0f} panes {med['panes']:4.1f} | AUTOPSIA: refeicoes {med['n_come']:4.1f} abastecidas {med['n_posto']:4.1f} fome_fim {med['fome_fim']:3.0f} agua_fim {med['agua_fim']:3.0f} dinheiro_fim {med['dinh_fim']:4.0f} (fome 100 = morreu de fome; refeicoes 0 = nunca comprou comida; dinheiro < 0 = divida)", flush=True); return med
+    print(f"  {nome:<28} mortos {med['mortos']:.2f} {med['por_seed']['mortos']} ent {med['ent']:5.1f} renda {med['rec']:5.0f} panes {med['panes']:4.1f} | AUTOPSIA: refeicoes {med['n_come']:4.1f} abastecidas {med['n_posto']:4.1f} fome_fim {med['fome_fim']:3.0f} agua_fim {med['agua_fim']:3.0f} dinheiro_fim {med['dinh_fim']:4.0f} | morreu no dia {med['dia_morte']:.1f} de: fome {100*med['c_fome']:.0f}% sede {100*med['c_sede']:.0f}% divida {100*med['c_divida']:.0f}% pane/calor {100*med['c_dano']:.0f}%", flush=True); return med
 print(f'== juiz de politica | {os.path.basename(a.politica)} | cenario {a.cenario or "base(default)"} | {len(a.seeds)} sementes x {a.copias} copias x 3 mapas ==', flush=True)
-def traco(Arq, W, T=240):   # histograma das ESCOLHAS nos primeiros T ticks: mostra o mecanismo (parado? comprando? andando?)
+def traco(Arq, W, T=2400):   # histograma das ESCOLHAS nos primeiros T ticks: mostra o mecanismo (parado? comprando? andando?)
     m = Campo(teste, 64, cfg, seed=7777, R=1); Wb = W[None, :].repeat(64, 1)[m.gidx]; ar = Arq(); ar.reset(m, Wb); cont = torch.zeros(G + S, device=DEV); dist = 0.
     for t in range(T):
         F, val = m.obs(); sc = torch.einsum('bgf,bf->bg', F, Wb[:, :NF]) + ar.extra(m, Wb, F); sc = sc - sc.mean(1, keepdim=True)
@@ -56,7 +59,7 @@ def traco(Arq, W, T=240):   # histograma das ESCOLHAS nos primeiros T ticks: mos
         cont += torch.bincount(esc, minlength=G + S).float(); dist += float((m.pos - p0).norm(dim=-1).mean())
     f = (cont/cont.sum()).tolist(); nomes = ['mover']*(G - 1) + ['ficar'] + [f'{t}{int(q) if q else ""}' for t, q in ACOES]
     agg = {'mover': sum(f[:G - 1]), 'ficar': f[G - 1]}; agg.update({nomes[G + k]: f[G + k] for k in range(S)})
-    print('  TRACO 240 ticks (fracao das escolhas): ' + ' '.join(f'{k} {v:.2f}' for k, v in agg.items() if v > 0.005) + f' | deslocamento medio/tick {dist/T:.2f} u', flush=True)
+    print(f'  TRACO {T} ticks (vida inteira) (fracao das escolhas): ' + ' '.join(f'{k} {v:.2f}' for k, v in agg.items() if v > 0.005) + f' | deslocamento medio/tick {dist/T:.2f} u', flush=True)
 res = dict(politica=a.politica, cenario=a.cenario, predicao=cen.get('predicao'))
 res['linear_campeao'] = mede(Linear, Wc, 'linear campeao (q8)'); traco(POL, torch.zeros(Linear.NP, device=DEV)); res['politica_res'] = mede(POL, torch.zeros(Linear.NP, device=DEV), 'politica do agente')
 res['dif_mortos'] = res['politica_res']['mortos'] - res['linear_campeao']['mortos']
