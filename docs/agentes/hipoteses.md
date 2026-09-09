@@ -81,3 +81,5 @@
 | H59 | a coluna "causa" do juiz é ESTADO na morte, não causa: c_fome = fome ≥ 90 ao morrer e se sobrepõe a c_sede (49+40+29 > 100); c_dano é só o resíduo | ✓ julga_politica.py:44-47 — "fome 49 %" superestima a fome; dano da pane aparece dentro dela | auditoria do código |
 | H60 | e_reserva (F[:,0,17] = res/120) nunca foi lida por nenhuma das 100+ políticas dos 14 lotes | ✓ grep nos lotes L1–L14 | consolidação L14 |
 | H61 | limiar de COMIDA: 7º teste (L14 p1, posto .15 → .35) deu 0.56 com 7.0 refeições contra 0.52/8.3 da base — subir o limiar perde; a fome não é limiar, é acesso (posto fecha à noite) | ✗ aposentar o eixo "limiar de fome"; comer oportunista no posto é bom porque é barato (2·pmul) e o tick já está gasto | L14 p1 |
+| H55 | F2 custo por ATIVAÇÃO (por bloco) vs existência, λ .3, COMPLETO fumaça | dof 318 vs 165, metab 1.40 vs 1.49, mortos 0.87 vs 0.86: silêncio deixa de custar; tálamo/córtex sempre ligados; nada muda na sobrevivência | m1/m2, pred 136 |
+| H56 | lote 14 p7 (RUA sobre esfriar): 0.50 em 5 s (−5 pp), panes 6.2 | ✓ novo teto; primeiro ganho em 6 lotes veio de uma combinação (esfriar + rua) | L14 |
