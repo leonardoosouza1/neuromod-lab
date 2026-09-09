@@ -1,0 +1,104 @@
+{
+ "nome": "minimo-pax-cidade-flip",
+ "predicao": "\u00danico par\u00e2metro mudado (menor desvio poss\u00edvel do base.json): passageiros.pax_cidade false -> true. Mecanismo (achado 84): o linear n\u00e3o l\u00ea dire\u00e7\u00e3o/posi\u00e7\u00e3o nos sentidos do corpo ao decidir a a\u00e7\u00e3o \u2014 sua pol\u00edtica ignora onde o passageiro est\u00e1. Quando o passageiro nasce perto do t\u00e1xi (base), essa cegueira n\u00e3o custa nada; quando nasce em qualquer ponto da cidade (pax_cidade=true), buscar exige rota eficiente, e s\u00f3 o COMPLETO tem hipocampo/c\u00f3rtex para orientar o deslocamento. N\u00fameros: linear mortos sobe para >= 0.55 (de uma base quase nula com passageiro gr\u00e1tis rodando) porque perde ticks andando sem rumo eficiente, consumindo fuel_passo .15/tick e agua/fome sem repor renda, entrando em d\u00edvida (LIMITE_DIVIDA 60) ou pane (KCAL_PANE 8); COMPLETO mortos <= 0.40 por rotear com menos ticks ociosos/tortuosos por corrida. Gap esperado >= 15 pp, cumprindo o corte de 10 pp. Nenhum outro campo do mundo, distrito, corpo ou protocolo foi alterado \u2014 isola o efeito \u00fanico de precisar NAVEGAR at\u00e9 o passageiro em vez de ele aparecer ao lado.",
+ "mundo": {
+  "L": 200,
+  "dias": 10,
+  "regua": "riqueza",
+  "K": 6,
+  "ruas": {
+   "dentro": 1,
+   "fora": 3
+  },
+  "precos": {
+   "amp": 0.5,
+   "periodo": 3
+  }
+ },
+ "distritos": {
+  "centro": {
+   "pmul": 2.0,
+   "aliq": 0.35,
+   "alug": 2.5,
+   "dem": 2.0,
+   "dens": [
+    1.0,
+    1.5,
+    1.0,
+    0.5,
+    1.0
+   ]
+  },
+  "industrial": {
+   "pmul": 0.6,
+   "aliq": 0.1,
+   "alug": 0.8,
+   "dem": 0.7,
+   "dens": [
+    2.5,
+    0.0,
+    1.0,
+    0.0,
+    2.0
+   ]
+  },
+  "residencial": {
+   "pmul": 1.0,
+   "aliq": 0.15,
+   "alug": 1.0,
+   "dem": 1.0,
+   "dens": [
+    0.0,
+    2.0,
+    1.5,
+    2.0,
+    0.0
+   ]
+  },
+  "periferia": {
+   "pmul": 0.5,
+   "aliq": 0.0,
+   "alug": 0.8,
+   "dem": 0.3,
+   "dens": [
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.0
+   ]
+  }
+ },
+ "passageiros": {
+  "npx": 12,
+  "respawn": 20,
+  "pax_cidade": true,
+  "ponto": 0,
+  "tarifa_base": 3,
+  "tarifa_km": 0.25
+ },
+ "corpo": {
+  "dinh0": 10,
+  "fome_passo": 0.32,
+  "kcal_pane": 8,
+  "guincho": 0,
+  "fuel_pos_pane": 15
+ },
+ "bracos": [
+  "linear",
+  "COMPLETO (talamo+cortex+hipocampo+reflexo+livre)"
+ ],
+ "protocolo": {
+  "P": 512,
+  "G": 60,
+  "paciencia": 30,
+  "R": 4,
+  "seeds": [
+   0,
+   1,
+   2,
+   3,
+   4
+  ]
+ }
+}

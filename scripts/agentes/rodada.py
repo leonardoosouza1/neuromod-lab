@@ -46,19 +46,22 @@ def chama(prompt, model, timeout=420):
     except Exception: return r.stdout or r.stderr
 def bloco(txt, lang):
     m = re.search(r'```' + lang + r'\s*(.*?)```', txt, re.S); return m.group(1).strip() if m else None
+def json_tolerante(js):
+    """agente escreve JSON com comentarios // e virgula sobrando: limpa antes de recusar"""
+    js = re.sub(r'//[^\n]*', '', js); js = re.sub(r'/\*.*?\*/', '', js, flags=re.S); js = re.sub(r',(\s*[}\]])', r'\1', js); return json.loads(js)
 def gerar(a):
     grupos = json.load(open(os.path.join(REPO, 'scripts', 'agentes', a.grupos))); out = os.path.join(REPO, 'docs', 'agentes', f'r{a.rodada}'); os.makedirs(out, exist_ok=True)
     import nmd_cliente as c; pedidos = []
     for nome, g in grupos.items():
         if a.so and nome not in a.so: continue
-        for i in range(1, a.n + 1):
+        for i in (a.agentes or range(1, a.n + 1)):
             pr = prompt_de(nome, g, i, a.rodada); open(os.path.join(out, f'{nome}_{i}.prompt.md'), 'w').write(pr)
             if a.dry_run: print(f'[dry] {nome}_{i}: prompt {len(pr)} chars'); continue
             t0 = time.time(); txt = chama(pr, a.model); open(os.path.join(out, f'{nome}_{i}.resposta.md'), 'w').write(txt); print(f'{nome}_{i}: resposta {len(txt)} chars em {time.time()-t0:.0f}s', flush=True)
             env = {'NM_RISCO': '1', 'NM_PONTO': '1'}; pid = f'r{a.rodada}_{nome}{i}'
             if g['tipo'] == 'cenario':
                 js = bloco(txt, 'json')
-                try: cen = json.loads(js)
+                try: cen = json_tolerante(js)
                 except Exception as e: print(f'  RECUSADO (json): {e}'); continue
                 if not cen.get('predicao'): print('  RECUSADO: sem predicao'); continue
                 if a.triagem: cen['protocolo'] = {'P': 512, 'G': 60, 'paciencia': 30, 'R': 4, 'seeds': [0, 1, 2, 3, 4]}   # juiz rapido (~10 min por cenario de 4 bracos); a rodada final usa o protocolo cheio
@@ -70,7 +73,8 @@ def gerar(a):
                 pp = os.path.join(out, f'{nome}_{i}.politica.py'); open(pp, 'w').write(py); json.dump({'predicao': pm.group(1).strip()}, open(os.path.join(out, f'{nome}_{i}.cenario.json'), 'w'))
                 c.pedir(pid, 'julga_politica', out=f'agentes_r{a.rodada}', env=env, politica=pp, tag=f'_{pid}')
             pedidos.append(pid); print(f'  enfileirado {pid}', flush=True)
-    json.dump(pedidos, open(os.path.join(out, 'pedidos.json'), 'w')); print('pedidos:', pedidos)
+    pp = os.path.join(out, 'pedidos.json'); antigos = json.load(open(pp)) if os.path.exists(pp) else []
+    todos = antigos + [x for x in pedidos if x not in antigos]; json.dump(todos, open(pp, 'w')); print('pedidos desta chamada:', pedidos, '| todos da rodada:', todos)
 def consolidar(a):
     out = os.path.join(REPO, 'docs', 'agentes', f'r{a.rodada}'); pedidos = json.load(open(os.path.join(out, 'pedidos.json'))); import nmd_cliente as c
     partes = []
@@ -94,5 +98,5 @@ Escreva em portugues, direto: (1) para cada item: acertou/errou a predicao e POR
     print(txt[:1500])
 if __name__ == '__main__':
     ap = argparse.ArgumentParser(); ap.add_argument('fase', choices=['gerar', 'consolidar']); ap.add_argument('--rodada', type=int, default=1); ap.add_argument('--n', type=int, default=2); ap.add_argument('--model', default='sonnet')
-    ap.add_argument('--grupos', default='grupos.json'); ap.add_argument('--so', nargs='*', default=None); ap.add_argument('--dry-run', action='store_true'); ap.add_argument('--triagem', action='store_true', help='forca protocolo P512 G60 pac30 nos cenarios'); a = ap.parse_args()
+    ap.add_argument('--grupos', default='grupos.json'); ap.add_argument('--so', nargs='*', default=None); ap.add_argument('--agentes', type=int, nargs='*', default=None, help='so estes indices de agente (ex.: 2)'); ap.add_argument('--dry-run', action='store_true'); ap.add_argument('--triagem', action='store_true', help='forca protocolo P512 G60 pac30 nos cenarios'); a = ap.parse_args()
     gerar(a) if a.fase == 'gerar' else consolidar(a)
