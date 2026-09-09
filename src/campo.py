@@ -580,6 +580,7 @@ def rodar_com_prefeito(Arq, W, mapas, cfg, T, seed, R=1, Wp=None, prefeito_cls=N
     """como rodar(), mas com um prefeito por mapa agindo a cada dia (t % dia == 0). Wp=None -> identico a rodar()."""
     m = Campo(mapas, W.shape[0], cfg, seed=seed, R=R); Wb = W[m.gidx]; a = Arq(); a.reset(m, Wb); fn = _passo_fn()
     if cfg.custo_gene > 0.: m.metab = 1. + cfg.custo_gene*dof_de(Wb, cfg)/100.                    # [E55] cada gene ligado alem da espinha custa calorias
+    if getattr(cfg, 'custo_basal', 0.) > 0.: m.metab = m.metab + getattr(cfg, 'custo_basal', 0.)*dof_de(Wb, cfg)/100.
     pref = prefeito_cls(m, Wp) if Wp is not None else None
     for t in range(T):
         if pref is not None and t > 0 and t % cfg.dia == 0:
