@@ -14,7 +14,7 @@ import torch
 from campo import *
 
 # grupos do talamo: indices em NOMES_F (NOMES_OP 0-9, NOMES_CORPO 10-23)
-GRUPOS = [('rota', [0, 6, 9, 18]), ('servicos', [1, 2, 3, 4, 5]), ('corpo', [10, 11, 12, 13, 14, 15, 24, 25] + ([26] if NF > 26 else [])), ('economia', [7, 8, 16, 17]), ('tempo', [19, 20, 21, 22, 23])]   # [E57] +consumo, autonomia; [E61] +risco no corpo
+GRUPOS = [('rota', [0, 6, 9, 18]), ('servicos', [1, 2, 3, 4, 5]), ('corpo', [10, 11, 12, 13, 14, 15, 24, 25] + list(range(26, NF))), ('economia', [7, 8, 16, 17]), ('tempo', [19, 20, 21, 22, 23])]   # [E57] +consumo, autonomia; [E61] +risco no corpo; [E68] demanda/espera tambem no corpo (range(26, NF))
 NOMES_G = [g for g, _ in GRUPOS]; NG = len(GRUPOS)
 assert sorted(i for _, ids in GRUPOS for i in ids) == list(range(NF)), 'grupos nao cobrem os 24 sentidos'
 _IG = [0]*NF

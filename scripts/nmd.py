@@ -39,7 +39,7 @@ SPOOL = os.path.join(BASE, '_nmd')
 
 SCRIPTS = {'rodar', 'e43_campo', 'e44_prefeito', 'diag_oraculo', 'autopsia', 'testes_campo', 'testes_bilinear', 'testes_completo', 'perf_varredura', 'perf_perfil',
            'retrato_cerebro', 'base_fechada', 'ablacao_mem', 'testes', 'testes_sentidos'}
-ENVS    = {'NM_RISCO', 'NM_COMPILE', 'HSA_OVERRIDE_GFX_VERSION', 'OMP_NUM_THREADS',
+ENVS    = {'NM_PONTO', 'NM_RISCO', 'NM_COMPILE', 'HSA_OVERRIDE_GFX_VERSION', 'OMP_NUM_THREADS',
            'TORCHINDUCTOR_COMPILE_THREADS', 'MKL_NUM_THREADS'}
 FLAG    = re.compile(r'^[A-Za-z][A-Za-z0-9-]{0,24}$')          # nome de flag
 VALOR   = re.compile(r'^[\w .,()+=/-]{1,120}$')          # valor textual: sem metacaractere de shell

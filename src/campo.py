@@ -20,6 +20,8 @@ NOMES_OP = ['d_alvo', 'd_posto', 'd_comida', 'd_agua', 'd_oficina', 'd_descanso'
 NOMES_CORPO = ['e_fuel', 'e_agua', 'e_fome', 'e_fadiga', 'e_calor', 'e_vida', 'e_dinheiro', 'e_reserva', 'e_tem_pax', 'h_sin', 'h_cos', 'e_noite', 'custo_aqui', 'bias', 'e_consumo', 'e_autonomia']   # [E57] painel do carro: consumo medido (L por metro, media movel) e autonomia = (tanque/consumo - d_posto)/100
 RISCO = os.environ.get('NM_RISCO', '0') == '1'   # [E61] luz de reserva: e_risco = relu(d_posto + margem - alcance)/100 (0 = seguro; cresce quando a margem some). Ligado por NM_RISCO=1 (muda NF: nao misturar com JSONs de semeadura antigos)
 if RISCO: NOMES_CORPO = NOMES_CORPO + ['e_risco']
+PONTO = os.environ.get('NM_PONTO', '0') == '1'   # [E68 ponto de taxi] sentidos 'demanda daqui' e 'ha quanto tempo espero' (Leonardo 09-08: 'parar pode ser esperar passageiro'). Ligado por NM_PONTO=1 (muda NF)
+if PONTO: NOMES_CORPO = NOMES_CORPO + ['e_demanda', 'e_espera']
 NF = len(NOMES_OP) + len(NOMES_CORPO)   # 24 (+2 painel, +1 risco)
 NOMES_F = NOMES_OP + NOMES_CORPO + [f'sv_{a[0]}{int(a[1]) if a[1] else ""}' for a in ACOES] + ['sv_bias']
 
@@ -32,6 +34,7 @@ class CfgCampo:
         s.CALOR_MAX = 92.; s.D_QUENTE = 6.; s.D_PANE = 6.; s.D_RODAR = .15
         s.fome_mata = .15; s.FOME_CRIT = 90.; s.agua_mata = .15; s.AGUA_CRIT = 10.; s.KCAL_PANE = 20.
         s.custo_gene = 0.; s.gene_min = .5; s.custo_suave = False; s.varredura = 'exata'; s.margem_risco = 30.; s.GUINCHO = 0.; s.FUEL_POS_PANE = 15.; s.nevoa = float('inf'); s.k_cego = 2.   # [E63] raio de VISIBILIDADE dos servicos: alem dele a distancia satura (gradiente zero) e o ser tem de LEMBRAR onde viu. inf = mundo onisciente de hoje (identico bit a bit)   # [E61b] guincho cobra dinheiro e deixa o ser no posto com FUEL_POS_PANE (15 = subsidio: 6 panes/vida = vive de guincho);
+        s.ponto = 0.   # [E68] ponto de taxi: parado+livre recebe passageiro no lugar com prob demanda/ponto por tick (0 = desligado, mundo identico ao anterior); 30 => centro ~15 ticks, periferia ~100
         s.amp_preco = .5; s.periodo_preco = 3.   # [E56] precos oscilam +-50 % num ciclo de 3 dias por distrito (so em mapa distinto)        # [E55] cerebro que come: fome sobe x (1 + custo_gene*dof/100), dof = genes alem da espinha com |w| > gene_min (Lei do Metabolismo = AIC; acervo: 'custo e o que seleciona')
         s.preco_L = .3; s.preco_agua = .05; s.preco_comida = 2.; s.HOTEL = 8.; s.preco_oficina = 10.; s.REPARO = 25.
         s.tarifa_base = 3.; s.tarifa_km = .25; s.aluguel = 4.; s.LIMITE_DIVIDA = 60.; s.PERDA_ARMAZ = .15; s.RES_MAX = 120.; s.perda_res = .02/240
@@ -123,6 +126,7 @@ class Campo:
         s.px = s._perto(s.pos, c.NPX); s.pxd = s._destino(s.px)   # passageiros privados por ser, nascem perto
         s.pd_ = torch.full((B,), -1., device=DEV); s.dest = torch.zeros(B, 2, device=DEV); s.orig_d = torch.zeros(B, dtype=torch.long, device=DEV); s.emb = torch.zeros(B, 2, device=DEV)
         s.px_ok = torch.ones(B, c.NPX, dtype=torch.bool, device=DEV)   # [E44 v2] demanda: slot de passageiro ativo; tarifa alta = reaparece devagar
+        s.t_ult = torch.zeros(B, device=DEV)   # [E68] ticks desde o ultimo embarque (sentido e_espera)
         s.t = torch.zeros((), dtype=torch.long, device=DEV)
         s.recusa = torch.zeros(B, dtype=torch.bool, device=DEV); s.ARB = torch.arange(B, device=DEV)
         s.n_agua = torch.zeros(B, device=DEV); s.parado_dia = torch.zeros(B, device=DEV); s.imp = torch.zeros(B, device=DEV); s.subs = torch.zeros(B, device=DEV)   # [E44] sentidos do prefeito; subs = subsidio pago
@@ -218,7 +222,8 @@ class Campo:
                 (s.pd_ >= 0).float(), torch.sin(h), torch.cos(h), nv.float(), s.custo_em(s.pos), torch.ones_like(s.fuel),
                 s.cons/(c.fuel_passo*3.), auton.clamp(-2., 4.)]
         if RISCO: cols.append(((s._dist_v[:, 0] + c.margem_risco - s.fuel/s.cons.clamp(min=1e-3))/100.).clamp(min=0., max=3.))   # [E61] zero enquanto ha margem; cresce quando o posto fica fora do alcance
-        corpo = torch.stack(cols, -1)   # (B,16|17)
+        if PONTO: cols += [s.demanda[s.cidx, s.distrito(s.pos)]/2., (s.t_ult/100.).clamp(max=2.)]   # [E68] demanda do distrito onde estou (0.15..1) e tempo esperando (satura em 200 ticks)
+        corpo = torch.stack(cols, -1)   # (B,16|17|19)
         Fo = torch.cat([Fop, corpo[:, None, :].expand(-1, G, -1)], -1)
         val = torch.ones(s.B, G, dtype=torch.bool, device=DEV)
         return Fo, val
@@ -297,6 +302,11 @@ class Campo:
         desc = usa[:, 8] > 0; s.fad = torch.where(desc, torch.minimum(s.fad, torch.full_like(s.fad, 40.)), s.fad); s.tpar = torch.where(desc, torch.full_like(s.tpar, 12.), s.tpar)   # [G6] descanso nunca aumenta fadiga
         ofi = usa[:, 9] > 0; s.vida = torch.where(ofi, (s.vida + c.REPARO).clamp(max=100.), s.vida); s.calor = torch.where(ofi, torch.full_like(s.calor, 25.), s.calor); s.n_oficina += ofi.float()
         # passageiros: embarque (raio) e entrega
+        if c.ponto > 0:   # [E68 ponto de taxi] parado, livre, sem passageiro e sem usar servico: o passageiro VEM ate o taxi; espera media ponto/demanda ticks (so gasta RNG quando ligado)
+            ar = s.ARB; esp = livre & (s.pd_ < 0) & ~mov & ~pode
+            vem = esp & (torch.rand(B, generator=s.g, device=DEV) < (s.demanda[ci, s.distrito(s.pos)]/c.ponto))
+            kx0 = (s.px - s.pos[:, None, :]).norm(dim=-1).argmin(1); novo_d0 = s._destino(s.pos[:, None, :])[:, 0]
+            s.px[ar, kx0] = torch.where(vem[:, None], s.pos, s.px[ar, kx0]); s.pxd[ar, kx0] = torch.where(vem[:, None], novo_d0, s.pxd[ar, kx0]); s.px_ok[ar, kx0] = s.px_ok[ar, kx0] | vem
         dpx = (s.px - s.pos[:, None, :]).norm(dim=-1).masked_fill(~s.px_ok, 1e9); kx = dpx.argmin(1); ar = s.ARB
         pega = livre & (s.pd_ < 0) & (dpx[ar, kx] <= c.raio) & ~s.recusa & ~pode
         s.dest = torch.where(pega[:, None], s.pxd[ar, kx], s.dest); s.emb = torch.where(pega[:, None], s.pos, s.emb)
@@ -304,6 +314,7 @@ class Campo:
         novo_px = s._perto(s.pos, 1)[:, 0]; novo_d = s._destino(novo_px[:, None, :])[:, 0]
         s.px[ar, kx] = torch.where(pega[:, None], novo_px, s.px[ar, kx]); s.pxd[ar, kx] = torch.where(pega[:, None], novo_d, s.pxd[ar, kx])
         s.px_ok[ar, kx] = s.px_ok[ar, kx] & ~pega                                                   # slot usado fica inativo
+        s.t_ult = torch.where(pega, torch.zeros_like(s.t_ult), s.t_ult + 1.)                        # [E68] relogio de espera
         volta = torch.rand(B, c.NPX, generator=s.g, device=DEV) < (s.demanda[ci, s.distrito(s.pos)]/(20.*s.pref_mult[ci, 5]))[:, None]   # elasticidade: tarifa x2 = espera 2x; [E56] demanda do distrito
         s.px_ok = s.px_ok | volta
         cheg = livre & (s.pd_ >= 0) & ((s.pos - s.dest).norm(dim=-1) <= c.raio)
