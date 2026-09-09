@@ -129,3 +129,5 @@ def nomes_genes():
     cor = [f'cor_d{d}_{f}' for d in range(DMAX) for f in NOMES_C]
     hip = ['hip_tau', 'hip_ganho'] + [f'hipM_{k}_{f}' for k in NOMES_M for f in NOMES_F[:NF]] + [f'hipP_{k}_{a}' for k in NOMES_M for a in NOMES_F[NF:NF+S]]
     return ref + tal + cor + hip
+
+Cerebro.nomes_genes = staticmethod(nomes_genes_cerebro)   # [spec I1a/F2] o Cerebro livre (rap+len) tambem decompoe dof e aceita custo por ativacao
