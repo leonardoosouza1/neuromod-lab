@@ -1,0 +1,6 @@
+{
+ "construcao": {
+  "tipo": "politica",
+  "tarefa": "Rodada 3 (contrato certo): as politicas andaram 93-95% do tempo mas entregaram 6 (campeao 17.7), comeram 3x (campeao 6x) e morreram 1.00 de fome/sede/divida. Diagnostico do consolidador: DESVIO DEMAIS, TRABALHO DE MENOS. O campeao evoluido aceita 6.8 PANES por vida (a pane cobra 8 kcal da reserva e o guincho deixa no posto com 15 L: e' mais barato que desviar 40 unidades por precaucao) e come TODA vez que esta no posto. Escreva a politica IMITANDO o perfil do campeao: (1) trabalhar por default: argmin(F[:,:,0]) — nao pare; (2) abastecer SO quando a luz de reserva acende (e_risco > 0, coluna 26 de NOMES_CORPO) ou e_fuel < .15, e entao o posto mais perto (argmin F[:,:,1]) e comprar o maior que o dinheiro paga (G+3 posto 100 se dinheiro > ~35, senao G+1/G+0); (3) no posto (tudo[:,G+0] > -1e8): comprar comida (G+7) se e_fome > .25 e agua (G+5) se e_agua < .7 ANTES de sair; (4) comida fora do posto so se e_fome > .8 e d_comida < 15; (5) descanso (G+8) so de madrugada (e_noite) com e_fadiga > .8 e d_descanso < 10; (6) NUNCA devolver 8 (ficar). Predicao com numeros: mortos, entregas, refeicoes, abastecidas, panes, dia da morte e causa. Meta: mortos <= 0.60 (campeao 0.85)."
+ }
+}
