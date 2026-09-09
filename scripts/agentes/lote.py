@@ -9,6 +9,10 @@ ALAVANCAS = ['limiar de COMIDA no posto e fora (fome)', 'AGUA: quando e quanto c
 def ler(p, n=None):
     s = open(p).read() if os.path.exists(p) else ''; return s if n is None else s[-n:]
 def api():
+    cache = os.path.join(DA, 'api_contrato.md')   # [12:50] gerado uma vez: importar campo (torch, 2.6 GB) so para montar texto deixava o laco pesado
+    if os.path.exists(cache): return open(cache).read()
+    txt = _api_gera(); open(cache, 'w').write(txt); return txt
+def _api_gera():
     sys.path.insert(0, os.path.join(REPO, 'src')); os.environ.setdefault('NM_RISCO', '1'); os.environ.setdefault('NM_PONTO', '1')
     import campo
     ac = [f'{k}: {t} {int(q) if q else ""}'.strip() for k, (t, q) in enumerate(campo.ACOES)]
