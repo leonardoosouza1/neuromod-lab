@@ -76,7 +76,7 @@ def placar(a):
     json.dump(P, open(pj, 'w'), indent=1, ensure_ascii=False)
     ok = sorted([p for p in P if 'mortos' in p], key=lambda p: p['mortos'])[:15]
     md = ['# Placar (juiz: simulador; 3 sementes x 128 copias x 3 mapas; campeao evoluido = %.2f)' % L['baseline']['mortos'], '', '| lote/politica | alavanca | mortos | corridas (por dia vivo) | refeicoes | dia | causa | predicao do agente |', '|---|---|---|---|---|---|---|---|']
-    md += [f"| L{p['lote']} {p['nome']} | {(p['alavanca'] or '')[:40]} | **{p['mortos']:.2f}** | {p['ent']:.1f} ({p.get('cor_dia', 0):.2f}/dia) | {p['n_come']:.1f} | {p['dia']:.1f} | fome {100*p['c_fome']:.0f} % / dano {100*p['c_dano']:.0f} % | {(p['predicao'] or '')[:60]} |" for p in ok]
+    md += [f"| L{p['lote']} {p['nome']} | {(p['alavanca'] or '')[:40]} | **{p['mortos']:.2f}** | {p['ent']:.1f} ({p.get('cor_dia') or p['ent']/max(p['mortos']*p['dia'] + (1 - p['mortos'])*10., 1e-6):.2f}/dia) | {p['n_come']:.1f} | {p['dia']:.1f} | fome {100*p['c_fome']:.0f} % / dano {100*p['c_dano']:.0f} % | {(p['predicao'] or '')[:60]} |" for p in ok]
     open(os.path.join(DA, 'placar.md'), 'w').write('\n'.join(md) + '\n')
     fb = [f"# Feedback do lote {a.lote} (medido pelo juiz; campeao {L['baseline']['mortos']:.2f}; melhor global {ok[0]['mortos']:.2f} = {ok[0]['nome']} L{ok[0]['lote']})", '', '| politica | alavanca | mortos | corridas (por dia vivo) | refeicoes | dia | causa | predicao |', '|---|---|---|---|---|---|---|---|'] + linhas
     open(os.path.join(out, 'feedback.md'), 'w').write('\n'.join(fb) + '\n'); print('\n'.join(fb), flush=True); return True
