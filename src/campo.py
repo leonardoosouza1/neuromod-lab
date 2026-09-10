@@ -137,7 +137,7 @@ class Campo:
         s.gidx = torch.arange(P, device=DEV).repeat_interleave(s.NC*R)
         sr = getattr(c, 'seres', None); s.ser = None; s.pb = None
         if sr:   # [10/09 Leonardo: um mundo, seres diversos NO MESMO LOTE] populacao g pertence ao ser (g // P) % n_seres; ajustes e partes viram tensores por ser
-            L_ = sr['lista']; n_ = len(L_); s.ser = (s.gidx // int(sr['P'])) % n_
+            L_ = sr['lista']; n_ = len(L_); pP = int(sr['P']); assert P % pP == 0 and (P // pP) % n_ == 0, f'[10/09 astra P1-1] lote de {P} genomas nao e multiplo de seres.P {pP} x {n_} seres: o ser seria identificado errado (reavaliacao da elite com o P antigo?)'; s.ser = (s.gidx // pP) % n_
             col = lambda k, d: torch.tensor([float(x.get(k, d)) for x in L_], device=DEV)[s.ser]
             tn = [str(x.get('talamo_norm', '') or '') for x in L_]
             s.pb = dict(talamo=col('talamo', 1.), cortex=col('cortex', 1.), hipocampo=col('hipocampo', 1.), reflexo=col('reflexo', 1.), livre=col('livre', 1.), rapida=col('rapida', 1.), lenta=col('lenta', 1.),

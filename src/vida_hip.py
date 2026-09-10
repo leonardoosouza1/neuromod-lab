@@ -2,7 +2,7 @@
 lancamento por tique. Inicializacao (berco, passageiros, fase) continua sendo a do Campo (torch, mesma semente); o kernel roda o laco e
 devolve o estado final no proprio Campo (m.t_vida, m.rec, m.ent, ...), de modo que _fit()/medidas leem igual. So cerebro Linear (NP 40,
 NF 29 = RISCO + PONTO ligados, sem retina/regime). Compila uma vez (hipcc) em TORCH_EXTENSIONS_DIR em /media/llm-data."""
-import os, sys, torch
+import os, sys, math, torch
 os.environ.setdefault('TORCH_EXTENSIONS_DIR', '/media/llm-data/scratch/torch_ext')
 from campo import Campo, Linear, TIPOS, NF, DEV
 _MOD = None
@@ -20,6 +20,7 @@ def rodar_hip(W, mapas, cfg, T, seed, R=1, alvo=None, grava=False):
     """mesma assinatura util de rodar(Linear, ...): devolve o Campo com o estado final; se grava, tambem (acoes (T,B), traj (T,B,7))"""
     assert NF == 29 and W.shape[1] == Linear.NP == 40, f'kernel v0 = NF 29 / NP 40 (RISCO+PONTO, sem retina); aqui NF {NF} NP {W.shape[1]}'
     assert cfg.custo_gene == 0. and not cfg.regime and not cfg.reproducao and cfg.ponto == 0. and cfg.retina is None, 'kernel v0: sem custo de gene, regime, reproducao, ponto ou retina'
+    assert math.isinf(float(cfg.nevoa)) and float(getattr(cfg, 'temp_decisao', 0.)) == 0. and not getattr(cfg, 'pax_cidade', False) and cfg.fitness == 'vida' and not getattr(cfg, 'jardim_comum', False) and float(getattr(cfg, 'custo_basal', 0.)) == 0. and getattr(cfg, 'orcamento_ativ', None) is None and getattr(cfg, 'seres', None) is None and not getattr(cfg, 'obs_grade', False) and cfg.varredura == 'exata', f'kernel v0 [10/09 astra P1-2] so implementa: nevoa inf, temp_decisao 0, sem pax_cidade, fitness vida, sem jardim_comum/custo_basal/orcamento_ativ/seres/obs_grade, varredura exata (nevoa {cfg.nevoa} temp {getattr(cfg, "temp_decisao", 0.)} pax_cidade {getattr(cfg, "pax_cidade", False)} fitness {cfg.fitness}): evoluir sob uma regra e julgar sob outra e proibido'
     m = Campo(mapas, W.shape[0], cfg, seed=seed, R=R); B = m.B; Wb = W[m.gidx].contiguous().float()
     assert int(cfg.NPX) == 12 and m.px.shape[1] == 12, f'kernel vida.cu compilado com NPX 12 fixo (cfg.NPX {cfg.NPX}, slots {m.px.shape[1]}): outro valor le fora do buffer'
     NC = m.NC; K = m.pmul0.shape[1]; NPTS = max(m.serv[t].shape[1] for t in TIPOS)

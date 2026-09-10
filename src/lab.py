@@ -1,5 +1,6 @@
 import os as _os; _os.environ.setdefault('TORCHINDUCTOR_COMPILE_THREADS', '1')   # [auditoria 16] pool de 17 processos de compilacao travava a CPU
 import torch, numpy as np, json, time, os
+import copy   # [10/09 astra P1-1] copia rasa do cfg na reavaliacao conjunta
 from datetime import datetime
 DEV = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -1771,7 +1772,9 @@ def evoluir_sementes(Arq, cidades, cfg, P=512, ger=25, T=1500, seeds=(0,1,2),
         # [10/09 opus, pred 166] maldicao do vencedor na EXPORTACAO: Wv[si][0] e' o argmax de P avaliacoes ruidosas
         # (SNR .72, docs/66) — a elite (ne = 15 % de P) e' reavaliada UMA vez num mundo novo e o campeao sai da MEDIA
         # das duas medidas. Custo: ne/(P*ger) ~ .25 % do run. campeao='ultimo' = caminho de sempre, bit a bit.
-        k = min(ne, P); fk = (avaliar_fn or avaliar)(Arq, Wv[:, :k, :].reshape(S*k, NPQ), cidades, cfg_it, T, seed=777000+(ger + 7)*13, R=R).view(S, k)
+        k = min(ne, P); cfg_k = cfg_it
+        if getattr(cfg_it, 'seres', None) and int(cfg_it.seres['P']) != k: cfg_k = copy.copy(cfg_it); cfg_k.seres = dict(cfg_it.seres, P=k)   # [10/09 astra P1-1] o lote da reavaliacao tem k genomas por populacao e Campo acha o ser por (g // seres.P) % n: com o P antigo, 612 de 765 genomas (P 1024, k 153, 5 seres) caiam no ser errado
+        fk = (avaliar_fn or avaliar)(Arq, Wv[:, :k, :].reshape(S*k, NPQ), cidades, cfg_k, T, seed=777000+(ger + 7)*13, R=R).view(S, k)
         for si, sd in enumerate(seeds): esc[sd] = int((fk[si] + f_el[sd][:k]).argmax())
         if verbose: print(f'  campeao reavaliado (elite {k} x mundo novo): posto escolhido por semente {[esc[sd] for sd in seeds]} (0 = o de sempre)', flush=True)
     return {sd: (Wv[si][esc[sd]], hist[sd], snaps[sd]) for si, sd in enumerate(seeds)}
