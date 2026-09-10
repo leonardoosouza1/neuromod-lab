@@ -51,7 +51,7 @@ class CfgCampo:
         s.orcamento_ativ = None
         s.limiar_disparo = .25
         s.custo_canais = ('fome',)
-        s.talamo_norm = False; s.cortex_amp = .5; s.temp_decisao = 0.; s.hip_esc = None; s.jardim_comum = False; s.grava_acoes = False; s.corte_vivos = 0.
+        s.talamo_norm = False; s.cortex_amp = .5; s.temp_decisao = 0.; s.hip_esc = None; s.jardim_comum = False; s.grava_acoes = False; s.corte_vivos = 0.; s.obs_rapido = False
         s.ativ_centrada = False   # [10/09 opus, pred 165] False = hoje (cobra |saida| media, 99.7 % modo comum); True = cobra |saida - media entre as opcoes|, a unica parte que o G1 nao descarta
         s.custo_modo = 'existencia'; s.amostra_ativ = 10; s.ativ_ref = 1.   # [spec F2] 'ativacao' = o gene custa pelo SINAL que emite (por bloco: |saida do bloco na nota| media, amostrada a cada amostra_ativ ticks; bloco com saida >= ativ_ref conta cheio); 'existencia' = hoje
         s.horizonte = 'fixo'; s.T_max = None; s.w_trab = 1.   # [spec Mundo Vivo F1] 'aberto' = roda ate todos morrerem (checa vivo.any() 1x por dia simulado) ou T_max; fitness 'vida' = dias vividos + w_trab*renda/300 (sem pena de morte, sem teto)
@@ -138,6 +138,10 @@ class Campo:
         if RETINA: s.opac = torch.stack([m['opac'] for m in mapas]); s.tipo_g = torch.stack([m['tipo_g'] for m in mapas]).long()   # [spec F3]
         s.serv = {}; s.serv_msk = {}
         for t in TIPOS: s.serv[t], s.serv_msk[t] = _empilha([{'p': m['serv'][t]} for m in mapas], 'p')
+        nmax = max(s.serv[t].shape[1] for t in TIPOS); s.serv_all = torch.zeros(s.NC, len(TIPOS), nmax, 2, device=DEV); s.msk_all = torch.zeros(s.NC, len(TIPOS), nmax, dtype=torch.bool, device=DEV)
+        for j, t in enumerate(TIPOS): s.serv_all[:, j, :s.serv[t].shape[1]] = s.serv[t]; s.msk_all[:, j, :s.serv[t].shape[1]] = s.serv_msk[t]
+        s.OBSR = bool(getattr(c, 'obs_rapido', False)); s.PERM_F = torch.tensor([0, 1, 2, 4, 3], device=DEV); s.TIPO_ID = torch.arange(1, len(TIPOS) + 1, device=DEV)
+        s.T_vel = torch.tensor(float(c.vel), device=DEV); s.T_vel_noite = torch.tensor(float(c.vel_noite), device=DEV); s.T_1e9 = torch.tensor(1e9, device=DEV); s.T_cego_nev = torch.tensor(float(c.k_cego*c.nevoa) if c.nevoa != float('inf') else float('inf'), device=DEV)
         s.centros = torch.stack([m['centros'] for m in mapas]); s.K = s.centros.shape[1]      # (NC,K,2)
         s.aliq = torch.stack([m['aliq'] for m in mapas]); s.pmul0 = torch.stack([m['pmul'] for m in mapas]); s.alug = torch.stack([m['alug'] for m in mapas])
         s.demanda = torch.stack([m.get('demanda', torch.ones_like(m['pmul'])) for m in mapas]); s.fase_preco = torch.stack([m.get('fase_preco', torch.zeros_like(m['pmul'])) for m in mapas])
@@ -254,7 +258,47 @@ class Campo:
         po = s.px[torch.arange(s.B, device=DEV), k]
         return torch.where((s.pd_ >= 0)[:, None], s.dest, po)
     # --- sentidos
-    def obs(s):
+    def obs(s): return s._obs_rapido() if s.OBSR else s._obs_lento()
+    def _perto_todos_r(s, p):
+        """[reprojeto CS docs/70 #3] eixo de tipo vetorizado: a mesma conta de _perto_exata sem o laco Python sobre TIPOS"""
+        pts = s.serv_all[s.cidx]; msk = s.msk_all[s.cidx]
+        d = (p[:, None, None, :] - pts).norm(dim=-1).masked_fill(~msk, 1e9); k = d.argmin(-1)
+        return pts.gather(2, k[:, :, None, None].expand(-1, -1, 1, 2)).squeeze(2), d.gather(2, k[:, :, None]).squeeze(2)
+    def _obs_rapido(s):
+        """[reprojeto CS docs/70 #1 e #3] mesma matematica de _obs_lento com constantes como tensores 0-dim e o eixo de tipo (5 servicos)
+        vetorizado; o portao testes_obs.py exige igualdade bit a bit com o caminho lento."""
+        c = s.cfg; nv = s.noite_(); v = torch.where(nv, s.T_vel_noite, s.T_vel)
+        pn = (s.pos[:, None, :] + v[:, None, None]*s.dirs[None, :, :]).clamp(0., s.L)
+        alvo = s.alvo(); esc = 1./c.vel
+        Falvo = (pn - alvo[:, None, :]).norm(dim=-1)*esc
+        s._ptos, s._dist = (s._perto_grade(s.pos) if getattr(c, 'varredura', 'exata') == 'grade' else s._perto_todos_r(s.pos))
+        s._dist_v = torch.where(s._dist <= c.nevoa, s._dist, s.T_cego_nev)
+        if RETINA:
+            rt = c.retina or RETINA_PADRAO; ret_d, ret_t, livre, Rd = s._retina(nv, rt); cego = rt['k_cego']*Rd; s._ret = (ret_d, ret_t, livre)
+            mk = ret_t[:, None, :] == s.TIPO_ID[None, :, None]
+            dk = torch.where(mk, ret_d[:, None, :], s.T_1e9); dmin, kmin = dk.min(-1); viu = mk.any(-1)
+            ponto = s.pos[:, None, :] + s.dirs[kmin]*dmin[..., None]
+            s._dist_v = torch.where(viu, dmin, torch.full_like(dmin, cego))
+            Fs = torch.where(viu[:, :, None], (pn[:, None, :, :] - ponto[:, :, None, :]).norm(dim=-1), torch.full_like(dmin[:, :, None], cego)).clamp(max=cego)*esc
+        else:
+            Fs = (pn[:, None, :, :] - s._ptos[:, :, None, :]).norm(dim=-1).clamp(max=c.nevoa)*esc
+        dn = s.distrito(pn); ci = s.cidx[:, None].expand(-1, G)
+        partes = [Falvo[..., None], Fs[:, s.PERM_F].permute(0, 2, 1), s.custo_em(pn)[..., None], s.pmul[ci, dn][..., None], s.aliq[ci, dn][..., None], (dn == s.casa[:, None]).float()[..., None]]
+        if RETINA: partes.append((torch.cat([livre, torch.zeros(s.B, 1, device=DEV)], 1)/100.)[..., None])
+        Fop = torch.cat(partes, -1)
+        h = s.hora()*2*math.pi/24.
+        auton = (s.fuel/s.cons.clamp(min=1e-3) - s._dist_v[:, 0])/100.
+        cols = [s.fuel/100., s.agua/100., s.fome/100., s.fad/100., s.calor/120., s.vida/100., (s.dinh/150.).clamp(-1., 1.), s.res/c.RES_MAX,
+                (s.pd_ >= 0).float(), torch.sin(h), torch.cos(h), nv.float(), s.custo_em(s.pos), torch.ones_like(s.fuel),
+                s.cons/(c.fuel_passo*3.), auton.clamp(-2., 4.)]
+        if RISCO: cols.append(((s._dist_v[:, 0] + c.margem_risco - s.fuel/s.cons.clamp(min=1e-3))/100.).clamp(min=0., max=3.))
+        if PONTO: cols += [s.demanda[s.cidx, s.distrito(s.pos)]/2., (s.t_ult/100.).clamp(max=2.)]
+        if RETINA: cols += [s._ret[0][:, k]/100. for k in range(KR)] + [s._ret[1][:, k].float()/5. for k in range(KR)]
+        if REGIME: fs = s._fase_regime(); cols += [torch.sin(fs).expand(s.B), torch.cos(fs).expand(s.B)]
+        corpo = torch.stack(cols, -1)
+        Fo = torch.cat([Fop, corpo[:, None, :].expand(-1, G, -1)], -1)
+        return Fo, torch.ones(s.B, G, dtype=torch.bool, device=DEV)
+    def _obs_lento(s):
         c = s.cfg; nv = s.noite_(); v = torch.where(nv, c.vel_noite, c.vel)
         pn = (s.pos[:, None, :] + v[:, None, None]*s.dirs[None, :, :]).clamp(0., s.L)          # (B,G,2)
         alvo = s.alvo(); esc = 1./c.vel                                                        # [G3] distancias em unidades andadas (o terreno nao sequestra o volante)
