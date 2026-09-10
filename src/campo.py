@@ -51,7 +51,7 @@ class CfgCampo:
         s.orcamento_ativ = None
         s.limiar_disparo = .25
         s.custo_canais = ('fome',)
-        s.talamo_norm = False; s.cortex_amp = .5; s.temp_decisao = 0.; s.hip_esc = None; s.jardim_comum = False; s.grava_acoes = False; s.corte_vivos = 0.; s.obs_rapido = False
+        s.talamo_norm = False; s.cortex_amp = .5; s.temp_decisao = 0.; s.hip_esc = None; s.jardim_comum = False; s.grava_acoes = False; s.corte_vivos = 0.; s.obs_rapido = False; s.obs_grade = False
         s.ativ_centrada = False   # [10/09 opus, pred 165] False = hoje (cobra |saida| media, 99.7 % modo comum); True = cobra |saida - media entre as opcoes|, a unica parte que o G1 nao descarta
         s.custo_modo = 'existencia'; s.amostra_ativ = 10; s.ativ_ref = 1.   # [spec F2] 'ativacao' = o gene custa pelo SINAL que emite (por bloco: |saida do bloco na nota| media, amostrada a cada amostra_ativ ticks; bloco com saida >= ativ_ref conta cheio); 'existencia' = hoje
         s.horizonte = 'fixo'; s.T_max = None; s.w_trab = 1.   # [spec Mundo Vivo F1] 'aberto' = roda ate todos morrerem (checa vivo.any() 1x por dia simulado) ou T_max; fitness 'vida' = dias vividos + w_trab*renda/300 (sem pena de morte, sem teto)
@@ -109,6 +109,10 @@ def gerar_mapa(seed, L=400., K=None, tex=64, distinto=False, perfis=None, ruas=(
     # campos pre-computados (grade GR x GR): distancia ao servico mais perto por tipo, e distrito da celula
     ax = (torch.arange(GR, device=DEV).float() + .5)*(L/GR); gy, gx = torch.meshgrid(ax, ax, indexing='ij'); cel = torch.stack([gx, gy], -1).view(-1, 2)   # (GR*GR,2) (x,y)
     campo_dist = (cel[:, None, :] - centros[None]).norm(dim=-1).argmin(1).view(GR, GR)                                        # (GR,GR) long
+    cs, cp = [], []
+    for t in TIPOS:
+        pts = serv[t]; d = (cel[:, None, :] - pts[None]).norm(dim=-1); k = d.argmin(1); cs.append(d.gather(1, k[:, None]).squeeze(1).view(GR, GR)); cp.append(pts[k].view(GR, GR, 2))
+    campo_serv = torch.stack(cs); campo_serv_pt = torch.stack(cp)   # [reprojeto CS docs/70 #2] (5,GR,GR) distancia e (5,GR,GR,2) ponto mais perto por tipo, no centro da celula
     # [spec F3] grades da retina (sem RNG): tipo_g = servico na celula (1..5 na ordem TIPOS); opac = quadra edificada = fora da rua (mapa distinto) e sem servico
     tipo_g = torch.zeros(GR, GR, dtype=torch.int8, device=DEV)
     for j, t in enumerate(TIPOS):
@@ -117,7 +121,7 @@ def gerar_mapa(seed, L=400., K=None, tex=64, distinto=False, perfis=None, ruas=(
         cg = custo.repeat_interleave(GR//tex, 0).repeat_interleave(GR//tex, 1); opac = (cg >= float(ruas[1])) & (tipo_g == 0)
         opac = opac & ~torch.nn.functional.max_pool2d(tipo_g[None, None].float(), 3, 1, 1)[0, 0].gt(0)   # 1 celula de folga em volta de cada servico
     else: opac = torch.zeros(GR, GR, dtype=torch.bool, device=DEV)
-    return dict(L=L, custo=custo, serv=serv, centros=centros, aliq=aliq, pmul=pmul, alug=alug, seed=int(seed), campo_dist=campo_dist, demanda=demanda, fase_preco=fase_preco, perfil=perfil, distinto=bool(distinto), opac=opac, tipo_g=tipo_g)
+    return dict(L=L, custo=custo, serv=serv, centros=centros, aliq=aliq, pmul=pmul, alug=alug, seed=int(seed), campo_dist=campo_dist, campo_serv=campo_serv, campo_serv_pt=campo_serv_pt, demanda=demanda, fase_preco=fase_preco, perfil=perfil, distinto=bool(distinto), opac=opac, tipo_g=tipo_g)
 
 OBRAS_MAX = 16                          # slots livres por tipo e por mapa para o prefeito construir
 def _empilha(mapas, chave):
@@ -140,7 +144,10 @@ class Campo:
         for t in TIPOS: s.serv[t], s.serv_msk[t] = _empilha([{'p': m['serv'][t]} for m in mapas], 'p')
         nmax = max(s.serv[t].shape[1] for t in TIPOS); s.serv_all = torch.zeros(s.NC, len(TIPOS), nmax, 2, device=DEV); s.msk_all = torch.zeros(s.NC, len(TIPOS), nmax, dtype=torch.bool, device=DEV)
         for j, t in enumerate(TIPOS): s.serv_all[:, j, :s.serv[t].shape[1]] = s.serv[t]; s.msk_all[:, j, :s.serv[t].shape[1]] = s.serv_msk[t]
-        s.OBSR = bool(getattr(c, 'obs_rapido', False)); s.PERM_F = torch.tensor([0, 1, 2, 4, 3], device=DEV); s.TIPO_ID = torch.arange(1, len(TIPOS) + 1, device=DEV)
+        s.OBSG = bool(getattr(c, 'obs_grade', False)) and all('campo_serv' in m for m in mapas)
+        if s.OBSG: s.campo_serv = torch.stack([m['campo_serv'] for m in mapas]); s.campo_serv_pt = torch.stack([m['campo_serv_pt'] for m in mapas])
+        s.T_tpar12 = torch.tensor(12., device=DEV); s.T_tpar18 = torch.tensor(18., device=DEV); s.T_tpar10 = torch.tensor(10., device=DEV); s.T_fad40 = torch.tensor(40., device=DEV); s.T_calor60 = torch.tensor(60., device=DEV); s.T_calor25 = torch.tensor(25., device=DEV); s.T_kcal_pane = torch.tensor(float(c.KCAL_PANE), device=DEV); s.T_fuel_pane = torch.tensor(float(c.FUEL_POS_PANE), device=DEV)
+        s.OBSR = bool(getattr(c, 'obs_rapido', False)) or s.OBSG; s.PERM_F = torch.tensor([0, 1, 2, 4, 3], device=DEV); s.TIPO_ID = torch.arange(1, len(TIPOS) + 1, device=DEV)
         s.T_vel = torch.tensor(float(c.vel), device=DEV); s.T_vel_noite = torch.tensor(float(c.vel_noite), device=DEV); s.T_1e9 = torch.tensor(1e9, device=DEV); s.T_cego_nev = torch.tensor(float(c.k_cego*c.nevoa) if c.nevoa != float('inf') else float('inf'), device=DEV)
         s.centros = torch.stack([m['centros'] for m in mapas]); s.K = s.centros.shape[1]      # (NC,K,2)
         s.aliq = torch.stack([m['aliq'] for m in mapas]); s.pmul0 = torch.stack([m['pmul'] for m in mapas]); s.alug = torch.stack([m['alug'] for m in mapas])
@@ -271,7 +278,8 @@ class Campo:
         pn = (s.pos[:, None, :] + v[:, None, None]*s.dirs[None, :, :]).clamp(0., s.L)
         alvo = s.alvo(); esc = 1./c.vel
         Falvo = (pn - alvo[:, None, :]).norm(dim=-1)*esc
-        s._ptos, s._dist = (s._perto_grade(s.pos) if getattr(c, 'varredura', 'exata') == 'grade' else s._perto_todos_r(s.pos))
+        if s.OBSG: cig, iyg, ixg = s._cel(s.pos); s._ptos = s.campo_serv_pt[cig, :, iyg, ixg]; s._dist = (s.pos[:, None, :] - s._ptos).norm(dim=-1)
+        else: s._ptos, s._dist = (s._perto_grade(s.pos) if getattr(c, 'varredura', 'exata') == 'grade' else s._perto_todos_r(s.pos))
         s._dist_v = torch.where(s._dist <= c.nevoa, s._dist, s.T_cego_nev)
         if RETINA:
             rt = c.retina or RETINA_PADRAO; ret_d, ret_t, livre, Rd = s._retina(nv, rt); cego = rt['k_cego']*Rd; s._ret = (ret_d, ret_t, livre)
@@ -404,20 +412,20 @@ class Campo:
         if 'calor' in c.custo_canais: s.calor = (s.calor + c.calor_sobe*(s.metab - 1.)*vivo.float()).clamp(25., 120.)
         s.agua = (s.agua - c.agua_passo*(s.metab if 'agua' in c.custo_canais else 1.)*vivo.float() - c.agua_calor*(s.calor > 60.).float()*vivo.float()).clamp(min=0.)
         s.fome = (s.fome + c.fome_passo*s.metab*vivo.float()).clamp(max=100.); s.fad = (s.fad + c.fad_passo*mov.float() - .1*(~mov).float()).clamp(0., 100.)
-        exausto = livre & (s.fad >= 95.); s.tpar = torch.where(exausto, torch.full_like(s.tpar, 12.), s.tpar); s.fad = torch.where(exausto, torch.full_like(s.fad, 40.), s.fad); s.avar += exausto.float()   # [G6] fadiga para o taxi
+        exausto = livre & (s.fad >= 95.); s.tpar = torch.where(exausto, s.T_tpar12, s.tpar); s.fad = torch.where(exausto, s.T_fad40, s.fad); s.avar += exausto.float()   # [G6] fadiga para o taxi
         s.res = (s.res*(1. - c.perda_res)).clamp(min=0.)
         if c.reproducao:
             rp = c.reproducao; nasce = vivo & (s.res > float(rp['limiar_res'])); gasto = float(rp['custo_kcal'])*nasce.float()
             s.res = s.res - gasto; s.filhos = s.filhos + nasce.float(); s.res_filhos = s.res_filhos + gasto
         # pane: reboque ate o posto mais perto, cobra calorias da reserva -> vida
-        s.avar += pane.float(); s.av_fuel += pane.float(); s.tpar = torch.where(pane, torch.full_like(s.tpar, 18.), s.tpar)
+        s.avar += pane.float(); s.av_fuel += pane.float(); s.tpar = torch.where(pane, s.T_tpar18, s.tpar)
         ci = s.cidx; posto_pos = s._ptos[:, 0]                                    # [auditoria 7] posto mais perto ja calculado no obs() (quem entra em pane nao moveu)
-        s.pos = torch.where(pane[:, None], posto_pos, s.pos); s.fuel = torch.where(pane, torch.full_like(s.fuel, c.FUEL_POS_PANE), s.fuel); s.dinh = s.dinh - c.GUINCHO*pane.float()   # [E61b] guincho paga
-        kcal = torch.minimum(s.res, torch.full_like(s.res, c.KCAL_PANE)); s.res = s.res - kcal*pane.float()
+        s.pos = torch.where(pane[:, None], posto_pos, s.pos); s.fuel = torch.where(pane, s.T_fuel_pane, s.fuel); s.dinh = s.dinh - c.GUINCHO*pane.float()   # [E61b] guincho paga
+        kcal = torch.minimum(s.res, s.T_kcal_pane); s.res = s.res - kcal*pane.float()
         dn = c.D_PANE*pane.float() + (c.KCAL_PANE - kcal)*pane.float()
         # calor: desliga
-        qt = livre & (s.calor > c.CALOR_MAX); s.avar += qt.float(); s.tpar = torch.where(qt, torch.full_like(s.tpar, 10.), s.tpar)
-        s.calor = torch.where(qt, torch.full_like(s.calor, 60.), s.calor); dn = dn + c.D_QUENTE*qt.float() + c.D_RODAR*(mov & (s.calor > 80.)).float()
+        qt = livre & (s.calor > c.CALOR_MAX); s.avar += qt.float(); s.tpar = torch.where(qt, s.T_tpar10, s.tpar)
+        s.calor = torch.where(qt, s.T_calor60, s.calor); dn = dn + c.D_QUENTE*qt.float() + c.D_RODAR*(mov & (s.calor > 80.)).float()
         # servicos
         sv, pm = s.serv_ab(); cs = s.custos(pm); pode = livre & (esc >= G)
         k = (esc - G).clamp(0, S - 1); onehot = torch.nn.functional.one_hot(k, S).float()*pode[:, None].float()*sv
@@ -431,8 +439,8 @@ class Campo:
         s.res = (s.res + sobra*(1. - c.PERDA_ARMAZ)).clamp(max=c.RES_MAX)
         s.agua = (s.agua + usa[:, 5]*50. + usa[:, 6]*100.).clamp(max=100.); s.n_agua += ((usa[:, 5] + usa[:, 6]) > 0).float()
         come = usa[:, 7] > 0; s.fome = torch.where(come, (s.fome - c.REFEICAO).clamp(min=0.), s.fome); s.n_come += come.float()
-        desc = usa[:, 8] > 0; s.fad = torch.where(desc, torch.minimum(s.fad, torch.full_like(s.fad, 40.)), s.fad); s.tpar = torch.where(desc, torch.full_like(s.tpar, 12.), s.tpar)   # [G6] descanso nunca aumenta fadiga
-        ofi = usa[:, 9] > 0; s.vida = torch.where(ofi, (s.vida + c.REPARO).clamp(max=100.), s.vida); s.calor = torch.where(ofi, torch.full_like(s.calor, 25.), s.calor); s.n_oficina += ofi.float()
+        desc = usa[:, 8] > 0; s.fad = torch.where(desc, torch.minimum(s.fad, s.T_fad40), s.fad); s.tpar = torch.where(desc, s.T_tpar12, s.tpar)   # [G6] descanso nunca aumenta fadiga
+        ofi = usa[:, 9] > 0; s.vida = torch.where(ofi, (s.vida + c.REPARO).clamp(max=100.), s.vida); s.calor = torch.where(ofi, s.T_calor25, s.calor); s.n_oficina += ofi.float()
         # passageiros: embarque (raio) e entrega
         if c.ponto > 0:   # [E68 ponto de taxi] parado, livre, sem passageiro e sem usar servico: o passageiro VEM ate o taxi; espera media ponto/demanda ticks (so gasta RNG quando ligado)
             ar = s.ARB; esp = livre & (s.pd_ < 0) & ~mov & ~pode
