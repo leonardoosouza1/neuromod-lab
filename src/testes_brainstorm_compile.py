@@ -1,7 +1,8 @@
 """[revisor 09-09, v2] flags novas sob torch.compile == eager, UMA POR VEZ e todas juntas. v1 comparava rodar() compilado com um laco eager
 escrito a mao — que nao tinha a contabilidade de custo (metab/ativ) que vive em rodar(): falhava por culpa do laco, nao das flags.
 v2: o MESMO rodar() em dois subprocessos (NM_COMPILE=0 e =1), cada um grava pos/metab/vida por flag; o pai compara.
-Tolerancia = a de testes_campo (empates de argmax: <= 3 seres em 128). Exit 1 e diz QUAL flag falhou."""
+Tolerancia = a de testes_campo (empates de argmax: <= 3 seres em 128); metab comparado so nos seres de trajetoria igual (em modo
+ativacao/disparo o metab depende da trajetoria). Exit 1 e diz QUAL flag falhou."""
 import sys, os, subprocess, json
 AQUI = os.path.dirname(os.path.abspath(__file__)); OUT = sys.argv[sys.argv.index('--out') + 1] if '--out' in sys.argv else '/media/llm-data/universe-runs/neuromod-lab-taxi/e72'
 FLAGS = {'nenhuma': {}, 'temp_decisao': dict(temp_decisao=.3), 'talamo_fixo': dict(talamo_norm='fixo'), 'canais': dict(custo_canais=('fome', 'agua', 'calor'), custo_gene=.3, custo_basal=.15),
@@ -22,7 +23,7 @@ for modo in ('0', '1'):
     if r.returncode != 0: print('PORTAO BRAINSTORM COMPILE FALHOU: filho NM_COMPILE', modo, 'exit', r.returncode, flush=True); sys.exit(1)
 import torch; a = torch.load(os.path.join(OUT, 'bc_compile0.pt')); b = torch.load(os.path.join(OUT, 'bc_compile1.pt')); falhas = []
 for nome in FLAGS:
-    dif = int(((a[nome]['pos'] - b[nome]['pos']).abs().max(1).values > 1e-6).sum()); dm = float((a[nome]['metab'] - b[nome]['metab']).abs().max()); dv = float((a[nome]['vida'] - b[nome]['vida']).abs().max())
+    igual = (a[nome]['pos'] - b[nome]['pos']).abs().max(1).values <= 1e-6; dif = int((~igual).sum()); dm = float((a[nome]['metab'] - b[nome]['metab']).abs()[igual].max()) if bool(igual.any()) else float('inf'); dv = float((a[nome]['vida'] - b[nome]['vida']).abs().max())
     ok = dif <= 3 and dm < 1e-5; falhas += [] if ok else [nome]
     print(f'  {nome:14} eager vs compilado (mesmo rodar): seres com pos diferente {dif:3d}/128 (tolerancia 3) | max dif metab {dm:.1e} vida {dv:.2e}', 'OK' if ok else 'FALHOU', flush=True)
 print('PORTAO BRAINSTORM COMPILE', 'ok' if not falhas else f'FALHOU em {falhas}', flush=True); sys.exit(0 if not falhas else 1)
