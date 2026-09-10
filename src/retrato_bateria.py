@@ -11,7 +11,7 @@ def pear(x, y):
     n = len(x); mx, my = sum(x)/n, sum(y)/n; sx = math.sqrt(sum((v-mx)**2 for v in x)); sy = math.sqrt(sum((v-my)**2 for v in y)); return sum((p-mx)*(q-my) for p, q in zip(x, y))/(sx*sy) if sx > 0 and sy > 0 else float('nan')
 def spear(x, y):
     r = lambda v: [sorted(v).index(t) for t in v]; return pear(r(x), r(y))
-print(f'RETRATO {os.path.basename(a.bateria)}', flush=True); print(f'  {"braco":26} {"sem":>3} ' + ' '.join(f'{g[:7]:>7}' for g in NOMES_G) + f' {"serv@.8":>7} {"ref_w":>6} {"ref_v":>6} {"theta":>5} {"hip_g":>5} {"cor|d|":>6} {"dof":>5}', flush=True)
+print(f'RETRATO {os.path.basename(a.bateria)}', flush=True); print(f'  {"braco":26} {"sem":>3} ' + ' '.join(f'{g[:7]:>7}' for g in NOMES_G) + f' {"soma":>5} {"serv@.8":>7} {"ref_w":>6} {"ref_v":>6} {"theta":>5} {"hip_g":>5} {"cor|d|":>6} {"dof":>5}', flush=True)
 pontos = []; saida = {}
 for nome, med in d['bracos'].items():
     if 'W' not in med: continue
@@ -20,8 +20,8 @@ for nome, med in d['bracos'].items():
         if W.numel() != A.NP: continue
         G3 = W[o_t:o_t+A.N_TAL].reshape(NG, 3); g0 = 2.*torch.sigmoid(G3[:, 0]); g8 = 2.*torch.sigmoid(G3[:, 0] + .8*G3[:, 1])
         rw, rv, th = float(W[o_r+1]), float(W[o_r+2]), float(torch.sigmoid(W[o_r+3])); hg = float(torch.tanh(W[o_h+1])); cd = float((.5*torch.tanh(W[o_c:o_c+A.N_COR])).abs().max()); dof = float((W[Linear.NP:].abs() > cfg.gene_min).float().mean())
-        js = NOMES_G.index('servicos'); pontos.append((nome, float(g0[js]), rw)); saida[f'{nome}|{sd}'] = dict(gates0=[float(x) for x in g0], gates8=[float(x) for x in g8], ref_w=rw, ref_v=rv, theta=th, hip_g=hg, cor_dmax=cd, dof=dof)
-        print(f'  {nome[:26]:26} {str(sd):>3} ' + ' '.join(f'{float(x):7.2f}' for x in g0) + f' {float(g8[js]):7.2f} {rw:6.2f} {rv:6.2f} {th:5.2f} {hg:5.2f} {cd:6.2f} {dof:5.2f}', flush=True)
+        js = NOMES_G.index('servicos'); pontos.append((nome, float(g0[js]), rw)); saida[f'{nome}|{sd}'] = dict(gates_soma=float(g0.sum()), gates0=[float(x) for x in g0], gates8=[float(x) for x in g8], ref_w=rw, ref_v=rv, theta=th, hip_g=hg, cor_dmax=cd, dof=dof)
+        print(f'  {nome[:26]:26} {str(sd):>3} ' + ' '.join(f'{float(x):7.2f}' for x in g0) + f' {float(g0.sum()):5.2f} {float(g8[js]):7.2f} {rw:6.2f} {rv:6.2f} {th:5.2f} {hg:5.2f} {cd:6.2f} {dof:5.2f}', flush=True)
 if len(pontos) >= 4:
     xs = [p[1] for p in pontos]; ys = [p[2] for p in pontos]; print(f'  DELEGACAO (todos, n={len(pontos)}): corr(portao servicos, reflexo w) pearson {pear(xs, ys):+.2f} spearman {spear(xs, ys):+.2f}   (CS em e77: rho -.76)', flush=True)
     for nome in sorted(set(p[0] for p in pontos)):
