@@ -31,6 +31,10 @@ def rodar_hip(W, mapas, cfg, T, seed, R=1, alvo=None, grava=False):
               pxs=m.px.contiguous().view(-1).clone(), pxd=m.pxd.contiguous().view(-1).clone(), px_ok=m.px_ok.int().contiguous(), pd_=m.pd_.contiguous(), destx=m.dest[:, 0].contiguous(), desty=m.dest[:, 1].contiguous(), embx=m.emb[:, 0].contiguous(), emby=m.emb[:, 1].contiguous(), orig_d=m.orig_d.int().contiguous(), t_ult=m.t_ult.contiguous(),
               ent=m.ent.contiguous(), rec=m.rec.contiguous(), avar=m.avar.contiguous(), av_fuel=m.av_fuel.contiguous(), n_posto=m.n_posto.contiguous(), litros=m.litros.contiguous(), n_oficina=m.n_oficina.contiguous(), n_come=m.n_come.contiguous(), n_agua=getattr(m, 'n_agua', torch.zeros(B, device=DEV)).contiguous(), dano_soma=m.dano_soma.contiguous(), t_vida=m.t_vida.contiguous())
     if alvo is not None: st['alvo_inj'] = alvo.float().contiguous()
+    INT = {'cdist', 'nserv', 'cidx', 'casa', 'px_ok', 'orig_d', 'acoes'}   # [18:25] o kernel le float* em tudo que nao esta aqui: no caminho do e43 (cenario + 4 mapas de treino) algum buffer chegou Long -> cast explicito e nome na falha
+    for k in list(st):
+        if k in INT: st[k] = st[k].to(torch.int32).contiguous()
+        elif st[k].dtype != torch.float32: st[k] = st[k].float().contiguous()
     if grava: st['acoes'] = torch.zeros(T, B, dtype=torch.int32, device=DEV); st['traj'] = torch.zeros(T, B, 7, device=DEV)
     cfg_i = dict(dia=int(cfg.dia), K=int(K), NPTS=int(NPTS), loja=int(bool(cfg.loja_no_posto)), T=int(T), injeta_alvo=int(alvo is not None), grava=int(grava))
     modulo().vida(st, _cfg_f(cfg), cfg_i, int(seed)*7919 + 13); torch.cuda.synchronize()
