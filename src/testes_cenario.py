@@ -39,5 +39,5 @@ for nomec in ('mundoB_conta_justa', 'mundoA_seres', 'mundoC_cidade_da_vida', 'mu
     dif = {k: (getattr(cE, k, '<ausente>'), getattr(cM, k, '<ausente>')) for k in sorted(set(vars(cE)) | set(vars(cM))) if not _eq(getattr(cE, k, None), getattr(cM, k, None))}
     print(f'cfg e43 (cfg_de_flags) vs cfg do juiz (mundo()) em {nomec}: {len(dif)} campos diferentes: {dif}', flush=True); chk(f'cfg juiz == cfg e43 ({nomec})', zero_diferencas=len(dif) == 0)
     if nomec == 'mundoB_conta_justa': cB = cM
-chk('cfg do juiz == cfg do e43 nos campos do cenario', **{k: _eq(getattr(cE, k, None), getattr(cB, k, None)) for k in ('L', 'fitness', 'T_max', 'horizonte', 'custo_gene', 'custo_modo', 'custo_basal', 'ativ_centrada', 'gene_min', 'NPX', 'respawn', 'pax_cidade', 'dinh0', 'fome_passo', 'KCAL_PANE', 'GUINCHO', 'FUEL_POS_PANE', 'retina', 'regime', 'reproducao', 'amp_preco', 'periodo_preco', 'w_trab', 'nevoa', 'ponto')})
+# (o laco acima ja exige 0 diferencas em TODOS os campos, nos 4 cenarios)
 assert all(OK), f'testes_cenario REPROVADO: {OK}'; print('testes_cenario: todos passaram', flush=True)
