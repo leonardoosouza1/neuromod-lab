@@ -3,7 +3,8 @@ subprocessos (PYTHONPATH), mesma W/mapa/cfg/semente, B = 5120 (P256 x R4 x 5 sem
 fixo. Motivo: e78/P256sig01 (09/09 23:48) levou 813 s e z2/z1 (10/09, mesmo protocolo) 1923/2097 s — 2.4x mais lento. Este portao
 separa 'codigo ficou lento' de 'cauda do horizonte aberto / GPU quente'. Exit 1 se agora > 1.15x o snapshot."""
 import sys, os, json, subprocess, time
-AQUI = os.path.dirname(os.path.abspath(__file__)); SNAP = '/media/llm-data/universe-runs/neuromod-lab-taxi/snapshots/src_antes_reprojeto'
+AQUI = os.path.dirname(os.path.abspath(__file__)); SNAP = os.environ.get('_NM_SNAP') or '/media/llm-data/universe-runs/neuromod-lab-taxi/snapshots/src_antes_reprojeto'
+if not os.environ.get('_NM_FILHO') and '--antes' in sys.argv: SNAP = sys.argv[sys.argv.index('--antes') + 1]; os.environ['_NM_SNAP'] = SNAP   # [16:30] bisect: qualquer snapshot de src/ (ex. src_2309_2305 = 09/09 23:05, antes do jardim comum)
 if os.environ.get('_NM_FILHO'):
     if os.environ['_NM_FILHO'] == 'antes': sys.path.insert(0, SNAP)
     else: sys.path.insert(0, AQUI)
