@@ -18,3 +18,14 @@ Controle pedido pelo CS (docs/78 §4) e pelo Astra (plano, passo 1): uma políti
 - **Controle padrão**: todo mundo novo registra `piso_parado` (uma chamada de `julga_politica parada`, segundos) e os resultados passam a reportar `fit − piso`. Não muda seleção (constante), muda a leitura.
 - **Régua**: uma constante não muda o argmax; o que muda é o PESO da renda. Hoje `w_trab` = 1 → renda/300 ≈ .33 de 4.19 (8 % do fit). Candidato a Mundo E: `w_trab` 3 (renda vira ~20 % do fit) — predição a registrar antes: a lacuna espinha–COMPLETO em A cresce (a espinha entrega mais por dia) e o parado cai para ≤ .75.
 - **Economia**: o piso alto de A vem do mundo matar todo mundo em ~4 d por dívida+dano. Uma lei só (ex.: guincho 10 → 0 com pane custando calorias, como no v1) tiraria a armadilha; mas isso é o Mundo A' e compete com o D do Opus. Escolha do Leonardo.
+
+## Adendo 20:30 — o FICAR é carga (teste refeito com o W do campeão)
+| mundo | campeão | campeão sem a opção FICAR | razão |
+|---|---|---|---|
+| A | dia 3.87, renda 98, fit 4.19 | dia 3.38, renda 86, fit 3.66 (compra normalmente: 3.8 refeições, 1.8 abast.) | **.87** |
+| C | dia 5.09, renda 196, fit 5.74 | dia 4.35, renda 161, fit 4.88 | **.85** |
+
+Tirar o FICAR custa 13–15 %: parar é economia de gasolina e calor enquanto o próximo passageiro não aparece (marcha lenta gasta 1/3; rodar gasta cheio e esquenta). Logo "o cérebro fica parado menos que a espinha" (pred 176) é custo, não virtude. Apostei −5..0 % (pred 179b) e errei o tamanho.
+
+## Adendo 20:30 — o4_0: o protocolo do lote é neutro e o sem-córtex ganha também em A
+A no protocolo do C5 (juntos + corte .05 + obs-rapido, braços do C) vs A5 por ser: linear +2.8 %, COMPLETO −3.7 %, sem hip −3.0 %, sem reflexo +4.3 % — tudo dentro de 5 % (pred 181b ✓), em 958 s contra 4494 s (4.7×). **Sem córtex = 4.387, o melhor cérebro em A** (+.42 sobre o COMPLETO), como no C. Dois mundos, mesmo sinal: o córtex (|δ| ≤ .5, multiplicativo por distrito) atrapalha.

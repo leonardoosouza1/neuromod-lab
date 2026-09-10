@@ -20,6 +20,7 @@ os.environ.setdefault('NM_COMPILE', '0')
 import torch
 from campo import *
 from completo import SerCompleto as SC, GRUPOS, NOMES_G
+from politica_util import mundo, braco   # [10/09 pred 170a] mundo do cenario + classe/ajustes por braco
 
 
 def carrega(bateria, arquiteturas):
@@ -40,7 +41,7 @@ def main():
     ap.add_argument('--mapa', type=int, default=0); ap.add_argument('--L', type=float, default=200.)
     ap.add_argument('--sementes', type=int, default=2, help='quantas sementes por arquitetura')
     ap.add_argument('--arqs', nargs='*', default=['linear', 'COMPLETO (', 'sem hipocampo'])
-    ap.add_argument('--tag', default='')
+    ap.add_argument('--tag', default=''); ap.add_argument('--cenario', default=None, help='[10/09 pred 170a] cenario.json: cfg do mundo (custos, retina, precos, L) e mapa de TESTE (1000+mapa) via politica_util.mundo; sem ele, mundo padrao L --L')
     a = ap.parse_args()
 
     todos, meta = carrega(a.bateria, a.arqs)
@@ -50,10 +51,13 @@ def main():
     sel = [(arm, sd, W) for arm, l in por_arq.items() for sd, W in l[:a.sementes]]
     print(f'{len(sel)} seres: ' + ', '.join(f'{arm[:22]}#{sd}' for arm, sd, W in sel), flush=True)
 
-    mapa = [gerar_mapa(a.mapa, L=a.L, distinto=True)]
-    cfg = CfgCampo(L=a.L, dias=a.dias); cfg.jardim_comum = True; cfg.medir_ativ = True
+    if a.cenario:   # [10/09 pred 170a] o mundo do cenario, nao um L 200 generico (mesmo erro da pred 176)
+        cfg, teste, _T, _ch = mundo(a.cenario); mapa = [teste[a.mapa]]; a.L = float(cfg.L)
+    else:
+        mapa = [gerar_mapa(a.mapa, L=a.L, distinto=True)]; cfg = CfgCampo(L=a.L, dias=a.dias)
+    cfg.jardim_comum = True; cfg.medir_ativ = True
     T = 240*a.dias
-    reg = {'meta': dict(bateria=os.path.basename(a.bateria), mapa=a.mapa, L=a.L, dias=a.dias,
+    reg = {'meta': dict(bateria=os.path.basename(a.bateria), mapa=a.mapa, L=a.L, dias=a.dias, cenario=a.cenario,
                         passo=a.passo, nomes_g=NOMES_G, nomes_op=list(NOMES_OP), grupos=[g for g, _ in GRUPOS]),
            'mapa': {}, 'seres': []}
 
@@ -63,13 +67,15 @@ def main():
                        serv={t: m0.serv[t][0][m0.serv_msk[t][0]].tolist() for t in TIPOS},
                        pmul=m0.pmul0[0].tolist(), aliq=m0.aliq[0].tolist(), alug=m0.alug[0].tolist())
 
-    # ---- agrupa por arquitetura (NP igual roda junto, no MESMO bloco)
-    grupos_np = {}
-    for arm, sd, W in sel: grupos_np.setdefault(W.shape[0], []).append((arm, sd, W))
-    for NP, lote in grupos_np.items():
-        Arq = SC if NP == SC.NP else Linear
+    # ---- um lote por BRACO: a classe e os ajustes de cerebro vem do braco (sem cortex NAO e o SerCompleto cheio) [10/09 pred 170a; antes agrupava por NP e toda ablacao rodava como SC]
+    grupos = {}
+    for arm, sd, W in sel: grupos.setdefault(arm, []).append((arm, sd, W))
+    for arm_, lote in grupos.items():
+        NP = lote[0][2].shape[0]
+        try: Arq, cfg_b = braco(meta, arm_, cfg)
+        except KeyError: Arq, cfg_b = (SC if NP == SC.NP else Linear), cfg   # bateria antiga sem 'ser' e rotulo fora de BRACOS
         Wpop = torch.stack([W for _, _, W in lote]).to(DEV)
-        m = Campo(mapa, Wpop.shape[0], cfg, seed=0, R=1)
+        m = Campo(mapa, Wpop.shape[0], cfg_b, seed=0, R=1)
         Wb = Wpop[m.gidx]; ser = Arq(); ser.reset(m, Wb)
         B = m.B
         tr = {i: dict(pos=[], acao=[], corpo=[], blk=[], gates=[], mem=[], ev=[]) for i in range(B)}
