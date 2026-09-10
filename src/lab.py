@@ -1732,6 +1732,7 @@ def evoluir_sementes(Arq, cidades, cfg, P=512, ger=25, T=1500, seeds=(0,1,2),
     if mascaras is not None: W = W*mascaras.repeat_interleave(P, 0)
     hist = {sd: [] for sd in seeds}; snaps = {sd: [] for sd in seeds}
     ne = max(2, int(P*elite)); f_el = {}; cfg_it = cfg
+    _t_blk = time.time()   # [10/09 opus ciclo 3] relogio do bloco de 5 geracoes (so para a linha de log; nada entra em conta)
     for it in range(ger):
         # E20 curriculo (infancia protegida): cfg_gen(it, ger) -> cfg desta geracao (None = identidade)
         cfg_it = cfg_gen(it, ger) if cfg_gen is not None else cfg
@@ -1758,7 +1759,8 @@ def evoluir_sementes(Arq, cidades, cfg, P=512, ger=25, T=1500, seeds=(0,1,2),
         W = torch.cat(novos)
         if verbose and it % 5 == 0:
             linha = ' '.join(f'{hist[sd][-1]:>8.2f}' for sd in seeds)
-            print(f'  ger {it:>3} | {linha}   (melhor por semente)', flush=True)
+            _t1 = time.time(); _dt = _t1 - _t_blk; _t_blk = _t1   # [10/09 opus ciclo 3] tempo do bloco + carga de 1 min: separa CONTENCAO DE CPU (carga alta, ritmo uniforme) de CAUDA DO HORIZONTE ABERTO (carga baixa, blocos irregulares). z1/z2 levaram 1923-2097 s no protocolo em que z5 (mesmo codigo) leva 845 s e o perf_snapshot deu 0.97x: sem esta linha a pergunta so se responde com GPU.
+            print(f'  ger {it:>3} | {linha}   (melhor por semente) [{_dt:6.1f}s carga {os.getloadavg()[0]:4.1f}]', flush=True)
         if paciencia and it >= paciencia:   # [E61d] parada antecipada: o melhor (media das sementes) nao subiu > 1 % em `paciencia` geracoes
             agora = sum(max(hist[sd][-paciencia:]) for sd in seeds)/len(seeds); antes = sum(max(hist[sd][:-paciencia]) for sd in seeds)/len(seeds)   # [09-09] max da JANELA vs max de antes: um sorteio vs um sorteio era cara-ou-coroa (ruido +-13%)
             if agora <= antes + 0.01*abs(antes) + 1e-6:

@@ -1,0 +1,138 @@
+{
+ "nome": "mundoD_olho_proporcional",
+ "predicao": "pred 182: MUNDO D = Mundo C com UMA lei trocada: o ALCANCE DO OLHO na mesma proporcao da cidade. R_dia 60 -> 27 e R_noite 15 -> 7 (mesmo fator .45; passo, custo e k_cego intactos). MECANISMO NO CODIGO: com NM_RETINA=1 campo.py:292-301 e :329-341 SOBRESCREVEM s._dist_v e as distancias por opcao pelo que os 8 raios enxergam — cfg.nevoa (E63) nunca e consultado. O alcance do olho E a lei de observabilidade deste mundo, e ela nunca foi dimensionada: dimensiona.py imprime retina/L 0.30 no Mundo A e 0.65 no Mundo C. Encolher L 200 -> 92 sem tocar no olho tornou o mundo 2.2x mais OBSERVAVEL, e o cego (k_cego*R_dia = 120 m) passou a ser MAIOR que o mapa (1.30*L). Com R_dia 27 em L 92 a razao volta a 0.29 e o cego a 0.59*L — exatamente as proporcoes do Mundo A. APOSTA: (a) linear cai para <= 6.2 (C: 7.469); (b) lacuna linear-COMPLETO cai de +2.319 [1.49,3.14] para <= +1.4; (c) INVERSAO no hipocampo: 'sem hipocampo' - COMPLETO sai de +0.256 (C) para <= -0.20; (d) 'sem cortex' continua >= +0.30 acima do COMPLETO. pred 183 (seres novos, sem codigo): 'COMPLETO cortex 0.1' (cortex_amp .5->.1) e 'COMPLETO hip 0.1' (hip_esc .01->.1).",
+ "mundo": {
+  "L": 92,
+  "dias": 10,
+  "regua": "vida",
+  "K": 6,
+  "ruas": {
+   "dentro": 1,
+   "fora": 3
+  },
+  "precos": {
+   "amp": 0.5,
+   "periodo": 1.5
+  },
+  "retina": {
+   "R_dia": 27.0,
+   "R_noite": 7.0,
+   "passo": 4.0,
+   "custo": 0.0,
+   "k_cego": 2.0
+  },
+  "horizonte": "aberto",
+  "T_max": 7200,
+  "w_trab": 1.0,
+  "obs_rapido": true,
+  "corte_vivos": 0.02
+ },
+ "distritos": {
+  "centro": {
+   "pmul": 2.0,
+   "aliq": 0.35,
+   "alug": 2.5,
+   "dem": 2.0,
+   "dens": [
+    1.0,
+    1.5,
+    1.0,
+    0.5,
+    1.0
+   ]
+  },
+  "industrial": {
+   "pmul": 0.6,
+   "aliq": 0.1,
+   "alug": 0.8,
+   "dem": 0.7,
+   "dens": [
+    2.5,
+    0.0,
+    1.0,
+    0.0,
+    2.0
+   ]
+  },
+  "residencial": {
+   "pmul": 1.0,
+   "aliq": 0.15,
+   "alug": 1.0,
+   "dem": 1.0,
+   "dens": [
+    0.0,
+    2.0,
+    1.5,
+    2.0,
+    0.0
+   ]
+  },
+  "periferia": {
+   "pmul": 0.5,
+   "aliq": 0.0,
+   "alug": 0.8,
+   "dem": 0.3,
+   "dens": [
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.0
+   ]
+  }
+ },
+ "passageiros": {
+  "npx": 12,
+  "respawn": 20,
+  "pax_cidade": false,
+  "ponto": 0,
+  "tarifa_base": 3,
+  "tarifa_km": 0.25
+ },
+ "corpo": {
+  "dinh0": 10,
+  "fome_passo": 0.32,
+  "kcal_pane": 8,
+  "guincho": 10,
+  "fuel_pos_pane": 5,
+  "custo_gene": 0.3,
+  "custo_modo": "ativacao",
+  "custo_basal": 0.15
+ },
+ "bracos": [
+  "linear",
+  "COMPLETO (talamo+cortex+hipocampo+reflexo+livre)",
+  "completo sem hipocampo",
+  "completo sem cortex",
+  "completo sem reflexo",
+  {
+   "nome": "COMPLETO (talamo+cortex+hipocampo+reflexo+livre)",
+   "rotulo": "COMPLETO cortex 0.1",
+   "cerebro": {
+    "cortex_amp": 0.1
+   }
+  },
+  {
+   "nome": "COMPLETO (talamo+cortex+hipocampo+reflexo+livre)",
+   "rotulo": "COMPLETO hip 0.1",
+   "cerebro": {
+    "hip_esc": 0.1
+   }
+  }
+ ],
+ "protocolo": {
+  "P": 128,
+  "G": 30,
+  "paciencia": 15,
+  "R": 4,
+  "seeds": [
+   0,
+   1,
+   2,
+   3,
+   4
+  ],
+  "sigma_mut": 0.1,
+  "jardim_comum": false
+ }
+}
