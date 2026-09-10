@@ -15,7 +15,7 @@ m = Campo(mapas, a.B, c, seed=3, R=1); Wb = W[m.gidx]; ar = SerCompleto(); ar.re
 u = lambda lo, hi: lo + (hi - lo)*torch.rand(a.B, generator=g, device=DEV)
 m.fuel = u(0., 30.); m.fome = u(40., 90.); m.agua = u(30., 90.); m.dinh = u(-20., 20.)
 ar.MEM = torch.randn(ar.MEM.shape, generator=g, device=DEV)*.5
-for _ in range(5): um_passo(m, ar, Wb)
+for _ in range(5): um_passo(m, ar, Wb); ar.atualizar(m)
 F, _ = m.obs(); esp = torch.einsum('bgf,bf->bg', F, Wb[:, :NF]); ext = ar.extra(m, Wb, F); tot = esp + ext; blk = dict(ar._blk); blk['espinha'] = esp
 gen = {'espinha': Linear.NP}
 for n in nomes_genes_completos(): gen[n[:3]] = gen.get(n[:3], 0) + 1

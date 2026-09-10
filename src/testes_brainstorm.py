@@ -12,7 +12,7 @@ def cfg(**kw):
     return c
 def monta(Wg, c):
     m = Campo(mapas, Wg.shape[0], c, seed=3, R=1); Wb = Wg[m.gidx]; a = SerCompleto(); a.reset(m, Wb)
-    for _ in range(5): um_passo(m, a, Wb)
+    for _ in range(5): um_passo(m, a, Wb); a.atualizar(m)
     return m, a
 def test_talamo_norm():
     Wg = W.clone(); o = SerCompleto.O_TAL; Wg[:, o:o+SerCompleto.N_TAL:3] = 5.

@@ -87,7 +87,7 @@ def main(a):
         for k in list(med):
             if isinstance(med[k], (int, float)): med[k + '_por_semente'] = [round(por[sd][k], 3) for sd in p['seeds']]   # dof_bloco (dict) fica so na media
         med['W'] = {sd: [round(float(x), 5) for x in champs[sd][0]] for sd in p['seeds']}; med['segundos'] = round(time.time() - t1); med['otim'] = a.otim
-        med['ger_efetiva'] = {str(sd): len(champs[sd][1]) for sd in p['seeds']}; med['seeds'] = list(p['seeds']); med['sigma_mut'] = .3; med['sigma0'] = a.sigma0; med['sigma_espinha'] = a.sigma_espinha; med['gene_min'] = cfg.gene_min; med['G'] = p['G']; med['P'] = p['P']
+        med['ger_efetiva'] = {str(sd): len(champs[sd][1]) for sd in p['seeds']}; med['seeds'] = list(p['seeds']); med['sigma_mut'] = (a.es_sigma if a.otim == 'es' else .3); med['sigma0'] = a.sigma0; med['sigma_espinha'] = a.sigma_espinha; med['gene_min'] = cfg.gene_min; med['G'] = p['G']; med['P'] = p['P']
         res['bracos'][nome] = med
         print(f'  {nome:<36} NP {A.NP:3d} fit {med["fit"]:6.2f} {med["fit_por_semente"]} ent {med["ent"]:5.1f} mortos {med["mortos"]:.2f} {med["mortos_por_semente"]} '
               f'panes {med["panes"]:4.1f} fome {med["fome_fim"]:3.0f} agua {med["agua_fim"]:3.0f} dinh {med["dinh"]:4.0f} res {med["res"]:4.0f} L/abast {med["litros_por_abast"]:4.0f} abast {med["n_posto"]:4.1f} dof {med["dof"]:4.0f} metab {med["metab"]:.2f} ({med["segundos"]}s)', flush=True)
