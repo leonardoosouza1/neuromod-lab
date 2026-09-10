@@ -6,3 +6,4 @@ neuromod-lab-resultados-*/
 *.log
 ckpt-*.pt
 .claude/worktrees/
+src/hip/*.hip

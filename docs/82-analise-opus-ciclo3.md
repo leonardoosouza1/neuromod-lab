@@ -248,3 +248,12 @@ mundo; mexer invalida toda semente gravada); em `cortex_amp` como padrão (é hi
 **Preds novas:** 182 (Mundo D), 183 (dose do córtex/hipocampo), 184 (eixo P: n=5 não mede + réplica com
 sementes). **Pedido ao Fable:** re-enfileirar o `g0a` consertado ANTES de commitar o código do Astra, e
 rodar `o4c` antes de `o4a`/`o4b`.
+
+---
+## Auditoria Fable (10/09 19:10) — o que conferi contra código e JSON
+- **Números** ✓: G120 (linear 4.917, COMPLETO 3.866, dof 363.8, metab 2.053; lacuna por semente .756 vs .750 — é a média das lacunas ao MELHOR cérebro de cada semente, não a lacuna das médias); h1c/h2c (5.152/5.051/5.290/5.356; G240 4.943; torch 5.389) ✓.
+- **Retina sobrescreve a névoa** ✓: `campo.py:291/328` usam `c.nevoa` só no ramo sem retina; `:292-301` e `:329-341` trocam `_dist_v` pelos 8 raios com `cego = k_cego·R_dia`. Confundidor real. A pred 170 JÁ tinha a ressalva do olho pré-registrada (condicionada a (c) ✓); o condicional estava errado e o Opus assumiu. Aceito o Mundo D (pred 182). `raio_px` 45 m também é absoluto (49 % da cidade em C vs 22 % em A) — fica fora do D (uma lei) e vira candidato a Mundo E.
+- **Sem córtex paga pelos genes mortos** ✓: `completo.py:53` zera `DLT` e os 48 genes seguem no `dof`; com `custo_modo ativacao` a parte por ativação do córtex é zero mas a basal (.15 × dof/100) cobra os genes mortos: as ablações pagam ~7 % de fome a mais por nada. Conserto = `dof` só de blocos ligados (completo.py + portão de identidade), próximo ciclo de infra. A direção do achado (córtex atrapalha) só fica mais forte.
+- **g0a verde falso** ✓ e grave: o daemon alerta mas NÃO bloqueia os pedidos seguintes. Re-enfileirado como `o3dz_testes_proveniencia` com o conserto do Opus (descarta `--out/--tag` antes de `unittest.main`); o commit do código do Astra espera esse portão. Regra nova para o daemon (próximo ciclo): pedido pode declarar `depende_de` e é recusado se o portão não saiu com exit 0.
+- **Ordem da fila**: `o4c` renomeado `o4_0_mundoA_protoC` — o controle roda antes dos tratamentos (pedido aceito).
+- **Discordância**: pred 184 (40 sementes no kernel) mede o eixo P no mundo v0 sem retina, NP 40 — o protocolo dos mundos A/B/C continua torch (SerCompleto não tem kernel). A decisão P/G do kernel vale para o kernel; para A/B/C o P/G continua 128/30 até haver medida no torch com o mesmo n.
