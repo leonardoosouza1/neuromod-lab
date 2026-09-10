@@ -2,7 +2,7 @@
 vezes da variancia EXATAMENTE zero dentro de cada bloco (pos, vida, t_vida iguais) e blocos diferentes diferem; (3) genomas diferentes
 no mesmo bloco diferem (o jardim iguala o mundo, nao o ser); (4) medidas() fica fora do jardim (128 copias com bercos distintos)."""
 import sys, os; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-os.environ['NM_COMPILE'] = '0'
+os.environ.setdefault('NM_COMPILE', '0')
 import torch; from campo import *; from completo import SerCompleto
 mapas = [gerar_mapa(1000, L=200., distinto=True), gerar_mapa(1001, L=200., distinto=True)]; g = torch.Generator(device=DEV); g.manual_seed(5)
 W = torch.randn(8, Linear.NP, generator=g, device=DEV)*.5

@@ -70,7 +70,7 @@ def main(a):
     gm = dict(L=a.L, distinto=a.mundo == 'distinto', perfis=ex['perfis'], K=ex['K'], ruas=ex['ruas'])
     treino = [gerar_mapa(s, **gm) for s in range(4)]; teste = [gerar_mapa(a.teste_seed + s, **gm) for s in range(3)]
     res = dict(nomes_f=NOMES_F, cenario=a.cenario, cenario_json=cen, cenario_hash=hashlib.md5(json.dumps(cen, sort_keys=True).encode()).hexdigest()[:10], dispositivo=dict(gpu=torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'cpu', torch=torch.__version__, hip_ou_cuda=(torch.version.hip or torch.version.cuda)), argv=sys.argv[1:], predicao=cen.get('predicao'), ponto=a.ponto, npx=a.npx, respawn=a.respawn, pax_cidade=a.pax_cidade, nevoa=a.nevoa, preset=a.preset, L=a.L, fitness=a.fitness, pena=a.pena, NF=NF, S=S, bracos={})
-    print(f'== E43 campo | {a.preset} L={a.L} dias={a.dias} regua={a.fitness} P={p["P"]} G={p["G"]} R={p["R"]} x{len(p["seeds"])} | pena {a.pena} ==', flush=True)
+    print(f'== E43 campo | {a.preset} L={a.L} dias={a.dias} regua={a.fitness} P={p["P"]} G={p["G"]} R={p["R"]} x{len(p["seeds"])} | pena {a.pena} | sigma_mut {a.sigma_mut} crn {a.crn} jardim {bool(a.jardim_comum)} ==', flush=True)
     for nome, A in BRACOS:
         if a.so and nome not in a.so: continue
         t1 = time.time(); W0 = None

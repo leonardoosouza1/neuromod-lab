@@ -432,7 +432,7 @@ def um_passo(m, a, Wb):
     Td = float(getattr(m.cfg, 'temp_decisao', 0.))
     if Td > 0.:
         ok = (tudo > -1e8).float(); n = ok.sum(1, keepdim=True).clamp(min=1.); q0 = tudo*ok; mu = q0.sum(1, keepdim=True)/n; sd = (((q0 - mu)**2*ok).sum(1, keepdim=True)/n).sqrt()
-        u = torch.rand(tudo.shape, device=DEV, generator=m.g_dec).clamp(1e-9, 1. - 1e-9); tudo = tudo + Td*sd*(-torch.log(-torch.log(u)))*ok
+        u = (torch.rand((m.NB,) + tuple(tudo.shape[1:]), generator=m.g_dec, device=DEV)[m.bloco] if m.JC else torch.rand(tudo.shape, device=DEV, generator=m.g_dec)).clamp(1e-9, 1. - 1e-9); tudo = tudo + Td*sd*(-torch.log(-torch.log(u)))*ok
     esc = a.decidir(tudo, m) if hasattr(a, 'decidir') else tudo.argmax(1)
     m.passo(esc)
 
