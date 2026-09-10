@@ -1,6 +1,6 @@
 {
  "nome": "mundoA_seres",
- "predicao": "pred 164: MUNDO A (v1 + custo por ativacao .3 + basal .15) com 8 SERES pareados nas mesmas sementes",
+ "predicao": "pred 164: MUNDO A (v1 + custo por ativacao .3 + basal .15) com 8 SERES pareados nas mesmas sementes [09:40: 5 seres, G30 pac15 — o COMPLETO leva 2.8 h/ser a G60]",
  "mundo": {
   "L": 200,
   "dias": 10,
@@ -104,37 +104,16 @@
   "completo sem reflexo",
   {
    "nome": "COMPLETO (talamo+cortex+hipocampo+reflexo+livre)",
-   "rotulo": "COMPLETO hip 1.0",
-   "cerebro": {
-    "hip_esc": 1.0
-   }
-  },
-  {
-   "nome": "COMPLETO (talamo+cortex+hipocampo+reflexo+livre)",
-   "rotulo": "COMPLETO cortex 2.0",
-   "cerebro": {
-    "cortex_amp": 2.0
-   }
-  },
-  {
-   "nome": "COMPLETO (talamo+cortex+hipocampo+reflexo+livre)",
    "rotulo": "COMPLETO talamo fixo",
    "cerebro": {
     "talamo_norm": "fixo"
-   }
-  },
-  {
-   "nome": "COMPLETO (talamo+cortex+hipocampo+reflexo+livre)",
-   "rotulo": "COMPLETO temp .3",
-   "cerebro": {
-    "temp_decisao": 0.3
    }
   }
  ],
  "protocolo": {
   "P": 128,
-  "G": 60,
-  "paciencia": 30,
+  "G": 30,
+  "paciencia": 15,
   "R": 4,
   "seeds": [
    0,
