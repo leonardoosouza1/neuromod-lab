@@ -49,7 +49,7 @@ class SerCompleto(Cerebro):
         s.G3 = W[:, s.O_TAL:s.O_TAL+s.N_TAL].reshape(B, NG, 3)
         if not L['talamo']: s.G3 = torch.zeros_like(s.G3)
         s.IDXG = torch.tensor(_IG, device=DEV)[None, :].expand(B, -1)
-        s.DLT = ESC_DELTA*torch.tanh(W[:, s.O_COR:s.O_COR+s.N_COR].reshape(B, DMAX, len(IDX_CORTEX)))
+        s.DLT = float(getattr(m.cfg, 'cortex_amp', ESC_DELTA))*torch.tanh(W[:, s.O_COR:s.O_COR+s.N_COR].reshape(B, DMAX, len(IDX_CORTEX))); s.TNORM = bool(getattr(m.cfg, 'talamo_norm', False))
         if not L['cortex']: s.DLT = torch.zeros_like(s.DLT)
         s.IDXC = torch.tensor(IDX_CORTEX, device=DEV); s.IDX1 = torch.tensor([1], device=DEV)   # [g10] buffer criado UMA vez: torch.tensor no extra() era a unica sincronizacao do completo (H2D por passo)
         o = s.O_HIP; s.tau_h = 1. + 200.*torch.sigmoid(W[:, o:o+1] - 4.); s.g_hip = torch.tanh(W[:, o+1:o+2])
@@ -62,7 +62,9 @@ class SerCompleto(Cerebro):
         return torch.stack([1. - m.fuel/100., 1. - m.agua/100., m.fome/100., m.fad/100., m.calor/120.], 1).max(1).values
     def _gate(s, m):
         need = s._need(m); pax = (m.pd_ >= 0).float()
-        return 2.*torch.sigmoid(s.G3[:, :, 0] + s.G3[:, :, 1]*need[:, None] + s.G3[:, :, 2]*pax[:, None])     # genes 0 -> 1.0 exato
+        gt = 2.*torch.sigmoid(s.G3[:, :, 0] + s.G3[:, :, 1]*need[:, None] + s.G3[:, :, 2]*pax[:, None])     # genes 0 -> 1.0 exato
+        if s.TNORM: gt = gt*(NG/gt.sum(1, keepdim=True)).clamp(max=1.)
+        return gt
     def _ativ(s): return (s.c - s.theta).clamp(min=0.)
     def _mem(s, m):
         s.dn = m.distrito(m.pos).clamp(max=DMAX-1)

@@ -1,0 +1,130 @@
+{
+ "nome": "v2f_regime_curto",
+ "predicao": "pred 149: v2c com periodo do regime 1.3 d (~1/3 da vida mediana 3.9 d; CS brainstorm 3) em vez de 5 d",
+ "mundo": {
+  "L": 200,
+  "dias": 10,
+  "regua": "vida",
+  "K": 6,
+  "ruas": {
+   "dentro": 1,
+   "fora": 3
+  },
+  "precos": {
+   "amp": 0.5,
+   "periodo": 3
+  },
+  "retina": {
+   "R_dia": 60.0,
+   "R_noite": 15.0,
+   "passo": 4.0,
+   "custo": 0.0,
+   "k_cego": 2.0
+  },
+  "horizonte": "aberto",
+  "T_max": 7200,
+  "w_trab": 1.0,
+  "regime": {
+   "periodo_dias": 1.3,
+   "amp": 0.5,
+   "canais": [
+    "consumo",
+    "preco",
+    "demanda",
+    "dia_curto"
+   ]
+  }
+ },
+ "distritos": {
+  "centro": {
+   "pmul": 2.0,
+   "aliq": 0.35,
+   "alug": 2.5,
+   "dem": 2.0,
+   "dens": [
+    1.0,
+    1.5,
+    1.0,
+    0.5,
+    1.0
+   ]
+  },
+  "industrial": {
+   "pmul": 0.6,
+   "aliq": 0.1,
+   "alug": 0.8,
+   "dem": 0.7,
+   "dens": [
+    2.5,
+    0.0,
+    1.0,
+    0.0,
+    2.0
+   ]
+  },
+  "residencial": {
+   "pmul": 1.0,
+   "aliq": 0.15,
+   "alug": 1.0,
+   "dem": 1.0,
+   "dens": [
+    0.0,
+    2.0,
+    1.5,
+    2.0,
+    0.0
+   ]
+  },
+  "periferia": {
+   "pmul": 0.5,
+   "aliq": 0.0,
+   "alug": 0.8,
+   "dem": 0.3,
+   "dens": [
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.0
+   ]
+  }
+ },
+ "passageiros": {
+  "npx": 12,
+  "respawn": 20,
+  "pax_cidade": false,
+  "ponto": 0,
+  "tarifa_base": 3,
+  "tarifa_km": 0.25
+ },
+ "corpo": {
+  "dinh0": 10,
+  "fome_passo": 0.32,
+  "kcal_pane": 8,
+  "guincho": 10,
+  "fuel_pos_pane": 5
+ },
+ "bracos": [
+  "linear",
+  "COMPLETO (talamo+cortex+hipocampo+reflexo+livre)",
+  "completo sem hipocampo"
+ ],
+ "protocolo": {
+  "P": 512,
+  "G": 60,
+  "paciencia": 30,
+  "R": 4,
+  "seeds": [
+   0,
+   1,
+   2,
+   3,
+   4,
+   5,
+   6,
+   7,
+   8,
+   9
+  ]
+ }
+}
