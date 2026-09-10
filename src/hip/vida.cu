@@ -1,0 +1,178 @@
+// vida.cu — [10/09 Leonardo: "carrega tudo na VRAM e executa so ali"] A VIDA INTEIRA de cada ser num kernel: uma thread por ser,
+// laco de T tiques no device, sem lancamento por tique. Semantica = docs/71-spec-mundo-taxi.md (mundo v0: cerebro Linear, sem
+// retina/regime/reproducao, custo de gene 0, ponto 0). Sorteios por contador (semente, ser, tique, k): deterministico.
+#include <torch/extension.h>
+#include <pybind11/stl.h>
+#include <cuda_runtime.h>
+#include <math.h>
+#include <stdint.h>
+
+#define G 9
+#define S 10
+#define NF 29
+#define NPW 40
+#define NT 5
+#define NPX 12
+#define GR 128
+#define TEX 64
+#define PI_F 3.14159265358979f
+
+struct Cfg {
+  float L, fuel_passo, agua_passo, agua_calor, fome_passo, fad_passo, calor_sobe, calor_desce, CALOR_MAX, D_QUENTE, D_PANE, D_RODAR;
+  float fome_mata, FOME_CRIT, agua_mata, AGUA_CRIT, KCAL_PANE, GUINCHO, FUEL_POS_PANE, raio, raio_px, vel, vel_noite, amp_preco, periodo_preco;
+  float preco_L, preco_agua, preco_comida, HOTEL, preco_oficina, REPARO, tarifa_base, tarifa_km, aluguel, LIMITE_DIVIDA, PERDA_ARMAZ, RES_MAX, perda_res, REFEICAO, margem_risco, respawn;
+  int dia, K, NPTS, loja, T, injeta_alvo, grava;
+};
+
+struct Ptr {
+  const float* custo; const int* cdist; const float* pmul0; const float* aliq; const float* alug; const float* demanda; const float* fase_preco;
+  const float* serv; const int* nserv; const float* W; const int* cidx;
+  float* px; float* py; float* fuel; float* fome; float* agua; float* dinh; float* vida; float* calor; float* fad; float* res; float* tpar; float* cons; const float* fase; const int* casa;
+  float* pxs; float* pxd; int* px_ok; float* pd_; float* destx; float* desty; float* embx; float* emby; int* orig_d; float* t_ult;
+  float* ent; float* rec; float* avar; float* av_fuel; float* n_posto; float* litros; float* n_oficina; float* n_come; float* n_agua; float* dano_soma; float* t_vida;
+  const float* alvo_inj; int* acoes; float* traj; unsigned long long seed;
+};
+
+__device__ __forceinline__ uint64_t mix64(uint64_t z) { z += 0x9E3779B97F4A7C15ULL; z = (z ^ (z >> 30))*0xBF58476D1CE4E5B9ULL; z = (z ^ (z >> 27))*0x94D049BB133111EBULL; return z ^ (z >> 31); }
+__device__ __forceinline__ float u01(uint64_t seed, int b, int t, int k) { uint64_t h = mix64(seed ^ mix64(((uint64_t)b << 32) ^ ((uint64_t)t << 8) ^ (uint64_t)k)); return (float)(h >> 40)*(1.0f/16777216.0f); }
+__device__ __forceinline__ float clampf(float x, float a, float b) { return fminf(fmaxf(x, a), b); }
+__device__ __forceinline__ int cel(float x, float L, int n) { int i = (int)(x/L*n); return i < 0 ? 0 : (i > n-1 ? n-1 : i); }
+__device__ __forceinline__ float custo_em(const Ptr& p, int c, float x, float y, float L) {
+  int ix = (int)rintf(x/L*(TEX-1)); int iy = (int)rintf(y/L*(TEX-1)); ix = ix < 0 ? 0 : (ix > TEX-1 ? TEX-1 : ix); iy = iy < 0 ? 0 : (iy > TEX-1 ? TEX-1 : iy);
+  return p.custo[(c*TEX + iy)*TEX + ix];
+}
+__device__ __forceinline__ int distrito(const Ptr& p, int c, float x, float y, float L) { return p.cdist[(c*GR + cel(y, L, GR))*GR + cel(x, L, GR)]; }
+__device__ __forceinline__ float pmul_dia(const Ptr& p, const Cfg& cf, int c, int d, int t) {
+  float base = p.pmul0[c*cf.K + d]; if (t <= 0 || cf.amp_preco <= 0.f) return base;
+  float dia = floorf((float)t/(float)cf.dia); return base*(1.f + cf.amp_preco*sinf(2.f*PI_F*(dia/cf.periodo_preco + p.fase_preco[c*cf.K + d])));
+}
+__device__ __forceinline__ float hora_(float t, float fase, int dia) { return fmodf(t + fase, (float)dia)/(float)dia*24.f; }
+
+__global__ void vida_kernel(Cfg cf, Ptr p, int B) {
+  int b = blockIdx.x*blockDim.x + threadIdx.x; if (b >= B) return;
+  const int c = p.cidx[b]; const float L = cf.L; const float* W = p.W + b*NPW; const float fase = p.fase[b]; const int casa = p.casa[b];
+  const float DX[9] = {1.f, 0.70710677f, 0.f, -0.70710677f, -1.f, -0.70710677f, 0.f, 0.70710677f, 0.f};
+  const float DY[9] = {0.f, 0.70710677f, 1.f, 0.70710677f, 0.f, -0.70710677f, -1.f, -0.70710677f, 0.f};
+  const int PERM[5] = {0, 1, 2, 4, 3}; const float QL[5] = {25.f, 50.f, 75.f, 100.f, 150.f};
+  float x = p.px[b], y = p.py[b], fuel = p.fuel[b], fome = p.fome[b], agua = p.agua[b], dinh = p.dinh[b], vida = p.vida[b], calor = p.calor[b], fad = p.fad[b], res = p.res[b], tpar = p.tpar[b], cons = p.cons[b];
+  float pd_ = p.pd_[b], destx = p.destx[b], desty = p.desty[b], embx = p.embx[b], emby = p.emby[b], t_ult = p.t_ult[b]; int orig_d = p.orig_d[b];
+  float ent = p.ent[b], rec = p.rec[b], avar = p.avar[b], av_fuel = p.av_fuel[b], n_posto = p.n_posto[b], litros = p.litros[b], n_oficina = p.n_oficina[b], n_come = p.n_come[b], n_agua = p.n_agua[b], dano = p.dano_soma[b], t_vida = p.t_vida[b];
+  float sx[NPX], sy[NPX], sdx[NPX], sdy[NPX]; int sok[NPX];
+  for (int k = 0; k < NPX; k++) { sx[k] = p.pxs[(b*NPX + k)*2]; sy[k] = p.pxs[(b*NPX + k)*2 + 1]; sdx[k] = p.pxd[(b*NPX + k)*2]; sdy[k] = p.pxd[(b*NPX + k)*2 + 1]; sok[k] = p.px_ok[b*NPX + k]; }
+  for (int t = 0; t < cf.T; t++) {
+    if (vida <= 0.f) break;
+    // ---------------- obs (usa t) ----------------
+    float h = hora_((float)t, fase, cf.dia); bool nv = (h >= 22.f) || (h < 6.f); float v = nv ? cf.vel_noite : cf.vel;
+    float ptx[NT], pty[NT], dst[NT];
+    for (int j = 0; j < NT; j++) {
+      int n = p.nserv[c*NT + j]; float best = 1e9f; float bx = 0.f, by = 0.f;
+      for (int i = 0; i < n; i++) { float qx = p.serv[((c*NT + j)*cf.NPTS + i)*2], qy = p.serv[((c*NT + j)*cf.NPTS + i)*2 + 1]; float d = sqrtf((x - qx)*(x - qx) + (y - qy)*(y - qy)); if (d < best) { best = d; bx = qx; by = qy; } }
+      ptx[j] = bx; pty[j] = by; dst[j] = best;
+    }
+    float ax, ay;
+    if (cf.injeta_alvo) { ax = p.alvo_inj[((size_t)t*B + b)*2]; ay = p.alvo_inj[((size_t)t*B + b)*2 + 1]; }
+    else { float bd = 1e30f; int kb = 0; for (int k = 0; k < NPX; k++) { float d = sqrtf((sx[k] - x)*(sx[k] - x) + (sy[k] - y)*(sy[k] - y)); if (d < bd) { bd = d; kb = k; } } if (pd_ >= 0.f) { ax = destx; ay = desty; } else { ax = sx[kb]; ay = sy[kb]; } }
+    int dpos = distrito(p, c, x, y, L); float cu_aqui = custo_em(p, c, x, y, L); float pm_obs = pmul_dia(p, cf, c, dpos, t);
+    float corpo[19]; float invc = fuel/fmaxf(cons, 1e-3f);
+    corpo[0] = fuel/100.f; corpo[1] = agua/100.f; corpo[2] = fome/100.f; corpo[3] = fad/100.f; corpo[4] = calor/120.f; corpo[5] = vida/100.f; corpo[6] = clampf(dinh/150.f, -1.f, 1.f); corpo[7] = res/cf.RES_MAX;
+    corpo[8] = pd_ >= 0.f ? 1.f : 0.f; float hr = h*2.f*PI_F/24.f; corpo[9] = sinf(hr); corpo[10] = cosf(hr); corpo[11] = nv ? 1.f : 0.f; corpo[12] = cu_aqui; corpo[13] = 1.f; corpo[14] = cons/(cf.fuel_passo*3.f);
+    corpo[15] = clampf((invc - dst[0])/100.f, -2.f, 4.f); corpo[16] = clampf((dst[0] + cf.margem_risco - invc)/100.f, 0.f, 3.f); corpo[17] = p.demanda[c*cf.K + dpos]/2.f; corpo[18] = fminf(t_ult/100.f, 2.f);
+    float sc[G]; float media = 0.f;
+    for (int g = 0; g < G; g++) {
+      float pnx = clampf(x + v*DX[g], 0.f, L), pny = clampf(y + v*DY[g], 0.f, L); float F[NF];
+      F[0] = sqrtf((pnx - ax)*(pnx - ax) + (pny - ay)*(pny - ay));
+      for (int j = 0; j < NT; j++) { int jj = PERM[j]; F[1 + j] = sqrtf((pnx - ptx[jj])*(pnx - ptx[jj]) + (pny - pty[jj])*(pny - pty[jj])); }
+      int dn_ = distrito(p, c, pnx, pny, L); F[6] = custo_em(p, c, pnx, pny, L); F[7] = pmul_dia(p, cf, c, dn_, t); F[8] = p.aliq[c*cf.K + dn_]; F[9] = (dn_ == casa) ? 1.f : 0.f;
+      for (int k = 0; k < 19; k++) F[10 + k] = corpo[k];
+      float acc = 0.f; for (int f = 0; f < NF; f++) acc += F[f]*W[f]; sc[g] = acc; media += acc;
+    }
+    media /= (float)G; for (int g = 0; g < G; g++) sc[g] -= media;
+    // servicos (obs: nv de t, distrito/pm de pos)
+    bool perto[NT]; for (int j = 0; j < NT; j++) perto[j] = dst[j] <= cf.raio;
+    if (cf.loja) { perto[1] = perto[1] || perto[0]; perto[2] = perto[2] || perto[0] || perto[1]; }
+    const int TIPO[S] = {0, 0, 0, 0, 0, 2, 2, 1, 3, 4}; float casaf = (dpos == casa) ? 1.f : 0.f;
+    float cs[S], sv[S]; for (int a = 0; a < S; a++) { bool ok = perto[TIPO[a]]; if (TIPO[a] == 0) ok = ok && !nv; sv[a] = ok ? 1.f : 0.f; }
+    for (int a = 0; a < 5; a++) cs[a] = cf.preco_L*QL[a]*pm_obs; cs[5] = cf.preco_agua*50.f*pm_obs; cs[6] = cf.preco_agua*100.f*pm_obs; cs[7] = cf.preco_comida*pm_obs; cs[8] = (1.f - casaf)*cf.HOTEL*pm_obs; cs[9] = cf.preco_oficina*pm_obs;
+    float cabe = 100.f - fuel, sobra_res = fmaxf(cf.RES_MAX - res, 0.f); float nec[S];
+    for (int a = 0; a < 5; a++) nec[a] = fminf(QL[a], cabe)/100.f + fmaxf(fminf(QL[a] - cabe, sobra_res), 0.f)/100.f*0.5f;
+    nec[5] = fminf(50.f, 100.f - agua)/100.f; nec[6] = fminf(100.f, 100.f - agua)/100.f; nec[7] = fome/100.f; nec[8] = fad/100.f; nec[9] = 1.f - vida/100.f;
+    float best = -3e38f; int esc = 0;
+    for (int g = 0; g < G; g++) if (sc[g] > best) { best = sc[g]; esc = g; }
+    for (int a = 0; a < S; a++) { float paga = dinh >= cs[a] ? 1.f : 0.f; float svn = sv[a]*nec[a]*paga; float nota = svn*W[NF + a] + W[NF + S]; if (sv[a]*paga <= 0.f) nota = -1e9f; if (nota > best) { best = nota; esc = G + a; } }
+    if (cf.grava) { p.acoes[(size_t)t*B + b] = esc; float* tr = p.traj + ((size_t)t*B + b)*7; tr[0] = fome; tr[1] = fuel; tr[2] = agua; tr[3] = dinh; tr[4] = x; tr[5] = y; tr[6] = vida; }
+    // ---------------- passo (t+1) ----------------
+    int tp = t + 1; bool vivo = vida > 0.f; bool livre = (tpar <= 0.f) && vivo; tpar = fmaxf(tpar - 1.f, 0.f);
+    float h2 = hora_((float)tp, fase, cf.dia); bool nv2 = (h2 >= 22.f) || (h2 < 6.f); float v2 = nv2 ? cf.vel_noite : cf.vel;
+    bool mov = livre && (esc < G) && (esc != G - 1); int gd = esc < G ? esc : G - 1; float dx = DX[gd], dy = DY[gd];
+    float cu = cu_aqui; float peso = 1.f + 0.15f*(pd_ >= 0.f ? 1.f : 0.f) + 0.002f*res;
+    bool pane = mov && (fuel < cf.fuel_passo*cu*peso); mov = mov && !pane;
+    if (mov) { x = clampf(x + v2*dx, 0.f, L); y = clampf(y + v2*dy, 0.f, L); }
+    bool marcha = livre && !mov; fuel = fmaxf(fuel - cf.fuel_passo*cu*peso*(mov ? 1.f : 0.f) - cf.fuel_passo*0.33f*(marcha ? 1.f : 0.f), 0.f);
+    if (mov) cons = cons + (cf.fuel_passo*cu*peso/fmaxf(v2, 1e-3f) - cons)*0.05f;
+    calor = clampf(calor + cf.calor_sobe*cu*(mov ? 1.f : 0.f) - cf.calor_desce*(mov ? 0.f : 1.f), 25.f, 120.f);
+    float vf = vivo ? 1.f : 0.f; agua = fmaxf(agua - cf.agua_passo*vf - cf.agua_calor*(calor > 60.f ? 1.f : 0.f)*vf, 0.f);
+    fome = fminf(fome + cf.fome_passo*vf, 100.f); fad = clampf(fad + cf.fad_passo*(mov ? 1.f : 0.f) - 0.1f*(mov ? 0.f : 1.f), 0.f, 100.f);
+    if (livre && fad >= 95.f) { tpar = 12.f; fad = 40.f; avar += 1.f; }
+    res = fmaxf(res*(1.f - cf.perda_res), 0.f);
+    float dn = 0.f;
+    if (pane) { avar += 1.f; av_fuel += 1.f; tpar = 18.f; x = ptx[0]; y = pty[0]; fuel = cf.FUEL_POS_PANE; dinh -= cf.GUINCHO; float kcal = fminf(res, cf.KCAL_PANE); res -= kcal; dn += cf.D_PANE + (cf.KCAL_PANE - kcal); }
+    bool qt = livre && (calor > cf.CALOR_MAX); if (qt) { avar += 1.f; tpar = 10.f; calor = 60.f; dn += cf.D_QUENTE; }
+    if (mov && calor > 80.f) dn += cf.D_RODAR;
+    // servicos no passo: perto do obs (dist da posicao ANTIGA), noite de t+1, distrito/pm da posicao NOVA
+    int dnew = distrito(p, c, x, y, L); float pm2 = pmul_dia(p, cf, c, dnew, tp); float casa2 = (dnew == casa) ? 1.f : 0.f;
+    bool pode = livre && (esc >= G); int k = esc - G; k = k < 0 ? 0 : (k > S - 1 ? S - 1 : k);
+    if (pode) {
+      bool ok = perto[TIPO[k]]; if (TIPO[k] == 0) ok = ok && !nv2;
+      float cst = (k < 5) ? cf.preco_L*QL[k]*pm2 : (k == 5 ? cf.preco_agua*50.f*pm2 : (k == 6 ? cf.preco_agua*100.f*pm2 : (k == 7 ? cf.preco_comida*pm2 : (k == 8 ? (1.f - casa2)*cf.HOTEL*pm2 : cf.preco_oficina*pm2))));
+      if (ok && dinh >= cst) {
+        dinh -= cst;
+        if (k < 5) { float lt = QL[k]; n_posto += 1.f; litros += lt; float novo = fuel + lt; float sobra = fmaxf(novo - 100.f, 0.f); fuel = fminf(novo, 100.f); res = fminf(res + sobra*(1.f - cf.PERDA_ARMAZ), cf.RES_MAX); }
+        else if (k == 5) { agua = fminf(agua + 50.f, 100.f); n_agua += 1.f; } else if (k == 6) { agua = fminf(agua + 100.f, 100.f); n_agua += 1.f; }
+        else if (k == 7) { fome = fmaxf(fome - cf.REFEICAO, 0.f); n_come += 1.f; }
+        else if (k == 8) { fad = fminf(fad, 40.f); tpar = 12.f; }
+        else { vida = fminf(vida + cf.REPARO, 100.f); calor = 25.f; n_oficina += 1.f; }
+      }
+    }
+    // passageiros: embarque
+    float bd = 1e9f; int kx = 0; for (int q = 0; q < NPX; q++) { float d = sok[q] ? sqrtf((sx[q] - x)*(sx[q] - x) + (sy[q] - y)*(sy[q] - y)) : 1e9f; if (d < bd) { bd = d; kx = q; } }
+    bool pega = livre && (pd_ < 0.f) && (bd <= cf.raio) && !pode;
+    if (pega) {
+      destx = sdx[kx]; desty = sdy[kx]; embx = x; emby = y; orig_d = dnew; pd_ = 1.f;
+      float ang = u01(p.seed, b, tp, 1)*2.f*PI_F; float r = 8.f + (cf.raio_px - 8.f)*u01(p.seed, b, tp, 2); float nx = clampf(x + r*cosf(ang), 0.f, L), ny = clampf(y + r*sinf(ang), 0.f, L);
+      float ang2 = u01(p.seed, b, tp, 3)*2.f*PI_F; float u2 = u01(p.seed, b, tp, 4); float r2 = L*(0.05f + 0.45f*u2*u2);
+      sx[kx] = nx; sy[kx] = ny; sdx[kx] = clampf(nx + r2*cosf(ang2), 0.f, L); sdy[kx] = clampf(ny + r2*sinf(ang2), 0.f, L); sok[kx] = 0;
+    }
+    t_ult = pega ? 0.f : t_ult + 1.f;
+    if (cf.respawn < 1e8f) { float pr = p.demanda[c*cf.K + dnew]/cf.respawn; for (int q = 0; q < NPX; q++) if (u01(p.seed, b, tp, 16 + q) < pr) sok[q] = 1; }
+    if (livre && pd_ >= 0.f && sqrtf((x - destx)*(x - destx) + (y - desty)*(y - desty)) <= cf.raio) {
+      float al = clampf(p.aliq[c*cf.K + orig_d], 0.f, 0.6f); float dv = sqrtf((destx - embx)*(destx - embx) + (desty - emby)*(desty - emby));
+      float tarifa = (cf.tarifa_base + cf.tarifa_km*dv)*pmul_dia(p, cf, c, orig_d, tp)*(1.f - al); dinh += tarifa; rec += tarifa; ent += 1.f; pd_ = -1.f;
+    }
+    bool meia = fmodf((float)tp + fase, (float)cf.dia) < 1.f; if (meia && vivo) dinh -= cf.aluguel*p.alug[c*cf.K + casa];
+    dn += cf.fome_mata*clampf((fome - cf.FOME_CRIT)/(100.f - cf.FOME_CRIT), 0.f, 1.f) + cf.agua_mata*clampf((cf.AGUA_CRIT - agua)/cf.AGUA_CRIT, 0.f, 1.f);
+    dinh = fmaxf(dinh, -cf.LIMITE_DIVIDA); float dv2 = clampf(-dinh/cf.LIMITE_DIVIDA, 0.f, 1.f); dn += 2.f*dv2*dv2;
+    vida = fmaxf(vida - dn*vf, 0.f); dano += dn*vf; t_vida += vf;
+  }
+  p.px[b] = x; p.py[b] = y; p.fuel[b] = fuel; p.fome[b] = fome; p.agua[b] = agua; p.dinh[b] = dinh; p.vida[b] = vida; p.calor[b] = calor; p.fad[b] = fad; p.res[b] = res; p.tpar[b] = tpar; p.cons[b] = cons;
+  p.pd_[b] = pd_; p.destx[b] = destx; p.desty[b] = desty; p.embx[b] = embx; p.emby[b] = emby; p.orig_d[b] = orig_d; p.t_ult[b] = t_ult;
+  p.ent[b] = ent; p.rec[b] = rec; p.avar[b] = avar; p.av_fuel[b] = av_fuel; p.n_posto[b] = n_posto; p.litros[b] = litros; p.n_oficina[b] = n_oficina; p.n_come[b] = n_come; p.n_agua[b] = n_agua; p.dano_soma[b] = dano; p.t_vida[b] = t_vida;
+  for (int k = 0; k < NPX; k++) { p.pxs[(b*NPX + k)*2] = sx[k]; p.pxs[(b*NPX + k)*2 + 1] = sy[k]; p.pxd[(b*NPX + k)*2] = sdx[k]; p.pxd[(b*NPX + k)*2 + 1] = sdy[k]; p.px_ok[b*NPX + k] = sok[k]; }
+}
+
+#define F(name) p.name = st[#name].data_ptr<float>()
+#define I(name) p.name = st[#name].data_ptr<int>()
+void vida(std::map<std::string, torch::Tensor> st, std::map<std::string, double> cfg_f, std::map<std::string, int64_t> cfg_i, int64_t seed) {
+  Cfg cf; cf.L = cfg_f["L"]; cf.fuel_passo = cfg_f["fuel_passo"]; cf.agua_passo = cfg_f["agua_passo"]; cf.agua_calor = cfg_f["agua_calor"]; cf.fome_passo = cfg_f["fome_passo"]; cf.fad_passo = cfg_f["fad_passo"]; cf.calor_sobe = cfg_f["calor_sobe"]; cf.calor_desce = cfg_f["calor_desce"];
+  cf.CALOR_MAX = cfg_f["CALOR_MAX"]; cf.D_QUENTE = cfg_f["D_QUENTE"]; cf.D_PANE = cfg_f["D_PANE"]; cf.D_RODAR = cfg_f["D_RODAR"]; cf.fome_mata = cfg_f["fome_mata"]; cf.FOME_CRIT = cfg_f["FOME_CRIT"]; cf.agua_mata = cfg_f["agua_mata"]; cf.AGUA_CRIT = cfg_f["AGUA_CRIT"]; cf.KCAL_PANE = cfg_f["KCAL_PANE"];
+  cf.GUINCHO = cfg_f["GUINCHO"]; cf.FUEL_POS_PANE = cfg_f["FUEL_POS_PANE"]; cf.raio = cfg_f["raio"]; cf.raio_px = cfg_f["raio_px"]; cf.vel = cfg_f["vel"]; cf.vel_noite = cfg_f["vel_noite"]; cf.amp_preco = cfg_f["amp_preco"]; cf.periodo_preco = cfg_f["periodo_preco"];
+  cf.preco_L = cfg_f["preco_L"]; cf.preco_agua = cfg_f["preco_agua"]; cf.preco_comida = cfg_f["preco_comida"]; cf.HOTEL = cfg_f["HOTEL"]; cf.preco_oficina = cfg_f["preco_oficina"]; cf.REPARO = cfg_f["REPARO"]; cf.tarifa_base = cfg_f["tarifa_base"]; cf.tarifa_km = cfg_f["tarifa_km"];
+  cf.aluguel = cfg_f["aluguel"]; cf.LIMITE_DIVIDA = cfg_f["LIMITE_DIVIDA"]; cf.PERDA_ARMAZ = cfg_f["PERDA_ARMAZ"]; cf.RES_MAX = cfg_f["RES_MAX"]; cf.perda_res = cfg_f["perda_res"]; cf.REFEICAO = cfg_f["REFEICAO"]; cf.margem_risco = cfg_f["margem_risco"]; cf.respawn = cfg_f["respawn"];
+  cf.dia = cfg_i["dia"]; cf.K = cfg_i["K"]; cf.NPTS = cfg_i["NPTS"]; cf.loja = cfg_i["loja"]; cf.T = cfg_i["T"]; cf.injeta_alvo = cfg_i["injeta_alvo"]; cf.grava = cfg_i["grava"];
+  Ptr p; p.custo = st["custo"].data_ptr<float>(); p.cdist = st["cdist"].data_ptr<int>(); p.pmul0 = st["pmul0"].data_ptr<float>(); p.aliq = st["aliq"].data_ptr<float>(); p.alug = st["alug"].data_ptr<float>(); p.demanda = st["demanda"].data_ptr<float>(); p.fase_preco = st["fase_preco"].data_ptr<float>();
+  p.serv = st["serv"].data_ptr<float>(); p.nserv = st["nserv"].data_ptr<int>(); p.W = st["W"].data_ptr<float>(); p.cidx = st["cidx"].data_ptr<int>(); p.fase = st["fase"].data_ptr<float>(); p.casa = st["casa"].data_ptr<int>();
+  F(px); F(py); F(fuel); F(fome); F(agua); F(dinh); F(vida); F(calor); F(fad); F(res); F(tpar); F(cons); F(pxs); F(pxd); I(px_ok); F(pd_); F(destx); F(desty); F(embx); F(emby); I(orig_d); F(t_ult);
+  F(ent); F(rec); F(avar); F(av_fuel); F(n_posto); F(litros); F(n_oficina); F(n_come); F(n_agua); F(dano_soma); F(t_vida);
+  p.alvo_inj = cf.injeta_alvo ? st["alvo_inj"].data_ptr<float>() : nullptr; p.acoes = cf.grava ? st["acoes"].data_ptr<int>() : nullptr; p.traj = cf.grava ? st["traj"].data_ptr<float>() : nullptr; p.seed = (unsigned long long)seed;
+  int B = st["fuel"].numel(); int bs = 128; vida_kernel<<<(B + bs - 1)/bs, bs>>>(cf, p, B);
+}
+PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) { m.def("vida", &vida, "vida inteira por thread"); }
