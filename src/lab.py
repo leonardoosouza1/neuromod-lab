@@ -1704,7 +1704,7 @@ def evoluir(Arq, cidades, cfg, P=512, ger=25, T=1500, seed=0, elite=.15,
 
 
 def evoluir_sementes(Arq, cidades, cfg, P=512, ger=25, T=1500, seeds=(0,1,2),
-                     elite=.15, verbose=True, R=1, cfg_gen=None, W0=None, sigma0=.2, avaliar_fn=None, paciencia=None, sigma_espinha=.05, crn='rotativo', sigma_mut=.3):
+                     elite=.15, verbose=True, R=1, cfg_gen=None, W0=None, sigma0=.2, avaliar_fn=None, paciencia=None, sigma_espinha=.05, crn='rotativo', sigma_mut=.3, campeao='ultimo'):
     """MEGA-LOTE de sementes: as S populacoes (uma por semente de evolucao)
     empilhadas num Lote so — B cresce S vezes e sai da regiao limitada por
     LANCAMENTO de kernel (VRAM vazia + GPU 'ocupada' = kernels pequenos).
@@ -1729,7 +1729,7 @@ def evoluir_sementes(Arq, cidades, cfg, P=512, ger=25, T=1500, seeds=(0,1,2),
             Ws.append(w + ru)
     W = torch.cat(Ws)                                  # (S*P, NP)
     hist = {sd: [] for sd in seeds}; snaps = {sd: [] for sd in seeds}
-    ne = max(2, int(P*elite))
+    ne = max(2, int(P*elite)); f_el = {}; cfg_it = cfg
     for it in range(ger):
         # E20 curriculo (infancia protegida): cfg_gen(it, ger) -> cfg desta geracao (None = identidade)
         cfg_it = cfg_gen(it, ger) if cfg_gen is not None else cfg
@@ -1739,7 +1739,7 @@ def evoluir_sementes(Arq, cidades, cfg, P=512, ger=25, T=1500, seeds=(0,1,2),
         for si, sd in enumerate(seeds):
             o = f[si].argsort(descending=True)
             Wb = Wv[si][o]; fb = f[si][o]
-            hist[sd].append(float(fb[0]))
+            hist[sd].append(float(fb[0])); f_el[sd] = fb[:ne]   # [10/09 opus, pred 166] aptidao medida da elite desta geracao (a elite passa intacta para W): usada so se campeao == 'reavaliado'
             idx = torch.randint(0, ne, (P-ne,), generator=gs[si], device=DEV)
             fil = (Wb[idx] + torch.randn(P-ne, NPQ, generator=gs[si],
                                          device=DEV)*sigma_mut).clamp(-5, 5)
@@ -1761,8 +1761,15 @@ def evoluir_sementes(Arq, cidades, cfg, P=512, ger=25, T=1500, seeds=(0,1,2),
             if agora <= antes + 0.01*abs(antes) + 1e-6:
                 if verbose: print(f'  parada antecipada na ger {it} (sem melhora em {paciencia} ger.)', flush=True)
                 break
-    Wv = W.view(S, P, NPQ)
-    return {sd: (Wv[si][0], hist[sd], snaps[sd]) for si, sd in enumerate(seeds)}
+    Wv = W.view(S, P, NPQ); esc = {sd: 0 for sd in seeds}
+    if campeao == 'reavaliado' and f_el:
+        # [10/09 opus, pred 166] maldicao do vencedor na EXPORTACAO: Wv[si][0] e' o argmax de P avaliacoes ruidosas
+        # (SNR .72, docs/66) — a elite (ne = 15 % de P) e' reavaliada UMA vez num mundo novo e o campeao sai da MEDIA
+        # das duas medidas. Custo: ne/(P*ger) ~ .25 % do run. campeao='ultimo' = caminho de sempre, bit a bit.
+        k = min(ne, P); fk = (avaliar_fn or avaliar)(Arq, Wv[:, :k, :].reshape(S*k, NPQ), cidades, cfg_it, T, seed=777000+(ger + 7)*13, R=R).view(S, k)
+        for si, sd in enumerate(seeds): esc[sd] = int((fk[si] + f_el[sd][:k]).argmax())
+        if verbose: print(f'  campeao reavaliado (elite {k} x mundo novo): posto escolhido por semente {[esc[sd] for sd in seeds]} (0 = o de sempre)', flush=True)
+    return {sd: (Wv[si][esc[sd]], hist[sd], snaps[sd]) for si, sd in enumerate(seeds)}
 
 
 def evoluir_es(Arq, cidades, cfg, P=512, ger=25, T=1500, seeds=(0, 1, 2), verbose=True, R=1, W0=None,

@@ -52,6 +52,7 @@ class CfgCampo:
         s.limiar_disparo = .25
         s.custo_canais = ('fome',)
         s.talamo_norm = False; s.cortex_amp = .5; s.temp_decisao = 0.; s.hip_esc = None; s.jardim_comum = False; s.grava_acoes = False
+        s.ativ_centrada = False   # [10/09 opus, pred 165] False = hoje (cobra |saida| media, 99.7 % modo comum); True = cobra |saida - media entre as opcoes|, a unica parte que o G1 nao descarta
         s.custo_modo = 'existencia'; s.amostra_ativ = 10; s.ativ_ref = 1.   # [spec F2] 'ativacao' = o gene custa pelo SINAL que emite (por bloco: |saida do bloco na nota| media, amostrada a cada amostra_ativ ticks; bloco com saida >= ativ_ref conta cheio); 'existencia' = hoje
         s.horizonte = 'fixo'; s.T_max = None; s.w_trab = 1.   # [spec Mundo Vivo F1] 'aberto' = roda ate todos morrerem (checa vivo.any() 1x por dia simulado) ou T_max; fitness 'vida' = dias vividos + w_trab*renda/300 (sem pena de morte, sem teto)
         s.ponto = 0.   # [E68] ponto de taxi: parado+livre recebe passageiro no lugar com prob demanda/ponto por tick (0 = desligado, mundo identico ao anterior); 30 => centro ~15 ticks, periferia ~100
@@ -739,6 +740,7 @@ class Cerebro(Linear):
         assert s.ORC is None or float(s.ORC) > 0., 'orcamento_ativ deve ser > 0'
         assert s.ORC is None or getattr(m.cfg, 'custo_modo', 'existencia') not in ('ativacao', 'disparo'), 'orcamento e custo por ativacao/disparo juntos nao: o imposto cobraria o sinal pre-projecao'
         s.ATIV = getattr(m.cfg, 'custo_modo', 'existencia') in ('ativacao', 'disparo') or getattr(m.cfg, 'medir_ativ', False) or s.ORC is not None   # [spec F2] constante em Python: o grafo compilado so ganha os caches neste modo
+        s.CENT = bool(getattr(m.cfg, 'ativ_centrada', False))   # [10/09 opus, pred 165] a conta do bloco mede o que MUDA a decisao (saida centrada nas 9 opcoes), nao o modo comum que o G1 (um_passo: sc - sc.mean) descarta
     def extra(s, m, W, F):
         s.corpo = F[:, G - 1, len(NOMES_OP):]                                                # sentidos do corpo (iguais nas 9 opcoes): opcao 'ficar'
         h = torch.relu(torch.einsum('bgf,bhf->bgh', F, s.U) + s.bU[:, None, :]); s.h = h         # (B,G,H) camada rapida
@@ -752,11 +754,13 @@ class Cerebro(Linear):
         x = torch.relu(torch.einsum('bf,bkf->bk', s.corpo, s.U2) + s.b2)                          # (B,K)
         s.z = s.z + (x - s.z)/s.tau
     def ativacao(s, m): return s.z
+    def _mag_blk(s, v):   # [10/09 opus, pred 165] magnitude do bloco: crua (hoje) ou centrada nas opcoes (so a parte que sobrevive ao G1)
+        return (v - v.mean(1, keepdim=True)).abs().mean(1) if s.CENT else v.abs().mean(1)
     def _fator_orc(s):
-        soma = sum(v.abs().mean(1) for v in s._blk.values())
+        soma = sum(s._mag_blk(v) for v in s._blk.values())
         return (float(s.ORC)/(soma + 1e-6)).clamp(max=1.)[:, None]
     def ativ_blocos(s, m):   # [spec F2] |saida do bloco| media sobre as opcoes -> {bloco: (B,)}
-        return {b: v.abs().mean(1) for b, v in getattr(s, '_blk', {}).items()}
+        return {b: s._mag_blk(v) for b, v in getattr(s, '_blk', {}).items()}
 
 
 class Bilinear(Linear):

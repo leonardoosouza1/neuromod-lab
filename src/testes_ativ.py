@@ -6,8 +6,8 @@ os.environ['NM_COMPILE'] = '0'
 import torch; from campo import *; from campo import _fit; from completo import SerCompleto, nomes_genes_completos
 mapas = [gerar_mapa(1000, L=200., distinto=True)]; g = torch.Generator(device=DEV); g.manual_seed(5)
 W = torch.randn(32, SerCompleto.NP, generator=g, device=DEV)*.3; W[:, :Linear.NP] = torch.randn(32, Linear.NP, generator=g, device=DEV)*.5
-def cfg(modo, lam):
-    c = CfgCampo(L=200., fitness='riqueza'); c.custo_modo = modo; c.custo_gene = lam; return c
+def cfg(modo, lam, centrada=False):
+    c = CfgCampo(L=200., fitness='riqueza'); c.custo_modo = modo; c.custo_gene = lam; c.ativ_centrada = centrada; return c
 def test_custo_identidade():
     m0 = rodar(SerCompleto, W, mapas, cfg('existencia', 0.), T=200, seed=3, R=1); m1 = rodar(SerCompleto, W, mapas, cfg('ativacao', 0.), T=200, seed=3, R=1)
     ok = torch.equal(m0.pos, m1.pos) and torch.equal(m0.vida, m1.vida) and torch.equal(m0.fome, m1.fome); print('test_custo_identidade (ativacao lam 0 == existencia lam 0, bit a bit):', ok, flush=True); assert ok
@@ -47,5 +47,20 @@ def test_custo_canais():
     ident = torch.equal(m1.pos, m0.pos) and torch.equal(m1.agua, m0.agua) and torch.equal(m1.calor, m0.calor)
     a1, a3, k1, k3 = float(m1.agua.mean()), float(m3.agua.mean()), float(m1.calor.mean()), float(m3.calor.mean()); ok = ident and a3 < a1 and k3 > k1
     print(f'test_custo_canais: padrao == (fome,) bit a bit {ident} | 3 canais: agua {a1:.1f} -> {a3:.1f} (deve cair), calor {k1:.1f} -> {k3:.1f} (deve subir), metab {float(m3.metab.mean()):.3f}', 'OK' if ok else 'FALHOU', flush=True); assert ok
+def test_ativ_centrada():
+    """[10/09 opus, pred 165] a conta do bloco deve cobrar o que MUDA a decisao. um_passo faz sc -= sc.mean(1): o que e' igual
+    nas 9 opcoes tem efeito EXATAMENTE zero. Bloco de prova: camada LENTA com M so em sentidos do CORPO (iguais nas 9 opcoes,
+    achado E58) -> saida puramente modo comum. Cru: cobra cheio. Centrado: cobra ~0. E identidade com lambda 0."""
+    m0 = rodar(SerCompleto, W, mapas, cfg('existencia', 0.), T=200, seed=3, R=1); mc = rodar(SerCompleto, W, mapas, cfg('ativacao', 0., True), T=200, seed=3, R=1)
+    idt = torch.equal(m0.pos, mc.pos) and torch.equal(m0.vida, mc.vida) and torch.equal(m0.fome, mc.fome)
+    nomes = nomes_genes_completos(); NOP = len(NOMES_OP)
+    Wc = torch.zeros(32, SerCompleto.NP, device=DEV); Wc[:, :Linear.NP] = W[:, :Linear.NP]
+    ib = [i for i, n in enumerate(nomes) if n.startswith('len_b2_k')]
+    im = [i for i, n in enumerate(nomes) if n.startswith('len_M_k') and '_'.join(n.split('_')[3:]) in NOMES_F[NOP:NF]]
+    Wc[:, Linear.NP + torch.tensor(ib, device=DEV)] = 2.; Wc[:, Linear.NP + torch.tensor(im, device=DEV)] = 3.
+    mr = rodar(SerCompleto, Wc, mapas, cfg('ativacao', .3), T=200, seed=3, R=1); mz = rodar(SerCompleto, Wc, mapas, cfg('ativacao', .3, True), T=200, seed=3, R=1)
+    ar = float((mr.ativ_soma['len']/mr.ativ_n).mean()); az = float((mz.ativ_soma['len']/mz.ativ_n).mean())
+    er, ez = float(mr.metab.mean()), float(mz.metab.mean()); ok = idt and ar > .05 and az < 1e-3 and er > ez + .05
+    print(f'test_ativ_centrada: identidade lam 0 {idt} | lenta so-corpo (modo comum puro): ativacao cru {ar:.3f} -> centrado {az:.5f}; metab {er:.3f} -> {ez:.3f}', 'OK' if ok else 'FALHOU', flush=True); assert ok
 if __name__ == '__main__':
-    test_custo_identidade(); test_custo_ativacao_gene_morto(); test_metab_monotono(); test_basal_impede_catatonia(); test_medidas_identidade(); test_disparo_evento(); test_custo_canais()
+    test_custo_identidade(); test_custo_ativacao_gene_morto(); test_metab_monotono(); test_basal_impede_catatonia(); test_medidas_identidade(); test_disparo_evento(); test_custo_canais(); test_ativ_centrada()
