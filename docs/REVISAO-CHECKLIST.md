@@ -13,3 +13,4 @@ Para cada diff em `src/` ou `scripts/`, o revisor (agente Sonnet) responde SIM/N
 10. **Predição**: a aritmética fecha (n de genes por bloco, escala das medidas)? Aposta própria registrada?
 11. **Import**: nomes com underscore importados explicitamente?
 12. **Relançamento**: o caminho "máquina reiniciou / laço relançado" usa o estado mais recente?
+13. **Política explícita (julga_politica)**: a política é medida com `W = zeros` — o `tudo` que chega ao `decidir(tudo, m)` é ZERO (movimento) e `-1e9` nos serviços indisponíveis, NÃO a nota do campeão. Uma política que só filtra `tudo` (ex.: apagar uma coluna e `argmax`) vira "direção 0 sempre". Para reusar o campeão, passar `--W-politica campeao` (10/09 20:05, pred 179b: sem-FICAR = artefato).
