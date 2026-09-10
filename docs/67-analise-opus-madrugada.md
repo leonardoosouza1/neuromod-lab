@@ -110,11 +110,15 @@ como `campeao=reavaliado`, desligada por padrão, custo ~0.25 % do run).
 zero** — na direção e também no mover-vs-servir (centrar mata qualquer constante por linha).
 Ou seja: **99.6 % do que cada bloco emite é jogado fora por construção.**
 
-O caso extremo é o **reflexo**: 0.016 %. O reflexo mexe no peso de `d_posto`
-(`src/completo.py:89`, `Wtot.index_add(1, s.IDX1, -(s.w*a))`), e `d_posto` vale ~60 m com diferença de
-~0.7 m entre opções vizinhas. O sinal que dirige é o **gradiente**; o que ele emite é o **nível**. Isso não
-é bug de implementação, é o preço de usar distância absoluta como sentido: o poder de virar do reflexo
-**cai** com a distância ao posto, exatamente ao contrário do que um reflexo deveria fazer.
+O caso extremo é o **reflexo**: 0.016 % — **20× pior que todo o resto** (os outros blocos ficam em
+0.34–0.37 %). O reflexo mexe no peso de `d_posto` (`src/completo.py:89`,
+`Wtot.index_add(1, s.IDX1, -(s.w*a))`), e `d_posto` é uma distância **absoluta**: o que dirige é o
+**gradiente** entre as 9 opções (metros), o que ele emite é o **nível** (dezenas de metros).
+Mecanismo geral: com sentido de distância absoluta, o poder de virar de qualquer bloco escala com
+Δd/d — **cai** quanto mais longe está o alvo, o contrário do que um reflexo deveria fazer.
+Ressalva honesta: sob retina com oclusão o `d_posto` salta para `k_cego·R = 120` nas direções cegas, e aí
+o gradiente é grande; o 0.016 % é o estado congelado da bancada (uma posição, 5 passos), não a média de uma
+vida. **Não medi** a distribuição de Δd/d ao longo de uma vida — é a medida que fecharia este ponto.
 
 ### 1.6 O achado com mais consequência: **a conta do cérebro cobra o modo comum**
 
@@ -207,6 +211,11 @@ COMPLETO − linear fecha pelo menos metade; (c) mesmo assim ninguém com camada
 `COMPLETO hip 1.0` (é o que mais emite modo comum: desloca 93.3 com esc 1.0 contra 0.93 com esc .01).
 Se (b) falhar, o custo por ativação sai do programa e a culpa é da peça.
 
+**Armadilha de leitura (importante):** com `ativ_centrada` ligado, `medidas()` também mede centrado
+(`campo.py: medidas` só força `medir_ativ`, o resto do cfg vem por cópia). Então `ativacao_bloco` do
+Mundo B **não é comparável em valor absoluto** com o do Mundo A — são duas réguas. O que se compara entre
+A e B é `metab`, `fit`, `ent`, `dof` e o **ranking** dos blocos, nunca o valor cru da ativação.
+
 **Smoke já enfileirado** (`o7_smoke_mundoB`, P=8 G=1, e79) — ele é diretamente comparável ao
 `s0_smoke_mundoA` (mesmo P, G, semente): basta comparar a coluna `metab` das duas saídas para ter a
 primeira leitura da aposta (a) antes de gastar 4 h. **Não enfileirei a bateria B** — é do Fable, depois do A.
@@ -253,4 +262,54 @@ Detalhe e commits em `docs/AGENTE-OPUS-LOG.md`. Resumo:
    ela não tem base.
 5. **A célula mais barata da noite** é `--campeao reavaliado` no mesmo protocolo do σ (P256, σ .1, 60 ger.,
    5 sementes, ~14 min): se der ≥ +5 %, todo run futuro herda o ganho por 0.25 % de custo (pred 166).
-6. **Pred 163 (trajetória) pode voltar para a fila** — a ferramenta está consertada.
+6. **Pred 163 (trajetória) pode voltar para a fila** — a ferramenta está consertada (dois bugs, §1.8 e §6.2).
+
+---
+
+## 6. Medido depois de escrever o resto (02:1x) — o smoke A × B já responde parte da pred 167
+
+### 6.1 Mundo A × Mundo B, os MESMOS 8 seres, mesmo P=8 G=1 semente 0
+
+`_nmd/log/s0_smoke_mundoA.log` × `_nmd/log/o7_smoke_mundoB.log`. Única diferença entre os dois runs:
+`ativ_centrada`.
+
+| ser | fit A | fit B | Δ | metab A | metab B | ent A | ent B |
+|---|---|---|---|---|---|---|---|
+| linear | 4.085 | **4.085** | 0 | 1.00 | 1.00 | 11.9 | 11.9 |
+| COMPLETO | 3.575 | **4.141** | **+0.57** | 1.71 | 1.04 | 10.8 | 12.1 |
+| completo sem hipocampo | 3.581 | 4.131 | +0.55 | 1.69 | 1.04 | 10.8 | 12.1 |
+| completo sem reflexo | 3.583 | **4.169** | **+0.59** | 1.70 | 1.04 | 10.8 | 12.2 |
+| COMPLETO hip 1.0 | 3.572 | 4.051 | +0.48 | **1.78** | **1.06** | 10.6 | 11.7 |
+| COMPLETO cortex 2.0 | 3.591 | 3.657 | **+0.07** | 1.34 | **1.12** | 6.3 | 6.2 |
+| COMPLETO talamo fixo | 3.744 | 4.048 | +0.30 | 1.65 | 1.05 | 10.7 | 11.6 |
+| COMPLETO temp .3 | 2.788 | 2.882 | +0.09 | 1.63 | 1.05 | 7.8 | 7.9 |
+
+O que isso diz (com a ressalva dura: **n = 1 semente, P = 8, G = 1** — os genomas são a semente linear
+mais ruído; isto isola o efeito da CONTA, e não diz nada sobre o que a evolução acha depois):
+
+- **O linear é idêntico nos dois** (a lei só toca blocos): identidade confirmada fora do teste unitário.
+- **A conta do cérebro cai 94 %**: sobretaxa do COMPLETO (metab − 1) 0.71 → **0.04**.
+- **O buraco COMPLETO × linear some**: A = −12.5 %, B = **+1.4 %**. A pred 167(b) previa fechar metade;
+  fechou inteiro **neste smoke**. Ou seja: a penalidade das camadas no Mundo A é **a balança**, não a peça.
+- **A conta justa DISCRIMINA, a antiga não.** Na conta antiga todo mundo pagava 1.6–1.8 (menos o
+  `cortex 2.0`). Na conta nova quem continua pagando é exatamente quem **emite sinal diferencial de
+  verdade**: `cortex 2.0` (1.12; na bancada é o que mais dirige, .714, e inverte sinal em 31.8 %) e
+  `hip 1.0` (1.06; dirige .330). Os demais caem para 1.04–1.05. Isso é o que uma conta deve fazer.
+- **Pred 167(d) ✗**: apostei que `hip 1.0` seria quem mais ganharia de A para B; quem mais ganhou foi
+  `completo sem reflexo` (+0.59) e o `hip 1.0` foi o 4º (+0.48). Mecanismo do erro: o `hip 1.0` emite
+  modo comum **e** diferencial, então continua pagando na conta nova — ganha menos líquido. O sinal do
+  mecanismo está certo, o ranking que eu previ estava errado.
+
+**Consequência prática para o Fable:** com `ativ_centrada` e λ = .3 a conta do cérebro fica **quase
+desligada** (0.04 de metab). O Mundo B como está responde *"a penalidade era a balança?"* — e o smoke já
+diz que sim. Se o objetivo for um mundo onde o cérebro **paga de verdade, mas dividido por influência**,
+o λ equivalente é `0.3 × 0.71/0.04 ≈ 5.3` (mesma conta total do Mundo A, repartida pelo que muda a
+decisão). Isso é um **Mundo C**, não escrevi o arquivo e não enfileirei — é decisão de vocês.
+
+### 6.2 Segundo bug na mesma cadeia (trajetória), consertado
+
+Depois do fix do `_explicit`, a `trajetoria.py` andou mais e morreu adiante:
+`TypeError: int() argument must be ... not 'NoneType'` — `politica_util.mundo()` copia `cfg.horizonte`
+do cenário mas **nunca copia `T_max`**, então com `horizonte='aberto'` o `cfg.T_max` fica `None`
+(em `e43_campo.main` o `T_max` vem do preset, e essa parte não existe no `politica_util`).
+Consertado com a mesma regra do e43 (`240*30` quando aberto). Re-enfileirado como `o10_trajetoria_P128`.
