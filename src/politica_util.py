@@ -1,6 +1,6 @@
 """Utilidades do juiz de politicas explicitas (doc 53): carregar com lista negra, involucro ciente da assinatura, medir, tracar."""
-import os, re, json, inspect, argparse, hashlib
-import torch; from campo import *; from e43_campo import aplica_cenario, alinha_semente
+import os, re, json, inspect, argparse, hashlib, copy
+import torch; from campo import *; from e43_campo import aplica_cenario, alinha_semente, BRACOS
 PROIBIDO = [r'\bimport\s+(?!torch\b|math\b)', r'\bfrom\s+(?!torch\b|math\b)', r'\b(os|sys|subprocess|open|exec|eval|__import__|compile|globals|locals|getattr|setattr)\s*\(', r'\.px\b', r'\.pxd\b', r'\.serv\[', r'\.serv_msk', r'\.g\b', r'\.dest\b']
 _OLD29 = [n for n in NOMES_F[:NF] if n != 'livre' and not n.startswith('ret_') and n not in ('est_sin', 'est_cos')]
 assert not (RETINA or REGIME) or len(_OLD29) == 29, f'layout antigo de 29 colunas exige NM_RISCO=1 NM_PONTO=1 (achei {len(_OLD29)})'
@@ -41,12 +41,23 @@ def mundo(cenario_path=None, nevoa=None):
     if nevoa is not None: fl.nevoa = float(nevoa)
     assert fl.retina in (None, 'off') or RETINA, 'cenario com retina exige NM_RETINA=1'; assert fl.regime in (None, 'off') or REGIME, 'cenario com regime exige NM_REGIME=1'
     cfg = CfgCampo(L=fl.L, fitness=fl.fitness); cfg.reproducao = (None if fl.reproducao in (None, 'off') else (dict(REPRODUCAO_PADRAO) if fl.reproducao == 'padrao' else json.loads(fl.reproducao))); cfg.regime = (None if fl.regime in (None, 'off') else (dict(REGIME_PADRAO) if fl.regime == 'padrao' else json.loads(fl.regime))); cfg.retina = (None if fl.retina in (None, 'off') else (dict(RETINA_PADRAO) if fl.retina == 'padrao' else json.loads(fl.retina))); cfg.horizonte = getattr(fl, 'horizonte', 'fixo'); cfg.T_max = int(getattr(fl, 'T_max', None) or (240*30 if cfg.horizonte == 'aberto' else 240*fl.dias)); cfg.w_trab = getattr(fl, 'w_trab', 1.); cfg.KCAL_PANE = fl.kcal_pane; cfg.dinh0 = fl.dinh0; cfg.GUINCHO = fl.guincho; cfg.FUEL_POS_PANE = fl.fuel_pane; cfg.nevoa = fl.nevoa; cfg.ponto = fl.ponto; cfg.NPX = fl.npx; cfg.respawn = fl.respawn; cfg.pax_cidade = fl.pax_cidade
+    # [10/09 astra/a4] corpo (custos) e cerebro do cenario chegam ao juiz: antes trajetoria/julga/clona rodavam os campeoes SEM custo de ativacao e sem talamo fixo = mundo diferente do que os evoluiu
+    for k in ('custo_gene', 'custo_basal', 'orcamento_ativ', 'custo_suave', 'gene_min', 'limiar_disparo', 'custo_modo', 'ativ_centrada', 'talamo_norm', 'cortex_amp', 'temp_decisao', 'hip_esc', 'corte_vivos', 'obs_rapido'):
+        if hasattr(fl, k): setattr(cfg, k, getattr(fl, k))
+    if hasattr(fl, 'custo_canais'): cfg.custo_canais = tuple(fl.custo_canais) if isinstance(fl.custo_canais, (list, tuple)) else tuple(x.strip() for x in fl.custo_canais.split(','))
+    if cfg.talamo_norm not in ('teto', 'fixo'): cfg.talamo_norm = bool(cfg.talamo_norm)
     if fl.fome_passo is not None: cfg.fome_passo = fl.fome_passo
     for k in ('amp_preco', 'periodo_preco', 'tarifa_base', 'tarifa_km'):
         if ex.get(k) is not None: setattr(cfg, k, ex[k])
     teste = [gerar_mapa(1000 + s, L=fl.L, distinto=fl.mundo == 'distinto', perfis=ex['perfis'], K=ex['K'], ruas=ex['ruas']) for s in range(3)]
     chave = hashlib.md5(json.dumps(cen, sort_keys=True).encode()).hexdigest()[:8] if cen else 'base'
     return cfg, teste, int(240*fl.dias), chave
+def braco(d, nome, cfg):
+    """[10/09 astra/a4] classe e cfg de UM braco de uma bateria e43: rotulo -> ser.nome (classe em BRACOS) + ajustes de cerebro do ser (ex. 'COMPLETO talamo fixo');
+    bateria antiga (sem 'ser') = rotulo e a propria classe. Antes: KeyError no rotulo e o ajuste nunca era aplicado."""
+    ser = d['bracos'][nome].get('ser') or {}; A = dict(BRACOS)[ser.get('nome', nome)]; c = copy.copy(cfg)
+    for k, v in (ser.get('cerebro') or {}).items(): setattr(c, k, v)
+    return A, c
 def mede(Arq, W, cfg, teste, T, seeds, copias=128):
     r = {k: [] for k in ('mortos', 'ent', 'rec', 'panes', 'fome_fim', 'n_come', 'n_posto', 'dinh_fim', 'agua_fim', 'dia_morte', 'c_fome', 'c_sede', 'c_divida', 'c_dano', 'n_oficina')}
     for sd in seeds:

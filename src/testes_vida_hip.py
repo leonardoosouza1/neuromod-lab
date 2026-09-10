@@ -5,7 +5,7 @@ enquanto ambos vivos, t_vida por ser; (2) estatistica com respawn ligado (bateri
 ~50 s do torch (linear) e 168 s (COMPLETO). Exit 1 se (1) tiver acoes iguais < 95 % ou erro de estado > 1e-2 antes da 1a divergencia."""
 import sys, os, json, time; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 os.environ['NM_COMPILE'] = '0'
-import torch; from campo import *; from e43_campo import alinha_semente; from vida_hip import rodar_hip
+import torch; from campo import *; from campo import _fit; from e43_campo import alinha_semente; from vida_hip import rodar_hip
 N = '/media/llm-data/universe-runs/neuromod-lab-taxi'
 t0 = time.time(); import vida_hip; vida_hip.modulo(); print(f'  compilacao/carga do kernel: {time.time() - t0:.0f} s', flush=True)
 txt = open(f'{N}/e81/traco_ref.json').read().replace('Infinity', '1e30'); tr = json.loads(txt); B, T = tr['B'], tr['T']

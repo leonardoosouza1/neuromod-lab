@@ -17,4 +17,4 @@ print(f'DERIVA NULA: P {a.P} NP {NP} sigma_mut {a.sigma_mut} corte +-5 gene_min 
 for it in range(1, a.G + 1):
     W = (W + torch.randn(a.P, NP, generator=g, device=DEV)*a.sigma_mut).clamp(-5, 5)
     if it in marcos: mede(it)
-os.makedirs(a.out, exist_ok=True); p = os.path.join(a.out, f'deriva_nula_s{a.sigma0}_e{a.sigma_espinha}.json'); json.dump(dict(args=vars(a), NP=NP, N_novos=NP - Linear.NP, marcos=out), open(p, 'w'), indent=1); print('gravado', p, flush=True)
+os.makedirs(a.out, exist_ok=True); p = os.path.join(a.out, f'deriva_nula_s{a.sigma0}_e{a.sigma_espinha}_m{a.sigma_mut}.json'); json.dump(dict(args=vars(a), NP=NP, N_novos=NP - Linear.NP, marcos=out), open(p, 'w'), indent=1); print('gravado', p, flush=True)

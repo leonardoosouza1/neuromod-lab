@@ -5,14 +5,14 @@ podando/segurando; igual ao nulo = deriva, nao selecao. Roda na fila (segundos).
 import sys, os, json, argparse; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 os.environ['NM_COMPILE'] = '0'
 import torch; from campo import DEV, Linear; from completo import SerCompleto
-ap = argparse.ArgumentParser(); ap.add_argument('--bateria', required=True); ap.add_argument('--nulo', default='/media/llm-data/universe-runs/neuromod-lab-taxi/e72/deriva_nula_s0.0_e0.0.json'); ap.add_argument('--gene-min', type=float, default=.5); ap.add_argument('--cortex-amp', type=float, default=.5); ap.add_argument('--out', default=None); a = ap.parse_args()
-d = json.load(open(a.bateria)); nulo = json.load(open(a.nulo))['marcos']; gens = sorted(int(k) for k in nulo); o = SerCompleto.O_COR; nc = SerCompleto.N_COR
+ap = argparse.ArgumentParser(); ap.add_argument('--bateria', required=True); ap.add_argument('--nulo', default='/media/llm-data/universe-runs/neuromod-lab-taxi/e72/deriva_nula_s0.0_e0.0_m0.1.json'); ap.add_argument('--gene-min', type=float, default=.5); ap.add_argument('--cortex-amp', type=float, default=.5); ap.add_argument('--out', default=None); a = ap.parse_args()
+d = json.load(open(a.bateria)); NJ = json.load(open(a.nulo)); nulo = NJ['marcos']; gens = sorted(int(k) for k in nulo); o = SerCompleto.O_COR; nc = SerCompleto.N_COR
 def ger_do_nulo(chave, v):
     xs = [(g, nulo[str(g)][chave]) for g in gens]
     for (g0, v0), (g1, v1) in zip(xs, xs[1:]):
         if v0 <= v <= v1: return g0 + (g1 - g0)*(v - v0)/max(v1 - v0, 1e-9)
     return float('inf') if v > xs[-1][1] else 0.
-print(f'CAMPEAO vs NULO: {os.path.basename(a.bateria)} | nulo {os.path.basename(a.nulo)} | gene_min {a.gene_min} amp {a.cortex_amp}', flush=True)
+print(f'CAMPEAO vs NULO: {os.path.basename(a.bateria)} | nulo {os.path.basename(a.nulo)} | gene_min {a.gene_min} amp {a.cortex_amp} | nulo sigma_mut {NJ["args"].get("sigma_mut")} (bateria: {d["bracos"][next(iter(d["bracos"]))].get("sigma_mut")})', flush=True)
 print(f'  {"braco":38} {"sem":>4} {"NP":>4} {"ger_ef":>6} {"dof_novos":>9} {"=nulo@ger":>9} {"trava":>6} {"=nulo@ger":>9}', flush=True); saida = {}
 for nome, med in d['bracos'].items():
     if 'W' not in med: continue

@@ -20,6 +20,7 @@ def rodar_hip(W, mapas, cfg, T, seed, R=1, alvo=None, grava=False):
     assert NF == 29 and W.shape[1] == Linear.NP == 40, f'kernel v0 = NF 29 / NP 40 (RISCO+PONTO, sem retina); aqui NF {NF} NP {W.shape[1]}'
     assert cfg.custo_gene == 0. and not cfg.regime and not cfg.reproducao and cfg.ponto == 0. and cfg.retina is None, 'kernel v0: sem custo de gene, regime, reproducao, ponto ou retina'
     m = Campo(mapas, W.shape[0], cfg, seed=seed, R=R); B = m.B; Wb = W[m.gidx].contiguous().float()
+    assert int(cfg.NPX) == 12 and m.px.shape[1] == 12, f'kernel vida.cu compilado com NPX 12 fixo (cfg.NPX {cfg.NPX}, slots {m.px.shape[1]}): outro valor le fora do buffer'
     NC = m.NC; K = m.pmul0.shape[1]; NPTS = max(m.serv[t].shape[1] for t in TIPOS)
     serv = torch.zeros(NC, len(TIPOS), NPTS, 2, device=DEV); nserv = torch.zeros(NC, len(TIPOS), dtype=torch.int32, device=DEV)
     for j, t in enumerate(TIPOS): n = m.serv[t].shape[1]; serv[:, j, :n] = m.serv[t]; nserv[:, j] = m.serv_msk[t].sum(1).int()

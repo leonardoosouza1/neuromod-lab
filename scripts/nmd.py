@@ -70,7 +70,7 @@ def valida(p):
     env = dict(os.environ)
     for k, v in (p.get('env') or {}).items():
         if k not in ENVS:                          raise ValueError(f'env fora da lista branca: {k}')
-        if not re.fullmatch(r'[\w.]{1,20}', str(v)): raise ValueError(f'valor de env inválido: {k}')
+        if not re.fullmatch(r'[\w./-]{1,80}', str(v)): raise ValueError(f'valor de env inválido: {k}')
         env[k] = str(v)
     env.setdefault('HSA_OVERRIDE_GFX_VERSION', '10.3.0')
     env.setdefault('TORCHINDUCTOR_COMPILE_THREADS', '1')

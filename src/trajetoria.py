@@ -4,14 +4,14 @@ MESMOS blocos do jardim comum (berco, passageiros, destinos iguais) com gravacao
 tique (fome, gasolina, agua, dinheiro, posicao, vida), quem viveu mais (pareado). Histograma de acoes por braco (estrategia). GPU."""
 import sys, os, json, argparse; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 os.environ['NM_COMPILE'] = '0'
-import torch; from campo import *; from politica_util import mundo; from e43_campo import BRACOS
+import torch; from campo import *; from politica_util import mundo, braco; from e43_campo import BRACOS
 ap = argparse.ArgumentParser(); ap.add_argument('--bateria', required=True); ap.add_argument('--ref', default='linear'); ap.add_argument('--bracos', nargs='*', default=None); ap.add_argument('--seeds', type=int, nargs='*', default=None)
 ap.add_argument('--R', type=int, default=8); ap.add_argument('--T', type=int, default=None); ap.add_argument('--out', default='/media/llm-data/universe-runs/neuromod-lab-taxi/e72'); a = ap.parse_args()
-d = json.load(open(a.bateria)); ARQ = dict(BRACOS); cfg, teste, T0, chave = mundo(d.get('cenario')); T = a.T or (int(cfg.T_max) if getattr(cfg, 'horizonte', 'fixo') == 'aberto' else T0)
+d = json.load(open(a.bateria)); cfg, teste, T0, chave = mundo(d.get('cenario')); T = a.T or (int(cfg.T_max) if getattr(cfg, 'horizonte', 'fixo') == 'aberto' else T0)
 cfg.jardim_comum = True; cfg.grava_acoes = True; bracos = a.bracos or [b for b in d['bracos'] if b != a.ref and 'W' in d['bracos'][b]]; seeds = a.seeds or [int(s) for s in d['bracos'][a.ref]['W']]
 NOMES = NOMES_OP[:G] if len(NOMES_OP) >= G else [f'mov{i}' for i in range(G)]; NOMES = [f'm{i}' for i in range(G)] + list(ACOES) if 'ACOES' in globals() else [f'op{i}' for i in range(G + S)]
 def roda(nome, sd):
-    W = torch.tensor(d['bracos'][nome]['W'][str(sd)], device=DEV)[None, :]; m = rodar(ARQ[nome], W, teste, cfg, T, seed=7777, R=a.R); return m
+    W = torch.tensor(d['bracos'][nome]['W'][str(sd)], device=DEV)[None, :]; A_, c_ = braco(d, nome, cfg); m = rodar(A_, W, teste, c_, T, seed=7777, R=a.R); return m
 print(f'TRAJETORIA {os.path.basename(a.bateria)} | ref {a.ref} vs {bracos} | sementes {seeds} | jardim NC {len(teste)} x R {a.R} = {len(teste)*a.R} blocos | T {T}', flush=True)
 saida = {}; saida_med = {}
 for nome in bracos:
