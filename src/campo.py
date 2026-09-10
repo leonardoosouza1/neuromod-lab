@@ -51,7 +51,7 @@ class CfgCampo:
         s.orcamento_ativ = None
         s.limiar_disparo = .25
         s.custo_canais = ('fome',)
-        s.talamo_norm = False; s.cortex_amp = .5; s.temp_decisao = 0.; s.hip_esc = None; s.jardim_comum = False
+        s.talamo_norm = False; s.cortex_amp = .5; s.temp_decisao = 0.; s.hip_esc = None; s.jardim_comum = False; s.grava_acoes = False
         s.custo_modo = 'existencia'; s.amostra_ativ = 10; s.ativ_ref = 1.   # [spec F2] 'ativacao' = o gene custa pelo SINAL que emite (por bloco: |saida do bloco na nota| media, amostrada a cada amostra_ativ ticks; bloco com saida >= ativ_ref conta cheio); 'existencia' = hoje
         s.horizonte = 'fixo'; s.T_max = None; s.w_trab = 1.   # [spec Mundo Vivo F1] 'aberto' = roda ate todos morrerem (checa vivo.any() 1x por dia simulado) ou T_max; fitness 'vida' = dias vividos + w_trab*renda/300 (sem pena de morte, sem teto)
         s.ponto = 0.   # [E68] ponto de taxi: parado+livre recebe passageiro no lugar com prob demanda/ponto por tick (0 = desligado, mundo identico ao anterior); 30 => centro ~15 ticks, periferia ~100
@@ -130,7 +130,7 @@ class Campo:
         s.cfg = c = cfg; s.NC = len(mapas); s.R = R; s.P = P; B = s.B = P*s.NC*R; s.L = float(mapas[0]['L'])
         s.cidx = torch.arange(s.NC, device=DEV).repeat_interleave(R).repeat(P)           # (B,)
         s.gidx = torch.arange(P, device=DEV).repeat_interleave(s.NC*R)
-        s.JC = bool(getattr(c, 'jardim_comum', False)); s.NB = s.NC*R; s.bloco = torch.arange(s.NB, device=DEV).repeat(P); s.cidx_b = torch.arange(s.NB, device=DEV)//R
+        s.GRAVA = False; s.JC = bool(getattr(c, 'jardim_comum', False)); s.NB = s.NC*R; s.bloco = torch.arange(s.NB, device=DEV).repeat(P); s.cidx_b = torch.arange(s.NB, device=DEV)//R
         g = torch.Generator(device=DEV); g.manual_seed(int(seed)); s.g = g; s.g_dec = torch.Generator(device=DEV); s.g_dec.manual_seed(int(seed) + 7919)
         s.custo_tex = torch.stack([m['custo'] for m in mapas])                              # (NC,tex,tex)
         s.campo_dist = torch.stack([m['campo_dist'] for m in mapas])                        # (NC,GR,GR)
@@ -434,6 +434,7 @@ def um_passo(m, a, Wb):
         ok = (tudo > -1e8).float(); n = ok.sum(1, keepdim=True).clamp(min=1.); q0 = tudo*ok; mu = q0.sum(1, keepdim=True)/n; sd = (((q0 - mu)**2*ok).sum(1, keepdim=True)/n).sqrt()
         u = (torch.rand((m.NB,) + tuple(tudo.shape[1:]), generator=m.g_dec, device=DEV)[m.bloco] if m.JC else torch.rand(tudo.shape, device=DEV, generator=m.g_dec)).clamp(1e-9, 1. - 1e-9); tudo = tudo + Td*sd*(-torch.log(-torch.log(u)))*ok
     esc = a.decidir(tudo, m) if hasattr(a, 'decidir') else tudo.argmax(1)
+    if m.GRAVA: m.acoes[m.t] = esc; m.traj[m.t] = torch.stack([m.fome, m.fuel, m.agua, m.dinh, m.pos[:, 0], m.pos[:, 1], m.vida], 1)
     m.passo(esc)
 
 class Linear:
@@ -497,6 +498,7 @@ def rodar(Arq, W, mapas, cfg, T, seed, R=1):
         nomes = Arq.nomes_genes(); n_b = {b: float(sum(n.startswith(b) for n in nomes)) for b in BLOCOS}
         m.ativ_soma = {b: torch.zeros(m.B, device=DEV) for b in BLOCOS if n_b[b] > 0}; m.ativ_n = 0
         if cobra_ativ: m.metab = torch.ones(m.B, device=DEV) + basal
+    if getattr(cfg, 'grava_acoes', False): m.GRAVA = True; m.acoes = torch.full((T, m.B), -1, dtype=torch.long, device=DEV); m.traj = torch.zeros(T, m.B, 7, device=DEV)
     for t in range(T):
         if ativ and t % cfg.amostra_ativ == 0 and t > 0:
             ab = a.ativ_blocos(m); m.ativ_n += 1
