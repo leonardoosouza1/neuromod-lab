@@ -105,6 +105,12 @@ como `campeao=reavaliado`, desligada por padrão, custo ~0.25 % do run).
 | rápida | 192 | .0069 | 2.00 | 0.34 % |
 | lenta | 279 | .0098 | 2.67 | 0.37 % |
 
+**Leitura que ficou errada no diário:** "as camadas quase não dirigem" confunde duas colunas. A coluna
+`dirige` **somada** nos blocos (tálamo .279 + córtex .182 + rápida .0069 + lenta .0098 + hip .0033 +
+ref .0022 = **.483**) é **74 % da espinha** (.652) — o cérebro tem ~43 % de toda a autoridade de direção.
+O que é 0.3 % é a razão `dirige/desloca`, que fala do **preço**, não da **influência**. A trajetória
+confirma o lado da influência (§6.3): linear e COMPLETO concordam em só **27 %** dos tiques.
+
 "dirige" é o que muda a escolha; "desloca" é o que é **igual nas 9 opções**. O `um_passo` centra a nota
 (`src/campo.py:427`: `sc = sc - sc.mean(1, keepdim=True)`), então **o modo comum tem efeito exatamente
 zero** — na direção e também no mover-vs-servir (centrar mata qualquer constante por linha).
@@ -312,4 +318,25 @@ Depois do fix do `_explicit`, a `trajetoria.py` andou mais e morreu adiante:
 `TypeError: int() argument must be ... not 'NoneType'` — `politica_util.mundo()` copia `cfg.horizonte`
 do cenário mas **nunca copia `T_max`**, então com `horizonte='aberto'` o `cfg.T_max` fica `None`
 (em `e43_campo.main` o `T_max` vem do preset, e essa parte não existe no `politica_util`).
-Consertado com a mesma regra do e43 (`240*30` quando aberto). Re-enfileirado como `o10_trajetoria_P128`.
+Consertado com a mesma regra do e43 (`240*30` quando aberto). Re-enfileirado como `o10_trajetoria_P128`:
+**exit=0 em 694 s**, `e72/trajetoria_e43_P128.json` gravado. A cadeia inteira está de pé de novo.
+
+### 6.3 Pred 163 tem números (fechamento é do Fable)
+
+`_nmd/log/o10_trajetoria_P128.log` — campeões do e43_P128 nos mesmos 24 blocos (3 mapas × R8, 5 sementes):
+
+| par | concordância de ação | 1ª divergência (mediana) | braço vive mais em | opção que mais difere |
+|---|---|---|---|---|
+| linear × COMPLETO | **0.269** | **18** tiques (p10 1) | 39 % dos blocos | **op8** (movimento) |
+| linear × sem hipocampo | 0.277 | 19 tiques (p10 4) | 40 % dos blocos | op8 (movimento) |
+
+Contra a aposta da pred 163: concordância ≥ .80 **✗ e por muito** (deu .27); 1ª divergência < 200 tiques
+**✓ e muito mais cedo** (18); vive mais em ≤ 40 % dos blocos **✓** (39–40 %, no fio); "a opção que mais
+difere é de SERVIÇO" **✗** — é de movimento.
+
+O detalhe que vale mais que os quatro: **o estado do linear na divergência é um corpo SAUDÁVEL**
+(fome 18, gasolina 76, água 83, vida 100). A divergência não é disparada por necessidade — ela acontece
+já no tique ~18, com o tanque cheio. Ou seja: os dois cérebros **não são o mesmo ser com um enfeite**;
+divergem desde o começo, em opção de direção, com o corpo em ordem. Isso mata de vez a leitura
+"as camadas quase não dirigem" (§1.5) e recoloca a pergunta certa: as camadas dirigem bastante e
+**mesmo assim** não vivem mais (39 % pareado). O problema não é autoridade, é **para onde** elas dirigem.
