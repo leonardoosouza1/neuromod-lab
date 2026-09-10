@@ -51,7 +51,7 @@ class CfgCampo:
         s.orcamento_ativ = None
         s.limiar_disparo = .25
         s.custo_canais = ('fome',)
-        s.talamo_norm = False; s.cortex_amp = .5; s.temp_decisao = 0.; s.hip_esc = None
+        s.talamo_norm = False; s.cortex_amp = .5; s.temp_decisao = 0.; s.hip_esc = None; s.jardim_comum = False
         s.custo_modo = 'existencia'; s.amostra_ativ = 10; s.ativ_ref = 1.   # [spec F2] 'ativacao' = o gene custa pelo SINAL que emite (por bloco: |saida do bloco na nota| media, amostrada a cada amostra_ativ ticks; bloco com saida >= ativ_ref conta cheio); 'existencia' = hoje
         s.horizonte = 'fixo'; s.T_max = None; s.w_trab = 1.   # [spec Mundo Vivo F1] 'aberto' = roda ate todos morrerem (checa vivo.any() 1x por dia simulado) ou T_max; fitness 'vida' = dias vividos + w_trab*renda/300 (sem pena de morte, sem teto)
         s.ponto = 0.   # [E68] ponto de taxi: parado+livre recebe passageiro no lugar com prob demanda/ponto por tick (0 = desligado, mundo identico ao anterior); 30 => centro ~15 ticks, periferia ~100
@@ -130,6 +130,7 @@ class Campo:
         s.cfg = c = cfg; s.NC = len(mapas); s.R = R; s.P = P; B = s.B = P*s.NC*R; s.L = float(mapas[0]['L'])
         s.cidx = torch.arange(s.NC, device=DEV).repeat_interleave(R).repeat(P)           # (B,)
         s.gidx = torch.arange(P, device=DEV).repeat_interleave(s.NC*R)
+        s.JC = bool(getattr(c, 'jardim_comum', False)); s.NB = s.NC*R; s.bloco = torch.arange(s.NB, device=DEV).repeat(P); s.cidx_b = torch.arange(s.NB, device=DEV)//R
         g = torch.Generator(device=DEV); g.manual_seed(int(seed)); s.g = g; s.g_dec = torch.Generator(device=DEV); s.g_dec.manual_seed(int(seed) + 7919)
         s.custo_tex = torch.stack([m['custo'] for m in mapas])                              # (NC,tex,tex)
         s.campo_dist = torch.stack([m['campo_dist'] for m in mapas])                        # (NC,GR,GR)
@@ -145,7 +146,7 @@ class Campo:
         if getattr(c, 'varredura', 'exata') == 'grade': s._recalc_grade()   # [chunks]
         s.dirs = DIRS.to(DEV)
         # estado
-        s.pos = torch.rand(B, 2, generator=g, device=DEV)*s.L
+        s.pos = (torch.rand(s.NB, 2, generator=g, device=DEV)[s.bloco] if s.JC else torch.rand(B, 2, generator=g, device=DEV))*s.L
         s.casa = s.distrito(s.pos)
         s.fuel = torch.full((B,), 85., device=DEV); s.agua = torch.full((B,), 85., device=DEV); s.fome = torch.full((B,), 10., device=DEV)
         s.fad = torch.full((B,), 10., device=DEV); s.calor = torch.full((B,), 30., device=DEV); s.vida = torch.full((B,), 100., device=DEV)
@@ -207,18 +208,24 @@ class Campo:
             d = (p[:, None, :] - pts).norm(dim=-1).masked_fill(~msk, 1e9); k = d.argmin(-1)
             P.append(pts[ar, k]); D.append(d[ar, k])
         return torch.stack(P, 1), torch.stack(D, 1)
+    def _rand(s, *shape):
+        if s.JC: return torch.rand((s.NB,) + tuple(shape[1:]), generator=s.g, device=DEV)[s.bloco]
+        return torch.rand(shape, generator=s.g, device=DEV)
+    def _randn(s, *shape):
+        if s.JC: return torch.randn((s.NB,) + tuple(shape[1:]), generator=s.g, device=DEV)[s.bloco]
+        return torch.randn(shape, generator=s.g, device=DEV)
     def _perto(s, p, n):                        # n pontos por ser num anel [8, raio_px] em volta de p (B,2) -> (B,n,2)
-        B = p.shape[0]; ang = torch.rand(B, n, generator=s.g, device=DEV)*2*math.pi; r = 8. + (s.cfg.raio_px - 8.)*torch.rand(B, n, generator=s.g, device=DEV)
+        B = p.shape[0]; ang = s._rand(B, n)*2*math.pi; r = 8. + (s.cfg.raio_px - 8.)*s._rand(B, n)
         return (p[:, None, :] + torch.stack([r*torch.cos(ang), r*torch.sin(ang)], -1)).clamp(0., s.L)
     def _na_cidade(s, n):                       # [E70] n passageiros por ser NA CIDADE: distrito sorteado ~ demanda, posicao gaussiana em volta do centro do distrito (sigma = L/(2*sqrt(K)))
         ci = s.cidx; B = ci.shape[0]; K = s.demanda.shape[1]
-        k = torch.multinomial(s.demanda[ci], n, replacement=True, generator=s.g)                    # (B,n)
+        k = torch.multinomial(s.demanda[s.cidx_b], n, replacement=True, generator=s.g)[s.bloco] if s.JC else torch.multinomial(s.demanda[ci], n, replacement=True, generator=s.g)   # (B,n)
         cen = s.centros[ci[:, None].expand(-1, n), k]                                                # (B,n,2)
-        return (cen + torch.randn(B, n, 2, generator=s.g, device=DEV)*(s.L/(2.*math.sqrt(K)))).clamp(0., s.L)
+        return (cen + s._randn(B, n, 2)*(s.L/(2.*math.sqrt(K)))).clamp(0., s.L)
     def _destino(s, po):                        # destino do passageiro: prob ~ 1/(1+d) via ruido, >=30% outro distrito (aprox: raio aleatorio grande)
         B, N, _ = po.shape
-        ang = torch.rand(B, N, generator=s.g, device=DEV)*2*math.pi
-        r = s.L*(.05 + .45*torch.rand(B, N, generator=s.g, device=DEV)**2)                  # concentra perto, cauda longa
+        ang = s._rand(B, N)*2*math.pi
+        r = s.L*(.05 + .45*s._rand(B, N)**2)                  # concentra perto, cauda longa
         d = po + torch.stack([r*torch.cos(ang), r*torch.sin(ang)], -1)
         return d.clamp(0., s.L)
     def construir(s, t, quer):                  # [E44] abre 1 ponto do tipo t (posicao aleatoria) nos mapas com quer=True, no proximo slot livre
@@ -384,7 +391,7 @@ class Campo:
         # passageiros: embarque (raio) e entrega
         if c.ponto > 0:   # [E68 ponto de taxi] parado, livre, sem passageiro e sem usar servico: o passageiro VEM ate o taxi; espera media ponto/demanda ticks (so gasta RNG quando ligado)
             ar = s.ARB; esp = livre & (s.pd_ < 0) & ~mov & ~pode
-            vem = esp & (torch.rand(B, generator=s.g, device=DEV) < (s.demanda[ci, s.distrito(s.pos)]/c.ponto))
+            vem = esp & (s._rand(B) < (s.demanda[ci, s.distrito(s.pos)]/c.ponto))
             kx0 = (s.px - s.pos[:, None, :]).norm(dim=-1).argmin(1); novo_d0 = s._destino(s.pos[:, None, :])[:, 0]
             s.px[ar, kx0] = torch.where(vem[:, None], s.pos, s.px[ar, kx0]); s.pxd[ar, kx0] = torch.where(vem[:, None], novo_d0, s.pxd[ar, kx0]); s.px_ok[ar, kx0] = s.px_ok[ar, kx0] | vem
             s.n_vem = s.n_vem + vem.float()
@@ -397,7 +404,7 @@ class Campo:
         s.px_ok[ar, kx] = s.px_ok[ar, kx] & ~pega                                                   # slot usado fica inativo
         s.t_ult = torch.where(pega, torch.zeros_like(s.t_ult), s.t_ult + 1.)                        # [E68] relogio de espera
         dem_v = s.demanda[ci[:, None].expand(-1, c.NPX), s.distrito(s.px)] if c.pax_cidade else s.demanda[ci, s.distrito(s.pos)][:, None]   # [E70] demanda do LUGAR do passageiro (cidade) ou do taxi (antigo)
-        volta = torch.rand(B, c.NPX, generator=s.g, device=DEV) < dem_v/(c.respawn*s.pref_mult[ci, 5])[:, None]   # elasticidade: tarifa x2 = espera 2x; [E56] demanda do distrito
+        volta = s._rand(B, c.NPX) < dem_v/(c.respawn*s.pref_mult[ci, 5])[:, None]   # elasticidade: tarifa x2 = espera 2x; [E56] demanda do distrito
         s.px_ok = s.px_ok | volta
         cheg = livre & (s.pd_ >= 0) & ((s.pos - s.dest).norm(dim=-1) <= c.raio)
         pf = s.pref_mult[ci]; aliq = (s.aliq[ci, s.orig_d]*pf[:, 0]).clamp(0., .6)
@@ -554,7 +561,7 @@ def evoluir(Arq, mapas, cfg, **kw):
     return evoluir_sementes(Arq, mapas, cfg, avaliar_fn=avaliar, **kw)
 
 def medidas(Arq, W, mapas, cfg, T=1200, seed=7777, R=1, copias=128):
-    import copy as _copy; cfg_m = _copy.copy(cfg); cfg_m.medir_ativ = True
+    import copy as _copy; cfg_m = _copy.copy(cfg); cfg_m.medir_ativ = True; cfg_m.jardim_comum = False
     m = rodar(Arq, W[None, :].repeat(copias, 1), mapas, cfg_m, T, seed, R=R); morto = (m.vida <= 0).float()
     med = dict(fit=float(_fit(m, cfg, T).mean()), mortos=float(morto.mean()), ent=float(m.ent.mean()),
                panes=float(m.av_fuel.mean()), fome_fim=float(m.fome.mean()), agua_fim=float(m.agua.mean()), dinh=float(m.dinh.mean()), res=float(m.res.mean()),
