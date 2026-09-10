@@ -1,6 +1,6 @@
 """E43: baterias no CAMPO (mundo continuo). Bracos: linear, reflexo, minimo-3. Presets triagem/honesto. --L tamanho do mapa.
 Saidas: /media/llm-data/universe-runs/neuromod-lab-taxi/e43/. So GPU (TORCHINDUCTOR_COMPILE_THREADS=1 no ambiente)."""
-import sys, os, json, time, argparse, hashlib
+import sys, os, json, time, argparse, hashlib, copy
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import torch
 from campo import *
@@ -71,17 +71,19 @@ def main(a):
     treino = [gerar_mapa(s, **gm) for s in range(4)]; teste = [gerar_mapa(a.teste_seed + s, **gm) for s in range(3)]
     res = dict(nomes_f=NOMES_F, cenario=a.cenario, cenario_json=cen, cenario_hash=hashlib.md5(json.dumps(cen, sort_keys=True).encode()).hexdigest()[:10], dispositivo=dict(gpu=torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'cpu', torch=torch.__version__, hip_ou_cuda=(torch.version.hip or torch.version.cuda)), argv=sys.argv[1:], predicao=cen.get('predicao'), ponto=a.ponto, npx=a.npx, respawn=a.respawn, pax_cidade=a.pax_cidade, nevoa=a.nevoa, preset=a.preset, L=a.L, fitness=a.fitness, pena=a.pena, NF=NF, S=S, bracos={})
     print(f'== E43 campo | {a.preset} L={a.L} dias={a.dias} regua={a.fitness} P={p["P"]} G={p["G"]} R={p["R"]} x{len(p["seeds"])} | pena {a.pena} | sigma_mut {a.sigma_mut} crn {a.crn} jardim {bool(a.jardim_comum)} ==', flush=True)
-    for nome, A in BRACOS:
-        if a.so and nome not in a.so: continue
+    _cls = dict(BRACOS); seres = [((b, b, {}) if isinstance(b, str) else (b.get('rotulo', b['nome']), b['nome'], dict(b.get('cerebro', {})))) for b in (a.so if a.so else [n for n, _ in BRACOS])]   # [10/09 Leonardo] um mundo, SERES diferentes: braco = nome da classe + rotulo + overrides de cerebro
+    for rotulo, nome, ov in seres:
+        A = _cls[nome]; cfg_b = copy.copy(cfg)
+        for k, v in ov.items(): setattr(cfg_b, k, v)
         t1 = time.time(); W0 = None
-        if cfg.orcamento_ativ is not None and not issubclass(A, Cerebro): print(f'  [aviso] orcamento_ativ={cfg.orcamento_ativ} nao se aplica ao braco {nome} (nao e Cerebro): roda sem orcamento', flush=True)
+        if cfg_b.orcamento_ativ is not None and not issubclass(A, Cerebro): print(f'  [aviso] orcamento_ativ={cfg_b.orcamento_ativ} nao se aplica ao braco {rotulo} (nao e Cerebro): roda sem orcamento', flush=True)
         if a.init_from:
             JJ = json.load(open(a.init_from[0])); J = JJ['bracos'][a.init_from[1]]['W']; W0 = {sd: alinha_semente(J.get(str(sd), J[sorted(J)[sd % len(J)]]), JJ.get('nomes_f')) for sd in p['seeds']}   # semente sem campeao no JSON (ex.: 3 sementes -> 5): usa o campeao de outra semente (ciclico)
-        champs = (lab.evoluir_es(A, treino, cfg, P=p['P'], ger=p['G'], T=p['T_evo'], seeds=p['seeds'], R=p['R'], verbose=True, W0=W0, paciencia=a.paciencia, avaliar_fn=avaliar, sigma_es=a.es_sigma, lr=a.es_lr) if a.otim == 'es'   # [E65] gradiente estimado, mesmo orcamento
-                  else evoluir(A, treino, cfg, P=p['P'], ger=p['G'], T=p['T_evo'], seeds=p['seeds'], R=p['R'], verbose=True, W0=W0, paciencia=a.paciencia, sigma_espinha=a.sigma_espinha, sigma0=a.sigma0, crn=a.crn, sigma_mut=a.sigma_mut))
+        champs = (lab.evoluir_es(A, treino, cfg_b, P=p['P'], ger=p['G'], T=p['T_evo'], seeds=p['seeds'], R=p['R'], verbose=True, W0=W0, paciencia=a.paciencia, avaliar_fn=avaliar, sigma_es=a.es_sigma, lr=a.es_lr) if a.otim == 'es'   # [E65] gradiente estimado, mesmo orcamento
+                  else evoluir(A, treino, cfg_b, P=p['P'], ger=p['G'], T=p['T_evo'], seeds=p['seeds'], R=p['R'], verbose=True, W0=W0, paciencia=a.paciencia, sigma_espinha=a.sigma_espinha, sigma0=a.sigma0, crn=a.crn, sigma_mut=a.sigma_mut))
         med = {}; por = {}
         for sd in p['seeds']:
-            por[sd] = medidas(A, champs[sd][0], teste, cfg, T=p['T_aval'], seed=7777, R=1, copias=128)
+            por[sd] = medidas(A, champs[sd][0], teste, cfg_b, T=p['T_aval'], seed=7777, R=1, copias=128)
         for k in por[p['seeds'][0]]:
             if isinstance(por[p['seeds'][0]][k], dict): med[k] = {b: sum(por[sd][k].get(b, 0.) for sd in p['seeds'])/len(p['seeds']) for b in por[p['seeds'][0]][k]}   # [spec I1a] dof_bloco: media por bloco
             else: med[k] = sum(por[sd][k] for sd in p['seeds'])/len(p['seeds'])
@@ -91,8 +93,8 @@ def main(a):
             if isinstance(med[k], (int, float)): med[k + '_por_semente'] = [round(por[sd][k], 3) for sd in p['seeds']]   # dof_bloco (dict) fica so na media
         med['W'] = {sd: [round(float(x), 5) for x in champs[sd][0]] for sd in p['seeds']}; med['segundos'] = round(time.time() - t1); med['otim'] = a.otim
         med['ger_efetiva'] = {str(sd): len(champs[sd][1]) for sd in p['seeds']}; med['seeds'] = list(p['seeds']); med['sigma_mut'] = (a.es_sigma if a.otim == 'es' else a.sigma_mut); med['crn'] = a.crn; med['jardim_comum'] = bool(a.jardim_comum); med['sigma0'] = a.sigma0; med['sigma_espinha'] = a.sigma_espinha; med['gene_min'] = cfg.gene_min; med['G'] = p['G']; med['P'] = p['P']
-        res['bracos'][nome] = med
-        print(f'  {nome:<36} NP {A.NP:3d} fit {med["fit"]:6.2f} {med["fit_por_semente"]} ent {med["ent"]:5.1f} mortos {med["mortos"]:.2f} {med["mortos_por_semente"]} '
+        med['ser'] = dict(nome=nome, cerebro=ov); res['bracos'][rotulo] = med
+        print(f'  {rotulo:<36} NP {A.NP:3d} fit {med["fit"]:6.2f} {med["fit_por_semente"]} ent {med["ent"]:5.1f} mortos {med["mortos"]:.2f} {med["mortos_por_semente"]} '
               f'panes {med["panes"]:4.1f} fome {med["fome_fim"]:3.0f} agua {med["agua_fim"]:3.0f} dinh {med["dinh"]:4.0f} res {med["res"]:4.0f} L/abast {med["litros_por_abast"]:4.0f} abast {med["n_posto"]:4.1f} dof {med["dof"]:4.0f} metab {med["metab"]:.2f} ({med["segundos"]}s)', flush=True)
         tmp = os.path.join(a.out, f'e43{a.tag}.json.tmp')
         with open(tmp, 'w') as fh: json.dump(res, fh, indent=1)
