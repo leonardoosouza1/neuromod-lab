@@ -4,7 +4,7 @@ demanda, aliq, pmul, alug) e cfg igual; (2) cenario alterado muda so o que pede 
 [10/09 astra] REPROVA com exit 1: antes so imprimia True/False (portao que nunca reprovava)."""
 import sys, os, json, argparse, copy; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 os.environ['NM_COMPILE'] = '0'
-import torch; from campo import *; from e43_campo import aplica_cenario, BRACOS; from politica_util import mundo, braco
+import torch; from campo import *; from e43_campo import aplica_cenario, BRACOS; from politica_util import mundo, braco; from completo import SerCompleto
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OK = []
 def chk(rotulo, **conds):
