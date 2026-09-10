@@ -2,7 +2,7 @@
 lancamento por tique. Inicializacao (berco, passageiros, fase) continua sendo a do Campo (torch, mesma semente); o kernel roda o laco e
 devolve o estado final no proprio Campo (m.t_vida, m.rec, m.ent, ...), de modo que _fit()/medidas leem igual. So cerebro Linear (NP 40,
 NF 29 = RISCO + PONTO ligados, sem retina/regime). Compila uma vez (hipcc) em TORCH_EXTENSIONS_DIR em /media/llm-data."""
-import os, torch
+import os, sys, torch
 os.environ.setdefault('TORCH_EXTENSIONS_DIR', '/media/llm-data/scratch/torch_ext')
 from campo import Campo, Linear, TIPOS, NF, DEV
 _MOD = None
@@ -10,6 +10,7 @@ def modulo():
     global _MOD
     if _MOD is None:
         from torch.utils.cpp_extension import load
+        os.environ['PATH'] = os.path.dirname(sys.executable) + os.pathsep + os.environ.get('PATH', '')   # [10/09] ninja do venv: a fila chama o python por caminho absoluto, sem ativar o venv
         _MOD = load(name='vida_hip', sources=[os.path.join(os.path.dirname(os.path.abspath(__file__)), 'hip', 'vida.cu')], extra_cuda_cflags=['-O3'], verbose=False)
     return _MOD
 def _cfg_f(c):

@@ -32,10 +32,12 @@ c4 = copy.deepcopy(cen); c4.setdefault('corpo', {})['gene_min'] = .7; f4 = flags
 chk('gene_min do cenario aplicado', flag_recebe=getattr(f4, 'gene_min', None) == .7, e43_copia_para_cfg='cfg.gene_min = float(getattr(a, \'gene_min\', cfg.gene_min))' in open(os.path.join(REPO, 'src', 'e43_campo.py')).read())
 # (4) [10/09 astra] cfg do e43 (cfg_de_flags) vs cfg do juiz (mundo()) para o MESMO cenario: diferencas listadas; os campos do cenario tem de bater
 from e43_campo import parser, cfg_de_flags
-cenB = os.path.join(REPO, 'cenarios', 'mundoB_conta_justa.json'); fa = parser().parse_args(['--preset', 'fumaca', '--cenario', cenB]); fa._explicit = {'preset', 'cenario'}; exB = aplica_cenario(fa, json.load(open(cenB)))
-TB = int(fa.T_max or 240*30) if fa.horizonte == 'aberto' else int(240*fa.dias); cE = cfg_de_flags(fa, exB, TB)
 def _eq(x, y): return bool(torch.equal(x, y)) if torch.is_tensor(x) and torch.is_tensor(y) else x == y
-dif = {k: (getattr(cE, k, '<ausente>'), getattr(cB, k, '<ausente>')) for k in sorted(set(vars(cE)) | set(vars(cB))) if not _eq(getattr(cE, k, None), getattr(cB, k, None))}
-print(f'cfg e43 (cfg_de_flags) vs cfg do juiz (mundo()) no mundoB: {len(dif)} campos diferentes: {dif}', flush=True)
+for nomec in ('mundoB_conta_justa', 'mundoA_seres', 'mundoC_cidade_da_vida', 'mundo_vivo_v1'):
+    cenX = os.path.join(REPO, 'cenarios', nomec + '.json'); fa = parser().parse_args(['--preset', 'fumaca', '--cenario', cenX]); fa._explicit = {'preset', 'cenario'}; exX = aplica_cenario(fa, json.load(open(cenX)))
+    TX = int(fa.T_max or 240*30) if fa.horizonte == 'aberto' else int(240*fa.dias); cE = cfg_de_flags(fa, exX, TX); cM, _, _, _ = mundo(cenX)
+    dif = {k: (getattr(cE, k, '<ausente>'), getattr(cM, k, '<ausente>')) for k in sorted(set(vars(cE)) | set(vars(cM))) if not _eq(getattr(cE, k, None), getattr(cM, k, None))}
+    print(f'cfg e43 (cfg_de_flags) vs cfg do juiz (mundo()) em {nomec}: {len(dif)} campos diferentes: {dif}', flush=True); chk(f'cfg juiz == cfg e43 ({nomec})', zero_diferencas=len(dif) == 0)
+    if nomec == 'mundoB_conta_justa': cB = cM
 chk('cfg do juiz == cfg do e43 nos campos do cenario', **{k: _eq(getattr(cE, k, None), getattr(cB, k, None)) for k in ('L', 'fitness', 'T_max', 'horizonte', 'custo_gene', 'custo_modo', 'custo_basal', 'ativ_centrada', 'gene_min', 'NPX', 'respawn', 'pax_cidade', 'dinh0', 'fome_passo', 'KCAL_PANE', 'GUINCHO', 'FUEL_POS_PANE', 'retina', 'regime', 'reproducao', 'amp_preco', 'periodo_preco', 'w_trab', 'nevoa', 'ponto')})
 assert all(OK), f'testes_cenario REPROVADO: {OK}'; print('testes_cenario: todos passaram', flush=True)

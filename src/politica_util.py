@@ -1,6 +1,6 @@
 """Utilidades do juiz de politicas explicitas (doc 53): carregar com lista negra, involucro ciente da assinatura, medir, tracar."""
 import os, re, json, inspect, argparse, hashlib, copy
-import torch; from campo import *; from e43_campo import aplica_cenario, alinha_semente, BRACOS
+import torch; from campo import *; from e43_campo import aplica_cenario, alinha_semente, BRACOS, parser, cfg_de_flags
 PROIBIDO = [r'\bimport\s+(?!torch\b|math\b)', r'\bfrom\s+(?!torch\b|math\b)', r'\b(os|sys|subprocess|open|exec|eval|__import__|compile|globals|locals|getattr|setattr)\s*\(', r'\.px\b', r'\.pxd\b', r'\.serv\[', r'\.serv_msk', r'\.g\b', r'\.dest\b']
 _OLD29 = [n for n in NOMES_F[:NF] if n != 'livre' and not n.startswith('ret_') and n not in ('est_sin', 'est_cos')]
 assert not (RETINA or REGIME) or len(_OLD29) == 29, f'layout antigo de 29 colunas exige NM_RISCO=1 NM_PONTO=1 (achei {len(_OLD29)})'
@@ -35,20 +35,15 @@ def carrega(path):
         def atualizar(s, m): return s._call('atualizar', m)
     return POL, None
 def mundo(cenario_path=None, nevoa=None):
-    """[spec Mundo Vivo I1b] nevoa=None = hoje (onisciente); o cenario.json (mundo.nevoa) tambem chega aqui via aplica_cenario"""
-    fl = argparse.Namespace(reproducao=None, regime=None, retina=None, L=200., dias=10., fitness='riqueza', nevoa=float('inf'), npx=12, respawn=20., pax_cidade=False, ponto=0., dinh0=10., fome_passo=None, kcal_pane=8., guincho=0., fuel_pane=15., P=None, G=None, paciencia=None, R=None, seeds=None, so=None, mundo='distinto')
+    """[spec Mundo Vivo I1b] nevoa=None = hoje (onisciente); o cenario.json (mundo.nevoa) tambem chega aqui via aplica_cenario.
+    [10/09 astra] o cfg vem de e43_campo.cfg_de_flags (o MESMO construtor da bateria) sobre os flags do parser() com os defaults
+    historicos do juiz por cima; antes montava o cfg por fora e perdia custo/cerebro (portao: testes_cenario item 4, 0 campos diferentes)."""
+    fl = parser().parse_args([]); fl._explicit = set()
+    fl.__dict__.update(dict(reproducao=None, regime=None, retina=None, L=200., dias=10., fitness='riqueza', nevoa=float('inf'), npx=12, respawn=20., pax_cidade=False, ponto=0., dinh0=10., fome_passo=None, kcal_pane=8., guincho=0., fuel_pane=15., P=None, G=None, paciencia=None, R=None, seeds=None, so=None, mundo='distinto'))
     cen = json.load(open(cenario_path)) if cenario_path else {}; ex = aplica_cenario(fl, cen)
     if nevoa is not None: fl.nevoa = float(nevoa)
-    assert fl.retina in (None, 'off') or RETINA, 'cenario com retina exige NM_RETINA=1'; assert fl.regime in (None, 'off') or REGIME, 'cenario com regime exige NM_REGIME=1'
-    cfg = CfgCampo(L=fl.L, fitness=fl.fitness); cfg.reproducao = (None if fl.reproducao in (None, 'off') else (dict(REPRODUCAO_PADRAO) if fl.reproducao == 'padrao' else json.loads(fl.reproducao))); cfg.regime = (None if fl.regime in (None, 'off') else (dict(REGIME_PADRAO) if fl.regime == 'padrao' else json.loads(fl.regime))); cfg.retina = (None if fl.retina in (None, 'off') else (dict(RETINA_PADRAO) if fl.retina == 'padrao' else json.loads(fl.retina))); cfg.horizonte = getattr(fl, 'horizonte', 'fixo'); cfg.T_max = int(getattr(fl, 'T_max', None) or (240*30 if cfg.horizonte == 'aberto' else 240*fl.dias)); cfg.w_trab = getattr(fl, 'w_trab', 1.); cfg.KCAL_PANE = fl.kcal_pane; cfg.dinh0 = fl.dinh0; cfg.GUINCHO = fl.guincho; cfg.FUEL_POS_PANE = fl.fuel_pane; cfg.nevoa = fl.nevoa; cfg.ponto = fl.ponto; cfg.NPX = fl.npx; cfg.respawn = fl.respawn; cfg.pax_cidade = fl.pax_cidade
-    # [10/09 astra/a4] corpo (custos) e cerebro do cenario chegam ao juiz: antes trajetoria/julga/clona rodavam os campeoes SEM custo de ativacao e sem talamo fixo = mundo diferente do que os evoluiu
-    for k in ('custo_gene', 'custo_basal', 'orcamento_ativ', 'custo_suave', 'gene_min', 'limiar_disparo', 'custo_modo', 'ativ_centrada', 'talamo_norm', 'cortex_amp', 'temp_decisao', 'hip_esc', 'corte_vivos', 'obs_rapido'):
-        if hasattr(fl, k): setattr(cfg, k, getattr(fl, k))
-    if hasattr(fl, 'custo_canais'): cfg.custo_canais = tuple(fl.custo_canais) if isinstance(fl.custo_canais, (list, tuple)) else tuple(x.strip() for x in fl.custo_canais.split(','))
-    if cfg.talamo_norm not in ('teto', 'fixo'): cfg.talamo_norm = bool(cfg.talamo_norm)
-    if fl.fome_passo is not None: cfg.fome_passo = fl.fome_passo
-    for k in ('amp_preco', 'periodo_preco', 'tarifa_base', 'tarifa_km'):
-        if ex.get(k) is not None: setattr(cfg, k, ex[k])
+    T_aval = int(fl.T_max or 240*30) if fl.horizonte == 'aberto' else int(240*fl.dias)
+    cfg = cfg_de_flags(fl, ex, T_aval)
     teste = [gerar_mapa(1000 + s, L=fl.L, distinto=fl.mundo == 'distinto', perfis=ex['perfis'], K=ex['K'], ruas=ex['ruas']) for s in range(3)]
     chave = hashlib.md5(json.dumps(cen, sort_keys=True).encode()).hexdigest()[:8] if cen else 'base'
     return cfg, teste, int(240*fl.dias), chave
