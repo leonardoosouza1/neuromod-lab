@@ -58,6 +58,12 @@ class SerCompleto(Cerebro):
         s.MEM = torch.zeros(B, DMAX, NM, device=DEV); s.ARD = torch.arange(DMAX, device=DEV)[None, :]
         s._rec = m.rec.clone(); s._dinh = m.dinh.clone(); s.dn = torch.zeros(B, dtype=torch.long, device=DEV)
         s.gate_soma = torch.zeros(B, NG, device=DEV); s.n_pass = torch.zeros((), device=DEV); s.ref_soma = torch.zeros(B, device=DEV)
+        pb = getattr(m, 'pb', None)
+        if pb is not None:   # [10/09 seres no mesmo lote] partes e ajustes por SER (mascaras 0/1 e escalares por ser); sem seres nada disto roda
+            s.V = s.V*(pb['rapida']*pb['livre'])[:, None]; s.M = s.M*(pb['lenta']*pb['livre'])[:, None, None]; s.P = s.P*(pb['lenta']*pb['livre'])[:, None, None]
+            s.w = s.w*pb['reflexo']; s.v = s.v*pb['reflexo']; s.G3 = s.G3*pb['talamo'][:, None, None]; s.g_hip = s.g_hip*pb['hipocampo'][:, None]
+            s.DLT = pb['cortex_amp'][:, None, None]*torch.tanh(W[:, s.O_COR:s.O_COR+s.N_COR].reshape(B, DMAX, len(IDX_CORTEX)))*pb['cortex'][:, None, None]
+            s.HESC = pb['hip_esc'][:, None]; s.TN_TETO = pb['tn_teto'][:, None]; s.TN_FIXO = pb['tn_fixo'][:, None]; s.TNORM = 'ser'
     def _need(s, m):
         return torch.stack([1. - m.fuel/100., 1. - m.agua/100., m.fome/100., m.fad/100., m.calor/120.], 1).max(1).values
     def _gate(s, m):
@@ -65,6 +71,7 @@ class SerCompleto(Cerebro):
         gt = 2.*torch.sigmoid(s.G3[:, :, 0] + s.G3[:, :, 1]*need[:, None] + s.G3[:, :, 2]*pax[:, None])     # genes 0 -> 1.0 exato
         if s.TNORM == 'teto': gt = gt*(NG/gt.sum(1, keepdim=True)).clamp(max=1.)
         elif s.TNORM == 'fixo': gt = gt*(NG/gt.sum(1, keepdim=True).clamp(min=1e-6))
+        elif s.TNORM == 'ser': r = NG/gt.sum(1, keepdim=True).clamp(min=1e-6); gt = gt*(s.TN_TETO*r.clamp(max=1.) + s.TN_FIXO*r + (1. - s.TN_TETO - s.TN_FIXO))
         return gt
     def _ativ(s): return (s.c - s.theta).clamp(min=0.)
     def _mem(s, m):

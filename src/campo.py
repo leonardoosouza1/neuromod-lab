@@ -51,7 +51,7 @@ class CfgCampo:
         s.orcamento_ativ = None
         s.limiar_disparo = .25
         s.custo_canais = ('fome',)
-        s.talamo_norm = False; s.cortex_amp = .5; s.temp_decisao = 0.; s.hip_esc = None; s.jardim_comum = False; s.grava_acoes = False; s.corte_vivos = 0.; s.obs_rapido = False; s.obs_grade = False
+        s.talamo_norm = False; s.cortex_amp = .5; s.temp_decisao = 0.; s.hip_esc = None; s.jardim_comum = False; s.grava_acoes = False; s.corte_vivos = 0.; s.obs_rapido = False; s.obs_grade = False; s.seres = None
         s.ativ_centrada = False   # [10/09 opus, pred 165] False = hoje (cobra |saida| media, 99.7 % modo comum); True = cobra |saida - media entre as opcoes|, a unica parte que o G1 nao descarta
         s.custo_modo = 'existencia'; s.amostra_ativ = 10; s.ativ_ref = 1.   # [spec F2] 'ativacao' = o gene custa pelo SINAL que emite (por bloco: |saida do bloco na nota| media, amostrada a cada amostra_ativ ticks; bloco com saida >= ativ_ref conta cheio); 'existencia' = hoje
         s.horizonte = 'fixo'; s.T_max = None; s.w_trab = 1.   # [spec Mundo Vivo F1] 'aberto' = roda ate todos morrerem (checa vivo.any() 1x por dia simulado) ou T_max; fitness 'vida' = dias vividos + w_trab*renda/300 (sem pena de morte, sem teto)
@@ -135,6 +135,14 @@ class Campo:
         s.cfg = c = cfg; s.NC = len(mapas); s.R = R; s.P = P; B = s.B = P*s.NC*R; s.L = float(mapas[0]['L'])
         s.cidx = torch.arange(s.NC, device=DEV).repeat_interleave(R).repeat(P)           # (B,)
         s.gidx = torch.arange(P, device=DEV).repeat_interleave(s.NC*R)
+        sr = getattr(c, 'seres', None); s.ser = None; s.pb = None
+        if sr:   # [10/09 Leonardo: um mundo, seres diversos NO MESMO LOTE] populacao g pertence ao ser (g // P) % n_seres; ajustes e partes viram tensores por ser
+            L_ = sr['lista']; n_ = len(L_); s.ser = (s.gidx // int(sr['P'])) % n_
+            col = lambda k, d: torch.tensor([float(x.get(k, d)) for x in L_], device=DEV)[s.ser]
+            tn = [str(x.get('talamo_norm', '') or '') for x in L_]
+            s.pb = dict(talamo=col('talamo', 1.), cortex=col('cortex', 1.), hipocampo=col('hipocampo', 1.), reflexo=col('reflexo', 1.), livre=col('livre', 1.), rapida=col('rapida', 1.), lenta=col('lenta', 1.),
+                        hip_esc=col('hip_esc', .01), cortex_amp=col('cortex_amp', .5), temp=col('temp_decisao', 0.), temp_max=max(float(x.get('temp_decisao', 0.)) for x in L_),
+                        tn_teto=torch.tensor([1. if t in ('teto', 'True') else 0. for t in tn], device=DEV)[s.ser], tn_fixo=torch.tensor([1. if t == 'fixo' else 0. for t in tn], device=DEV)[s.ser])
         s.GRAVA = False; s.JC = bool(getattr(c, 'jardim_comum', False)); s.NB = s.NC*R; s.bloco = torch.arange(s.NB, device=DEV).repeat(P); s.cidx_b = torch.arange(s.NB, device=DEV)//R
         g = torch.Generator(device=DEV); g.manual_seed(int(seed)); s.g = g; s.g_dec = torch.Generator(device=DEV); s.g_dec.manual_seed(int(seed) + 7919)
         s.custo_tex = torch.stack([m['custo'] for m in mapas])                              # (NC,tex,tex)
@@ -482,10 +490,10 @@ def um_passo(m, a, Wb):
     if hasattr(a, 'extra_serv'): ss = ss + a.extra_serv(m)
     ss = ss.masked_fill(sv <= 0, -1e9)
     tudo = torch.cat([sc, ss], 1)
-    Td = float(getattr(m.cfg, 'temp_decisao', 0.))
-    if Td > 0.:
+    Td = float(getattr(m.cfg, 'temp_decisao', 0.)); Tdv = m.pb['temp'][:, None] if (m.pb is not None and m.pb['temp_max'] > 0.) else None
+    if Td > 0. or Tdv is not None:
         ok = (tudo > -1e8).float(); n = ok.sum(1, keepdim=True).clamp(min=1.); q0 = tudo*ok; mu = q0.sum(1, keepdim=True)/n; sd = (((q0 - mu)**2*ok).sum(1, keepdim=True)/n).sqrt()
-        u = (torch.rand((m.NB,) + tuple(tudo.shape[1:]), generator=m.g_dec, device=DEV)[m.bloco] if m.JC else torch.rand(tudo.shape, device=DEV, generator=m.g_dec)).clamp(1e-9, 1. - 1e-9); tudo = tudo + Td*sd*(-torch.log(-torch.log(u)))*ok
+        u = (torch.rand((m.NB,) + tuple(tudo.shape[1:]), generator=m.g_dec, device=DEV)[m.bloco] if m.JC else torch.rand(tudo.shape, device=DEV, generator=m.g_dec)).clamp(1e-9, 1. - 1e-9); tudo = tudo + (Tdv if Tdv is not None else Td)*sd*(-torch.log(-torch.log(u)))*ok
     esc = a.decidir(tudo, m) if hasattr(a, 'decidir') else tudo.argmax(1)
     if m.GRAVA:
         m.acoes[m.t] = esc; m.traj[m.t] = torch.stack([m.fome, m.fuel, m.agua, m.dinh, m.pos[:, 0], m.pos[:, 1], m.vida], 1)
