@@ -36,3 +36,7 @@ def rodar_hip(W, mapas, cfg, T, seed, R=1, alvo=None, grava=False):
     for k in ('fuel', 'fome', 'agua', 'dinh', 'vida', 'calor', 'fad', 'res', 'tpar', 'cons', 'pd_', 't_ult', 'ent', 'rec', 'avar', 'av_fuel', 'n_posto', 'litros', 'n_oficina', 'n_come', 'n_agua', 'dano_soma', 't_vida'): setattr(m, k, st[k])
     m.dest = torch.stack([st['destx'], st['desty']], 1); m.emb = torch.stack([st['embx'], st['emby']], 1); m.orig_d = st['orig_d'].long(); m.px = st['pxs'].view(B, -1, 2); m.pxd = st['pxd'].view(B, -1, 2); m.px_ok = st['px_ok'].bool(); m.t = torch.tensor(T, device=DEV)
     return (m, st['acoes'].long(), st['traj']) if grava else m
+def avaliar_hip(Arq, W, mapas, cfg, T, seed=0, R=1):
+    """[motor hip] mesma assinatura de campo.avaliar: uma geracao inteira no kernel; so Linear (NP 40)"""
+    from campo import _fit
+    m = rodar_hip(W, mapas, cfg, T, seed, R=R); return _fit(m, cfg, T).view(W.shape[0], m.NC*m.R).mean(1)
