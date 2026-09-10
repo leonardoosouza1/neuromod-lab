@@ -51,7 +51,7 @@ class CfgCampo:
         s.orcamento_ativ = None
         s.limiar_disparo = .25
         s.custo_canais = ('fome',)
-        s.talamo_norm = False; s.cortex_amp = .5; s.temp_decisao = 0.; s.hip_esc = None; s.jardim_comum = False; s.grava_acoes = False
+        s.talamo_norm = False; s.cortex_amp = .5; s.temp_decisao = 0.; s.hip_esc = None; s.jardim_comum = False; s.grava_acoes = False; s.corte_vivos = 0.
         s.ativ_centrada = False   # [10/09 opus, pred 165] False = hoje (cobra |saida| media, 99.7 % modo comum); True = cobra |saida - media entre as opcoes|, a unica parte que o G1 nao descarta
         s.custo_modo = 'existencia'; s.amostra_ativ = 10; s.ativ_ref = 1.   # [spec F2] 'ativacao' = o gene custa pelo SINAL que emite (por bloco: |saida do bloco na nota| media, amostrada a cada amostra_ativ ticks; bloco com saida >= ativ_ref conta cheio); 'existencia' = hoje
         s.horizonte = 'fixo'; s.T_max = None; s.w_trab = 1.   # [spec Mundo Vivo F1] 'aberto' = roda ate todos morrerem (checa vivo.any() 1x por dia simulado) ou T_max; fitness 'vida' = dias vividos + w_trab*renda/300 (sem pena de morte, sem teto)
@@ -506,7 +506,7 @@ def rodar(Arq, W, mapas, cfg, T, seed, R=1):
             for b in m.ativ_soma:
                 if b in ab: m.ativ_soma[b] = m.ativ_soma[b] + ((ab[b] > cfg.ativ_ref*cfg.limiar_disparo).float() if modo == 'disparo' else (ab[b]/cfg.ativ_ref).clamp(max=1.))
             if cobra_ativ: m.metab = 1. + basal + cfg.custo_gene*sum(n_b[b]*m.ativ_soma[b] for b in m.ativ_soma)/m.ativ_n/100.
-        if cfg.horizonte == 'aberto' and t % 240 == 239 and not bool((m.vida > 0).any()): break   # [spec F1] 1 sincronismo por dia simulado, so no horizonte aberto (fixo: curto-circuito em Python, identico)
+        if cfg.horizonte == 'aberto' and t % 240 == 239 and float((m.vida > 0).float().mean()) <= getattr(cfg, 'corte_vivos', 0.): break   # [spec F1] 1 sincronismo por dia simulado, so no horizonte aberto (fixo: curto-circuito em Python, identico)
         try: fn(m, a, Wb)
         except Exception as e:
             if fn is not um_passo and t == 0:
