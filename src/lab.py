@@ -1704,7 +1704,7 @@ def evoluir(Arq, cidades, cfg, P=512, ger=25, T=1500, seed=0, elite=.15,
 
 
 def evoluir_sementes(Arq, cidades, cfg, P=512, ger=25, T=1500, seeds=(0,1,2),
-                     elite=.15, verbose=True, R=1, cfg_gen=None, W0=None, sigma0=.2, avaliar_fn=None, paciencia=None, sigma_espinha=.05, crn='rotativo'):
+                     elite=.15, verbose=True, R=1, cfg_gen=None, W0=None, sigma0=.2, avaliar_fn=None, paciencia=None, sigma_espinha=.05, crn='rotativo', sigma_mut=.3):
     """MEGA-LOTE de sementes: as S populacoes (uma por semente de evolucao)
     empilhadas num Lote so — B cresce S vezes e sai da regiao limitada por
     LANCAMENTO de kernel (VRAM vazia + GPU 'ocupada' = kernels pequenos).
@@ -1742,7 +1742,7 @@ def evoluir_sementes(Arq, cidades, cfg, P=512, ger=25, T=1500, seeds=(0,1,2),
             hist[sd].append(float(fb[0]))
             idx = torch.randint(0, ne, (P-ne,), generator=gs[si], device=DEV)
             fil = (Wb[idx] + torch.randn(P-ne, NPQ, generator=gs[si],
-                                         device=DEV)*.3).clamp(-5, 5)
+                                         device=DEV)*sigma_mut).clamp(-5, 5)
             Wn = torch.cat([Wb[:ne], fil])
             if it % 5 == 0:
                 q = torch.tensor([0., .25, .5, .75, 1.], device=DEV)
@@ -1757,7 +1757,7 @@ def evoluir_sementes(Arq, cidades, cfg, P=512, ger=25, T=1500, seeds=(0,1,2),
             linha = ' '.join(f'{hist[sd][-1]:>8.2f}' for sd in seeds)
             print(f'  ger {it:>3} | {linha}   (melhor por semente)', flush=True)
         if paciencia and it >= paciencia:   # [E61d] parada antecipada: o melhor (media das sementes) nao subiu > 1 % em `paciencia` geracoes
-            agora = sum(hist[sd][-1] for sd in seeds)/len(seeds); antes = sum(max(hist[sd][:-paciencia]) for sd in seeds)/len(seeds)
+            agora = sum(max(hist[sd][-paciencia:]) for sd in seeds)/len(seeds); antes = sum(max(hist[sd][:-paciencia]) for sd in seeds)/len(seeds)   # [09-09] max da JANELA vs max de antes: um sorteio vs um sorteio era cara-ou-coroa (ruido +-13%)
             if agora <= antes + 0.01*abs(antes) + 1e-6:
                 if verbose: print(f'  parada antecipada na ger {it} (sem melhora em {paciencia} ger.)', flush=True)
                 break
@@ -1805,7 +1805,7 @@ def evoluir_es(Arq, cidades, cfg, P=512, ger=25, T=1500, seeds=(0, 1, 2), verbos
             linha = ' '.join(f'{hist[sd][-1]:>8.2f}' for sd in seeds)
             print(f'  ger {it:>3} | {linha}   (melhor por semente, ES s={sigma_es} lr={lr})', flush=True)
         if paciencia and it >= paciencia:
-            agora = sum(hist[sd][-1] for sd in seeds)/len(seeds); antes = sum(max(hist[sd][:-paciencia]) for sd in seeds)/len(seeds)
+            agora = sum(max(hist[sd][-paciencia:]) for sd in seeds)/len(seeds); antes = sum(max(hist[sd][:-paciencia]) for sd in seeds)/len(seeds)   # [09-09] max da JANELA vs max de antes: um sorteio vs um sorteio era cara-ou-coroa (ruido +-13%)
             if agora <= antes + 0.01*abs(antes) + 1e-6:
                 if verbose: print(f'  parada antecipada na ger {it} (sem melhora em {paciencia} ger.)', flush=True)
                 break
