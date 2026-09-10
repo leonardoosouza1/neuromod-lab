@@ -17,8 +17,15 @@ def monta(Wg, c):
 def test_talamo_norm():
     Wg = W.clone(); o = SerCompleto.O_TAL; Wg[:, o:o+SerCompleto.N_TAL:3] = 5.
     m0, a0 = monta(Wg, cfg(talamo_norm=False)); m1, a1 = monta(Wg, cfg(talamo_norm=True)); s0 = a0._gate(m0).sum(1); s1 = a1._gate(m1).sum(1)
-    ok = float(s0.min()) > 1.5*NG and float((s1 - NG).abs().max()) < 1e-3
-    print(f'test_talamo_norm: NG {NG} | soma dos portoes sem denominador {float(s0.mean()):.2f} (~2*NG) | com denominador {float(s1.mean()):.3f} (== NG)', 'OK' if ok else 'FALHOU', flush=True); return ok
+    Wn = W.clone(); Wn[:, o:o+SerCompleto.N_TAL:3] = -5.
+    mt, at = monta(Wn, cfg(talamo_norm='teto')); mf, af = monta(Wn, cfg(talamo_norm='fixo')); st = at._gate(mt).sum(1); sf = af._gate(mf).sum(1)
+    ok = float(s0.min()) > 1.5*NG and float((s1 - NG).abs().max()) < 1e-3 and float(st.max()) < .2 and float((sf - NG).abs().max()) < 1e-3
+    print(f'test_talamo_norm: NG {NG} | portoes altos: sem denominador {float(s0.mean()):.2f} (~2*NG), teto {float(s1.mean()):.3f} (== NG) | portoes baixos: teto {float(st.mean()):.3f} (fica baixo), fixo {float(sf.mean()):.3f} (== NG, redistribui)', 'OK' if ok else 'FALHOU', flush=True); return ok
+def test_hip_esc():
+    Wg = W.clone(); Wg[:, SerCompleto.O_HIP+1] = 3.
+    c1 = cfg(medir_ativ=True); c2 = cfg(medir_ativ=True, hip_esc=1.); _, a1 = monta(Wg, c1); _, a2 = monta(Wg, c2)
+    h1 = float(a1._blk['hip'].abs().mean()); h2 = float(a2._blk['hip'].abs().mean()); r = h2/max(h1, 1e-12); ok = 50. < r < 200.
+    print(f'test_hip_esc: |saida do hipocampo| escala .01 (hoje) {h1:.5f} vs 1.0 {h2:.4f} -> razao {r:.0f}x (esperado ~100)', 'OK' if ok else 'FALHOU', flush=True); return ok
 def test_cortex_amp():
     Wg = W.clone(); o = SerCompleto.O_COR; Wg[:, o:o+SerCompleto.N_COR] = -5.
     _, a5 = monta(Wg, cfg(cortex_amp=.5)); _, a2 = monta(Wg, cfg(cortex_amp=2.)); f5 = float((1. + a5.DLT).min()); f2 = float((1. + a2.DLT).min())
@@ -31,4 +38,4 @@ def test_temp_decisao():
     ok = ident and muda and det
     print(f'test_temp_decisao: T=0 == padrao {ident} | T=.3 muda a trajetoria {muda} | T=.3 determinista (2 corridas iguais) {det}', 'OK' if ok else 'FALHOU', flush=True); return ok
 if __name__ == '__main__':
-    r = [test_talamo_norm(), test_cortex_amp(), test_temp_decisao()]; print('PORTAO BRAINSTORM', 'ok' if all(r) else 'FALHOU', flush=True); sys.exit(0 if all(r) else 1)
+    r = [test_talamo_norm(), test_cortex_amp(), test_temp_decisao(), test_hip_esc()]; print('PORTAO BRAINSTORM', 'ok' if all(r) else 'FALHOU', flush=True); sys.exit(0 if all(r) else 1)

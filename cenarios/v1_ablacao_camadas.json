@@ -1,6 +1,6 @@
 {
  "nome": "v1_ablacao_camadas",
- "predicao": "CS B6: ablacao de nascenca das camadas genericas no v1, n=10",
+ "predicao": "CS B6: ablacao de nascenca das camadas genericas no v1, n=10 | +braço sem reflexo (pred 154: ablação cruzada da delegação tálamo↔reflexo do CS)",
  "mundo": {
   "L": 200,
   "dias": 10,
@@ -100,7 +100,8 @@
   "completo sem rapida",
   "completo sem lenta",
   "completo sem livre (so camadas)",
-  "completo sem hipocampo"
+  "completo sem hipocampo",
+  "completo sem reflexo"
  ],
  "protocolo": {
   "P": 512,

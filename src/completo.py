@@ -49,7 +49,7 @@ class SerCompleto(Cerebro):
         s.G3 = W[:, s.O_TAL:s.O_TAL+s.N_TAL].reshape(B, NG, 3)
         if not L['talamo']: s.G3 = torch.zeros_like(s.G3)
         s.IDXG = torch.tensor(_IG, device=DEV)[None, :].expand(B, -1)
-        s.DLT = float(getattr(m.cfg, 'cortex_amp', ESC_DELTA))*torch.tanh(W[:, s.O_COR:s.O_COR+s.N_COR].reshape(B, DMAX, len(IDX_CORTEX))); s.TNORM = bool(getattr(m.cfg, 'talamo_norm', False))
+        s.DLT = float(getattr(m.cfg, 'cortex_amp', ESC_DELTA))*torch.tanh(W[:, s.O_COR:s.O_COR+s.N_COR].reshape(B, DMAX, len(IDX_CORTEX))); tn = getattr(m.cfg, 'talamo_norm', False); s.TNORM = 'fixo' if tn == 'fixo' else ('teto' if tn else ''); he = getattr(m.cfg, 'hip_esc', None); s.HESC = float(Cerebro.ESC if he is None else he)
         if not L['cortex']: s.DLT = torch.zeros_like(s.DLT)
         s.IDXC = torch.tensor(IDX_CORTEX, device=DEV); s.IDX1 = torch.tensor([1], device=DEV)   # [g10] buffer criado UMA vez: torch.tensor no extra() era a unica sincronizacao do completo (H2D por passo)
         o = s.O_HIP; s.tau_h = 1. + 200.*torch.sigmoid(W[:, o:o+1] - 4.); s.g_hip = torch.tanh(W[:, o+1:o+2])
@@ -63,7 +63,8 @@ class SerCompleto(Cerebro):
     def _gate(s, m):
         need = s._need(m); pax = (m.pd_ >= 0).float()
         gt = 2.*torch.sigmoid(s.G3[:, :, 0] + s.G3[:, :, 1]*need[:, None] + s.G3[:, :, 2]*pax[:, None])     # genes 0 -> 1.0 exato
-        if s.TNORM: gt = gt*(NG/gt.sum(1, keepdim=True)).clamp(max=1.)
+        if s.TNORM == 'teto': gt = gt*(NG/gt.sum(1, keepdim=True)).clamp(max=1.)
+        elif s.TNORM == 'fixo': gt = gt*(NG/gt.sum(1, keepdim=True).clamp(min=1e-6))
         return gt
     def _ativ(s): return (s.c - s.theta).clamp(min=0.)
     def _mem(s, m):
@@ -78,13 +79,13 @@ class SerCompleto(Cerebro):
         mem = s._mem(m)                                                                                     # (define s.dn)
         delta = s.DLT.gather(1, s.dn[:, None, None].expand(-1, 1, len(IDX_CORTEX))).squeeze(1)
         Wtot = Wtot.index_add(1, s.IDXC, W[:, s.IDXC]*delta)                                                # cortex por distrito (4 colunas)
-        Wtot = Wtot + torch.einsum('bk,bkf->bf', mem, s.M_h)*Cerebro.ESC                                    # hipocampo bilinear
+        Wtot = Wtot + torch.einsum('bk,bkf->bf', mem, s.M_h)*s.HESC                                          # hipocampo bilinear
         a = s._ativ(); Wtot = Wtot.index_add(1, s.IDX1, -(s.w*a)[:, None])            # reflexo: empurra pro posto (coluna d_posto) [g10: sem torch.tensor no passo]
         if s.ATIV:   # [spec F2] saidas POR BLOCO na nota de movimento (so no modo ativacao; 5 einsums a mais a cada passo)
             zc = torch.zeros_like(W[:, :NF])
             s._blk = {'rap': torch.einsum('bgh,bh->bg', h, s.V)*s.ESC, 'len': torch.einsum('bgf,bf->bg', F, torch.einsum('bk,bkf->bf', s.z, s.M)*s.ESC),
                       'tal': torch.einsum('bgf,bf->bg', F, W[:, :NF]*(gf - 1.)), 'cor': torch.einsum('bgf,bf->bg', F, zc.index_add(1, s.IDXC, W[:, s.IDXC]*delta)),
-                      'hip': torch.einsum('bgf,bf->bg', F, torch.einsum('bk,bkf->bf', mem, s.M_h)*Cerebro.ESC), 'ref': torch.einsum('bgf,bf->bg', F, zc.index_add(1, s.IDX1, -(s.w*a)[:, None]))}   # ref = contribuicao REAL na nota (revisao 09-09)
+                      'hip': torch.einsum('bgf,bf->bg', F, torch.einsum('bk,bkf->bf', mem, s.M_h)*s.HESC), 'ref': torch.einsum('bgf,bf->bg', F, zc.index_add(1, s.IDX1, -(s.w*a)[:, None]))}   # ref = contribuicao REAL na nota (revisao 09-09)
         out = torch.einsum('bgh,bh->bg', h, s.V)*s.ESC + torch.einsum('bgf,bf->bg', F, Wtot)
         if s.ORC is not None: out = out*s._fator_orc()
         return out

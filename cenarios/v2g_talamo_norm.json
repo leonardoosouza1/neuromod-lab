@@ -1,6 +1,6 @@
 {
  "nome": "v2g_talamo_norm",
- "predicao": "pred 150: v2b + denominador no talamo (soma dos portoes <= NG; CS brainstorm 1)",
+ "predicao": "pred 150 (emendada antes de rodar): v2b + denominador FIXO no talamo (soma dos portoes == NG, divisiva canonica do CS)",
  "mundo": {
   "L": 200,
   "dias": 10,
@@ -121,6 +121,6 @@
   ]
  },
  "cerebro": {
-  "talamo_norm": true
+  "talamo_norm": "fixo"
  }
 }
