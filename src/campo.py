@@ -479,7 +479,9 @@ def um_passo(m, a, Wb):
         ok = (tudo > -1e8).float(); n = ok.sum(1, keepdim=True).clamp(min=1.); q0 = tudo*ok; mu = q0.sum(1, keepdim=True)/n; sd = (((q0 - mu)**2*ok).sum(1, keepdim=True)/n).sqrt()
         u = (torch.rand((m.NB,) + tuple(tudo.shape[1:]), generator=m.g_dec, device=DEV)[m.bloco] if m.JC else torch.rand(tudo.shape, device=DEV, generator=m.g_dec)).clamp(1e-9, 1. - 1e-9); tudo = tudo + Td*sd*(-torch.log(-torch.log(u)))*ok
     esc = a.decidir(tudo, m) if hasattr(a, 'decidir') else tudo.argmax(1)
-    if m.GRAVA: m.acoes[m.t] = esc; m.traj[m.t] = torch.stack([m.fome, m.fuel, m.agua, m.dinh, m.pos[:, 0], m.pos[:, 1], m.vida], 1)
+    if m.GRAVA:
+        m.acoes[m.t] = esc; m.traj[m.t] = torch.stack([m.fome, m.fuel, m.agua, m.dinh, m.pos[:, 0], m.pos[:, 1], m.vida], 1)
+        if hasattr(m, 'alvo_t'): top = tudo.topk(2, dim=1).values; m.alvo_t[m.t] = m.alvo(); m.margem_t[m.t] = top[:, 0] - top[:, 1]; m.nota_t[m.t] = tudo
     m.passo(esc)
 
 class Linear:

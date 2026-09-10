@@ -13,11 +13,13 @@ c = CfgCampo(L=200., fitness='vida'); c.respawn = 1e9; c.ponto = 0.; c.grava_aco
 m = Campo([mapa], a.B, c, seed=7, R=1); Wb = W[m.gidx]; ar = Linear(); ar.reset(m, Wb)
 ini = dict(pos=m.pos.tolist(), fuel=m.fuel.tolist(), fome=m.fome.tolist(), agua=m.agua.tolist(), dinh=m.dinh.tolist(), vida=m.vida.tolist(), calor=m.calor.tolist(), fad=m.fad.tolist(), res=m.res.tolist(), fase=m.fase.tolist(), px=m.px.tolist(), pxd=m.pxd.tolist(), px_ok=m.px_ok.tolist(), casa=m.casa.tolist())
 m.GRAVA = True; m.acoes = torch.full((a.T, m.B), -1, dtype=torch.long, device=DEV); m.traj = torch.zeros(a.T, m.B, 7, device=DEV); extra = torch.zeros(a.T, m.B, 4, device=DEV)
+m.alvo_t = torch.zeros(a.T, m.B, 2, device=DEV); m.margem_t = torch.zeros(a.T, m.B, device=DEV); m.nota_t = torch.zeros(a.T, m.B, G + S, device=DEV); F50 = []
 for t in range(a.T):
+    if t < 50: F50.append(m.obs()[0].tolist())
     um_passo(m, ar, Wb); ar.atualizar(m); extra[t] = torch.stack([m.calor, m.fad, m.res, m.pd_.float()], 1)
 def T(x): return x.tolist() if hasattr(x, 'tolist') else x
 saida = dict(L=200., seed_mapa=a.seed_mapa, B=a.B, T=a.T, dia=c.dia, nomes_f=NOMES_F, nomes_op=NOMES_OP, nomes_corpo=NOMES_CORPO, acoes=[list(x) for x in ACOES], tipos=TIPOS, G=G, S=S,
              cfg={k: (v if isinstance(v, (int, float, str, bool, type(None))) else str(v)) for k, v in vars(c).items()},
              mapa=dict(custo=T(mapa['custo']), serv={t: T(mapa['serv'][t]) for t in TIPOS}, centros=T(mapa['centros']), aliq=T(mapa['aliq']), pmul=T(mapa['pmul']), alug=T(mapa['alug']), demanda=T(mapa.get('demanda')), campo_dist=T(mapa['campo_dist']), perfis=[str(p) for p in mapa.get('perfis', [])] if isinstance(mapa.get('perfis'), (list, tuple)) else str(mapa.get('perfis'))),
-             genoma=W[0].tolist(), inicial=ini, acoes_por_tique=m.acoes.tolist(), traco=m.traj.tolist(), traco_extra=extra.tolist(), t_vida=m.t_vida.tolist(), rec=m.rec.tolist())
+             genoma=W[0].tolist(), inicial=ini, acoes_por_tique=m.acoes.tolist(), traco=m.traj.tolist(), traco_extra=extra.tolist(), alvo_por_tique=m.alvo_t.tolist(), margem_por_tique=m.margem_t.tolist(), nota_por_tique=m.nota_t[:200].tolist(), F_primeiros_50=F50, t_vida=m.t_vida.tolist(), rec=m.rec.tolist(), esquema=dict(traco='[t][b] = fome, fuel, agua, dinh, x, y, vida', traco_extra='[t][b] = calor, fad, res, pd_', alvo='[t][b] = x, y do alvo lido ANTES do passo', margem='top1 - top2 da nota (empate < 1e-3)', nota='[t<200][b][19] nota completa (9 mov + 10 serv, servicos mascarados = -1e9)', F='[t<50][b][9][NF] sentidos por opcao'))
 os.makedirs(a.out, exist_ok=True); p = os.path.join(a.out, 'traco_ref.json'); json.dump(saida, open(p, 'w')); print(f'traco de referencia: B {a.B} T {a.T} | t_vida {[round(x/240., 2) for x in m.t_vida.tolist()]} d | rec {[round(x, 1) for x in m.rec.tolist()]} | gravado {p} ({os.path.getsize(p)//1024} KB)', flush=True)
