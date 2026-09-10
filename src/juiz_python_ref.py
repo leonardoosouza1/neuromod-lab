@@ -20,12 +20,21 @@ print(f"  Rust (128 copias, semente 7777): fit {rust['fit']:.3f} | mortos {rust[
 mapa = gerar_mapa(1000, L=200., distinto=True); res = []
 for sd in a.seeds:
     med = medidas(Linear, W, [mapa], c, T=7200, seed=sd, R=1, copias=128); r = dict(seed=sd, fit=med['fit'], t_vida=med['t_vida']['media'], mediana=med['t_vida']['mediana'], rec=med['rec'], ent=med['ent'], mortos=med['mortos']); res.append(r)
+    for k, v in med.items():   # [15:55] detalhe: TODAS as medias escalares que o Rust tambem grava (panes, n_posto, n_come, litros, dinh, fome/agua fim, oficina...) para achar ONDE a economia diverge
+        if isinstance(v, (int, float)) and k not in r: r[k] = float(v)
     print(f"  Python (semente {sd}): fit {r['fit']:.3f} | mortos {r['mortos']:.2f} | ent {r['ent']:.2f} | t_vida {r['t_vida']:.2f} d (mediana {r['mediana']:.2f}) | rec {r['rec']:.1f}", flush=True)
 ver = {}
 for k in ('fit', 't_vida', 'rec', 'ent'):
     xs = [r[k] for r in res]; m = sum(xs)/len(xs); sd_ = (sum((x - m)**2 for x in xs)/max(1, len(xs) - 1))**.5
     ver[k] = dict(python_media=m, python_dp=sd_, python_min=min(xs), python_max=max(xs), rust=rust[k], desvio_pct=100*(rust[k] - m)/m, dentro_5pct=abs(rust[k] - m) <= .05*abs(m), dentro_faixa=min(xs) <= rust[k] <= max(xs))
     print(f"  {k:7s}: Python {m:.3f} +- {sd_:.3f} [{min(xs):.3f}, {max(xs):.3f}] | Rust {rust[k]:.3f} ({ver[k]['desvio_pct']:+.1f} %) | +-5 %: {ver[k]['dentro_5pct']} | na faixa: {ver[k]['dentro_faixa']}", flush=True)
+alias = {'n_oficina': 'oficina', 'dinh_fim': 'dinh'}
+print('  DETALHE (Python media de 5 sementes vs Rust):', flush=True)
+for k in sorted(res[0]):
+    kr = alias.get(k, k)
+    if k in ('seed',) or kr not in b or not isinstance(b[kr], (int, float)): continue
+    xs = [r[k] for r in res]; m = sum(xs)/len(xs); d = b[kr] - m; pct = (100*d/m) if abs(m) > 1e-9 else float('nan')
+    print(f'    {k:18s} Python {m:9.3f}  Rust {b[kr]:9.3f}  dif {d:+8.3f} ({pct:+.1f} %)', flush=True)
 ok = ver['fit']['dentro_5pct'] and ver['t_vida']['dentro_5pct'] and all(r['mortos'] == rust['mortos'] for r in res)
 print(f"  VEREDITO pred 174: {'✓' if ok else '✗'} (fit e t_vida do Rust a +-5 % da media do Python com {len(res)} sementes; mortos iguais)", flush=True)
 os.makedirs(a.out, exist_ok=True); json.dump(dict(rust=rust, python=res, veredito=ver, ok=ok, W=b['W']['0']), open(os.path.join(a.out, 'juiz_python_ref.json'), 'w'), indent=1); print('gravado', os.path.join(a.out, 'juiz_python_ref.json'), flush=True)
