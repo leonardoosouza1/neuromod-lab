@@ -610,7 +610,7 @@ def evoluir(Arq, mapas, cfg, **kw):
     return evoluir_sementes(Arq, mapas, cfg, avaliar_fn=avaliar, **kw)
 
 def medidas(Arq, W, mapas, cfg, T=1200, seed=7777, R=1, copias=128):
-    import copy as _copy; cfg_m = _copy.copy(cfg); cfg_m.medir_ativ = True; cfg_m.jardim_comum = False
+    import copy as _copy; cfg_m = _copy.copy(cfg); cfg_m.medir_ativ = True; cfg_m.jardim_comum = False; cfg_m.corte_vivos = 0.   # [10/09 opus] o JUIZ nunca corta: a copia levava corte_vivos para as 128 copias e truncava t_vida SEM marcar frac_teto (a pred 169 aposta que "o juiz usa 128 copias sem corte"; o codigo fazia o contrario). Identico para corte_vivos = 0, que e tudo o que ja rodou
     m = rodar(Arq, W[None, :].repeat(copias, 1), mapas, cfg_m, T, seed, R=R); morto = (m.vida <= 0).float()
     med = dict(fit=float(_fit(m, cfg, T).mean()), mortos=float(morto.mean()), ent=float(m.ent.mean()),
                panes=float(m.av_fuel.mean()), fome_fim=float(m.fome.mean()), agua_fim=float(m.agua.mean()), dinh=float(m.dinh.mean()), res=float(m.res.mean()),
