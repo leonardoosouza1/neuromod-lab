@@ -5,7 +5,10 @@ import sys, os, subprocess
 AQUI = os.path.dirname(os.path.abspath(__file__)); SNAP = '/media/llm-data/universe-runs/neuromod-lab-taxi/snapshots/src_antes_reprojeto'
 OUT = sys.argv[sys.argv.index('--out') + 1] if '--out' in sys.argv else '/media/llm-data/universe-runs/neuromod-lab-taxi/e72'
 if os.environ.get('_NM_FILHO'):
+    if os.environ['_NM_FILHO'] == 'antes': sys.path.insert(0, SNAP)
+    else: sys.path.insert(0, AQUI)
     import torch; from campo import *; from completo import SerCompleto
+    assert (os.environ['_NM_FILHO'] == 'antes') == os.path.abspath(sys.modules['campo'].__file__).startswith(SNAP), 'importou o campo errado'
     mapas = [gerar_mapa(1000, L=200., distinto=True), gerar_mapa(1001, L=200., distinto=True)]; g = torch.Generator(device=DEV); g.manual_seed(5); res = {}
     for Arq, nome in ((Linear, 'Linear'), (SerCompleto, 'SerCompleto')):
         W = torch.randn(512, Arq.NP, generator=g, device=DEV)*.3; W[:, :Linear.NP] = torch.randn(512, Linear.NP, generator=g, device=DEV)*.5
@@ -14,7 +17,7 @@ if os.environ.get('_NM_FILHO'):
     torch.save(res, os.path.join(OUT, f'passo_id_{os.environ["_NM_FILHO"]}.pt')); print('filho', os.environ['_NM_FILHO'], 'ok', flush=True); sys.exit(0)
 os.makedirs(OUT, exist_ok=True)
 for rot, caminho in (('antes', SNAP), ('agora', AQUI)):
-    env = dict(os.environ, _NM_FILHO=rot, NM_COMPILE='0', PYTHONPATH=caminho); r = subprocess.run([sys.executable, os.path.join(caminho, 'testes_passo_identidade.py') if rot == 'agora' else os.path.abspath(__file__), '--out', OUT], env=env, cwd=caminho)
+    env = dict(os.environ, _NM_FILHO=rot, NM_COMPILE='0'); r = subprocess.run([sys.executable, os.path.abspath(__file__), '--out', OUT], env=env, cwd=caminho)
     if r.returncode != 0: print('PORTAO PASSO FALHOU: filho', rot, 'exit', r.returncode, flush=True); sys.exit(1)
 import torch; a = torch.load(os.path.join(OUT, 'passo_id_antes.pt')); b = torch.load(os.path.join(OUT, 'passo_id_agora.pt')); falhas = []
 for nome in a:
