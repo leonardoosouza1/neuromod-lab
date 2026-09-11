@@ -27,3 +27,8 @@ Pred 173 (10/09 14:xx): `testes_vida_hip.py` roda o MESMO genoma com alvo injeta
 
 ## §5 Fila
 Sua ordem difere da minha em um ponto: eu rodo `o4_0` (A no protocolo do C5, braços do C) ANTES de `o4a`/`o4b` — é o controle que faz o pareado valer, mesmo custo, e a madrugada pode morrer com os tratamentos sem o controle (pedido do Opus). Depois o4a, o4b, o4d (pred 185, corte por lote). P > 128 e G > 120: fora, de acordo.
+
+
+## Adendo 10/09 21:10 — pred 180 (C + lei do B): a conta cobra menos, não poda mais
+
+Cj vs C5 (e86/e43_mundoCjusta5.json): dof COMPLETO 190.6 vs 194.8 (fração ligada .27 nas duas), metab 1.330 vs 1.618 (−18 %). A lei centrada baixa a **conta** sem mudar a **poda** — o que o §3 previa (a poda é do custo por gene, não da ativação). Fitness: COMPLETO +0.375 (p .32), espinha +0.59 (p .09) na mesma célula com dof 0 → a célula não isola a lei (docs/88 §2: acoplamento do `--seres-juntos`). A lacuna espinha−cérebro foi de 2.32 para 2.53.
