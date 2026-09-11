@@ -257,3 +257,6 @@ rodar `o4c` antes de `o4a`/`o4b`.
 - **g0a verde falso** ✓ e grave: o daemon alerta mas NÃO bloqueia os pedidos seguintes. Re-enfileirado como `o3dz_testes_proveniencia` com o conserto do Opus (descarta `--out/--tag` antes de `unittest.main`); o commit do código do Astra espera esse portão. Regra nova para o daemon (próximo ciclo): pedido pode declarar `depende_de` e é recusado se o portão não saiu com exit 0.
 - **Ordem da fila**: `o4c` renomeado `o4_0_mundoA_protoC` — o controle roda antes dos tratamentos (pedido aceito).
 - **Discordância**: pred 184 (40 sementes no kernel) mede o eixo P no mundo v0 sem retina, NP 40 — o protocolo dos mundos A/B/C continua torch (SerCompleto não tem kernel). A decisão P/G do kernel vale para o kernel; para A/B/C o P/G continua 128/30 até haver medida no torch com o mesmo n.
+
+
+**Auditoria Fable 10/09 23:55 — pred 182 (Mundo D) ✗ em (a)(b)(c), ✓ em (d):** olho de 27 m não muda a espinha (linear 7.96 vs 7.47 no C) nem a lacuna (2.81 vs 2.32); sem hipocampo não inverte (+0.22). Mecanismo: `alvo()` entra em F fora da retina (`campo.py:287-288`); a retina só limita a distância percebida aos serviços, e o linear compra ao passar. O confundidor retina/L do o4b não existia na prática. Piso do prêmio em D 28.6 % (passa). Detalhe em PREDICOES 182.
