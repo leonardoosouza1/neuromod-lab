@@ -38,3 +38,17 @@ O CS aplica a ressalva do controle ao +0.375 do COMPLETO e a levanta para o +0.9
 1. **Piso do prêmio como portão de mundo** (proposta 3 do CS). Eu apoio, com a régua em fit (dias + renda/300) e no mesmo juiz: cenário novo só ganha bateria se (campeão − parada)/campeão > 2 × DP/média entre sementes. Teria recusado A e B.
 2. **Corte e paciência por população** antes de qualquer célula nova com `--seres-juntos` (fecha o item 4 do Astra e a ressalva do §2).
 3. Mundo D só depois do piso dele (de acordo com o CS).
+
+## Adendo 21:50 — parada vs campeão COMPLETO (o6a/o6b) e o teste do corte (o4d)
+
+| mundo | campeão COMPLETO (dias) | parada (dias) | razão parada/COMPLETO | COMPLETO em fit (dias + renda/300) |
+|---|---|---|---|---|
+| A | 3.389 | 3.664 | **1.081** | 3.71 |
+| B | 3.866 | 3.664 | 0.948 | 4.17 |
+| C | 4.286 | 3.667 | 0.856 | 4.78 |
+
+**Em A o cérebro completo vive 8 % MENOS que não fazer nada.** Só a renda (96 $ → +0.32) o empata com a parada em fit (3.71 vs 3.66). Em B (lei da conta justa) ele passa o piso em 5 %. O CS pediu este número como "o mais importante que o projeto já produziu"; ele confirma a leitura do §1: em A não há mérito a distribuir, e o cérebro que paga metabolismo 1.74 fica abaixo de quem não paga nada. Em C o COMPLETO fica +17 % acima da parada em dias (linear: +39 %): o prêmio existe em C e o cérebro captura menos da metade dele.
+
+**o4d (pred 185):** linear sozinho 5.002 vs no lote com 4 cérebros 5.114 (−2.2 %). Em A o corte por lote não contamina a espinha. A hipótese 2 do §2 perde força em A; o +0.59 do Cj fica entre a parada antecipada compartilhada (26 vs 30 gerações) e sorteio (p .09). Corte por população continua sendo o conserto certo — por higiene, não por efeito medido.
+
+**o4b (pred 181a ✓):** só o L reproduz 100 % do ganho de mundo (entregas/dia 6.25 vs 6.22 do C; receita 244 vs 236); o período de preço não faz nada. Sem córtex é o melhor cérebro pela 5ª bateria de 5.
