@@ -13,7 +13,7 @@ leitura de código/configuração. Inferido é cálculo ou interpretação deriv
 Hipótese é o mecanismo ainda não discriminado. Um relatório de agente é pista,
 nunca evidência: abra o `arquivo:linha` e confirme.
 
-Antes de coletar um número novo, faça a previsão que ele testa. Declare população,
+Antes de uma coleta confirmatória, registre a previsão que ela testa. Declare população,
 semente, horizonte, unidade, geometria, mortes e censura. Guarde manifesto com
 commit, caminho do binário, SHA-256 do binário/genoma/configuração e comando exato.
 Não recompile nem substitua o binário de uma corrida em andamento: registre o SHA
@@ -61,12 +61,12 @@ O juiz deve devolver o horizonte configurado; `t_vida_media` é tempo observado
 até o limite, não vida além dele. Não reconstrua fitness a partir de `dia_morte`.
 
 Para `u1v`, a observação histórica de 12/09/2026 (Universe commit `8ce51dc`)
-usou 3 seeds, 15 gerações e 40 beings: o mesmo campeão inicial `m23-s77`,
-avaliados na pista `8005`, foi compartilhado. As listas das últimas cinco
-gerações têm pelo menos 2 laps por observação: `ctrl=[37.8,37.8,39]` e
+usou 3 seeds, 15 gerações e 40 seres, com o mesmo campeão inicial `m23-s77`
+e pista `8005`. Cada valor é a média, nas últimas 5 gerações, da quantidade de
+seres que completaram pelo menos 2 voltas, entre os 40: `ctrl=[37.8,37.8,39]` e
 `hip=[34,28.2,33.4]`. A diferença média t2/t1
-foi `0.001553`, SD `0.007014`, `p=.738`, MDE `0.022894`. Isso é evidência de
-estimativa pontual pequena, com estudo sem potência para equivalência; p não
+foi `0.001553`, SD `0.007014`, `p=.738`, MDE `0.022894`. A estimativa pontual foi
+pequena, com estudo sem potência para equivalência; p não
 significativo não prova equivalência. Não houve novas corridas neste registro.
 
 No `hip_check`, uma magnitude máxima foi usada como se provasse memória zero. A
@@ -103,6 +103,15 @@ Métricas novas exigem teste de regressão sintético, adversarial e físico. Co
 o default bit a bit antes de mudar interpretação. Se números deveriam divergir e
 ficam idênticos, pare: suspeite de binário antigo, caminho não alimentado,
 ceiling não vinculante, mudança só de display ou artefato de unidade.
+
+## Contrato matemático
+
+Documente a equação realmente executada, com unidades, faixa, `dt`, condições
+iniciais e de contorno. Se o gene armazena a taxa de decaimento `d`, registre que
+o tempo físico é `tau=1/d`; não troque parâmetro por analogia de nome. Verifique
+estabilidade da discretização e a quantidade conservada, quando houver. Amplitude
+dinâmica não é transporte; difusão não é decaimento; número de neurônios não é
+grau de liberdade ativo. Nome de modelo não estabelece equivalência física.
 
 ## GPU, dados e contratos
 
