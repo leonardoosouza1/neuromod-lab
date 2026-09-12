@@ -29,7 +29,7 @@ RESPOSTA
   <spool>/log/<id>.log        stdout+stderr da bateria
   <spool>/feitos/<id>.json    o pedido, arquivado, quando termina
 """
-import argparse, json, os, re, shutil, signal, subprocess, sys, time
+import argparse, json, os, re, shutil, signal, subprocess, sys, threading, time
 from datetime import datetime, timezone
 
 REPO  = '/home/leonardo/projects/LLM/neuromod-lab'
@@ -44,6 +44,18 @@ ENVS    = {'NM_REGIME', 'NM_RETINA', 'NM_PONTO', 'NM_RISCO', 'NM_COMPILE', 'HSA_
 FLAG    = re.compile(r'^[A-Za-z][A-Za-z0-9-]{0,24}$')          # nome de flag
 VALOR   = re.compile(r'^[\w .,()+=/-]{1,120}$')          # valor textual: sem metacaractere de shell
 LIVRE   = re.compile(r'e4[0-9]_campo\.py|e44_prefeito\.py|diag_oraculo\.py')   # o que conta como "GPU ocupada"
+# [12/09] parallel slots: scripts that leave the GPU mostly idle (gpu_evolve: ~0.4 CPU core, GPU waiting on host
+# readbacks, 28 W) may run several at once. Loaded from _nmd/parallel.json ({"script": slots}); hot-reload like the
+# whitelist. Anything not listed keeps the historical rule: one process on the GPU at a time.
+PARALLEL = {'universe_run': 4}
+
+def parallel_slots(script):
+    global PARALLEL
+    pj = os.path.join(SPOOL, 'parallel.json')
+    if os.path.exists(pj):
+        try: PARALLEL = {str(k): int(v) for k, v in json.load(open(pj)).items()}
+        except Exception as ex: print(f'[nmd] parallel.json ignored: {ex}', flush=True)
+    return int(PARALLEL.get(script, 1))
 
 def agora(): return datetime.now(timezone.utc).isoformat(timespec='seconds')
 
@@ -138,39 +150,65 @@ def atende(uma_vez=False, intervalo=5):
     for d in ('pedidos', 'estado', 'log', 'feitos', 'recusados'):
         os.makedirs(os.path.join(SPOOL, d), exist_ok=True)
     print(f'[nmd] atendendo {SPOOL}/pedidos  (PARE para encerrar)', flush=True)
+    running = {}                       # file name -> dict(thread, ped, script, result)
+
+    def reap():
+        for name in list(running):
+            r = running[name]
+            if r['thread'].is_alive(): continue
+            e = r['result'].get('e')
+            cam = os.path.join(SPOOL, 'pedidos', name)
+            if os.path.exists(cam): shutil.move(cam, os.path.join(SPOOL, 'feitos', name))
+            if e: print(f'[nmd] {r["ped"]["id"]} terminou exit={e["exit_code"]} em {e["segundos"]}s', flush=True)
+            del running[name]
+
+    def start(name, ped, argv, env, out):
+        result = {}
+        def alvo():
+            try: result['e'] = executa(ped, argv, env, out)
+            except Exception as ex:
+                escreve(os.path.join(SPOOL, 'estado', ped['id'] + '.json'),
+                        dict(id=ped['id'], fase='erro', erro=repr(ex), quando=agora())); result['e'] = None
+        t = threading.Thread(target=alvo, name=ped['id'], daemon=True); t.start()
+        running[name] = dict(thread=t, ped=ped, script=ped.get('script'), result=result)
+        print(f'[nmd] rodando {ped["id"]} ({len(running)} em paralelo): {" ".join(argv[1:])[:150]}', flush=True)
+
     while True:
-        if os.path.exists(os.path.join(SPOOL, 'PARE')):
+        reap()
+        if os.path.exists(os.path.join(SPOOL, 'PARE')) and not running:
             print('[nmd] PARE encontrado, saindo', flush=True); return
-        fila = sorted(f for f in os.listdir(os.path.join(SPOOL, 'pedidos')) if f.endswith('.json'))
+        fila = [f for f in sorted(os.listdir(os.path.join(SPOOL, 'pedidos'))) if f.endswith('.json') and f not in running]
         if not fila:
-            if uma_vez: return
+            if uma_vez and not running: return
             time.sleep(intervalo); continue
-        cam = os.path.join(SPOOL, 'pedidos', fila[0])
+        name = fila[0]; cam = os.path.join(SPOOL, 'pedidos', name)
         try: ped = json.load(open(cam, encoding='utf-8'))
         except Exception as ex:
-            shutil.move(cam, os.path.join(SPOOL, 'recusados', fila[0]))
-            escreve(os.path.join(SPOOL, 'recusados', fila[0] + '.motivo'), dict(motivo=f'json ilegível: {ex}')); continue
+            shutil.move(cam, os.path.join(SPOOL, 'recusados', name))
+            escreve(os.path.join(SPOOL, 'recusados', name + '.motivo'), dict(motivo=f'json ilegível: {ex}')); continue
         try: argv, env, out = valida(ped)
         except ValueError as ex:
-            shutil.move(cam, os.path.join(SPOOL, 'recusados', fila[0]))
+            shutil.move(cam, os.path.join(SPOOL, 'recusados', name))
             escreve(os.path.join(SPOOL, 'estado', str(ped.get('id', 'sem-id')) + '.json'),
                     dict(id=ped.get('id'), fase='recusado', motivo=str(ex), quando=agora()))
-            print(f'[nmd] RECUSADO {fila[0]}: {ex}', flush=True); continue
+            print(f'[nmd] RECUSADO {name}: {ex}', flush=True); continue
+        script = ped.get('script'); slots = parallel_slots(script)
+        # a slot is free when: nothing exclusive is running, every running job is the SAME parallel script,
+        # fewer than `slots` of them are running, and no foreign GPU battery (torch) is alive
+        same = all(r['script'] == script for r in running.values())
+        if running and (slots <= 1 or not same or len(running) >= slots):
+            time.sleep(intervalo); continue
         viva = ocupado()
         if viva:
             print(f'[nmd] GPU ocupada ({len(viva)} bateria(s)), esperando', flush=True)
             escreve(os.path.join(SPOOL, 'estado', ped['id'] + '.json'),
                     dict(id=ped['id'], fase='esperando-gpu', ocupada_por=viva[:3], quando=agora()))
-            if uma_vez: return
+            if uma_vez and not running: return
             time.sleep(intervalo * 4); continue
-        print(f'[nmd] rodando {ped["id"]}: {" ".join(argv[1:])[:150]}', flush=True)
-        try: e = executa(ped, argv, env, out)
-        except Exception as ex:
-            escreve(os.path.join(SPOOL, 'estado', ped['id'] + '.json'),
-                    dict(id=ped['id'], fase='erro', erro=repr(ex), quando=agora())); e = None
-        shutil.move(cam, os.path.join(SPOOL, 'feitos', fila[0]))
-        if e: print(f'[nmd] {ped["id"]} terminou exit={e["exit_code"]} em {e["segundos"]}s', flush=True)
-        if uma_vez: return
+        start(name, ped, argv, env, out)
+        if uma_vez:
+            while running: reap(); time.sleep(1)
+            return
 
 if __name__ == '__main__':
     ap = argparse.ArgumentParser()
