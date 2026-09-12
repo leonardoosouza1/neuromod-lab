@@ -1,6 +1,6 @@
 # 90 — Auditoria do commit 1b60290 (Astra/Codex via Leonardo, 11/09 21:30): juiz, controle C, testes
 
-Conferido por um agente de leitura (Sonnet) contra `docs/REVISAO-CHECKLIST.md` e consolidado por Fable, 12/09 12:15.
+Conferido por um agente de leitura (Sonnet) contra `docs/REVISAO-CHECKLIST.md` e consolidado por Fable, 12/09 11:20.
 Testes CPU rodados; os 2 testes com GPU (`testes_cli_juiz.py`, `testes_metricas_juiz.py`) NÃO rodaram — entram pela fila.
 
 ## Veredito: aceito, com uma ressalva de comparabilidade
