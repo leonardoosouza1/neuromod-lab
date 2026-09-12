@@ -1,14 +1,17 @@
 """Utilidades do juiz de politicas explicitas (doc 53): carregar com lista negra, involucro ciente da assinatura, medir, tracar."""
 import os, re, json, inspect, argparse, hashlib, copy
-import torch; from campo import *; from e43_campo import aplica_cenario, alinha_semente, BRACOS, parser, cfg_de_flags
+import torch; from campo import *; from campo import _fit; from e43_campo import aplica_cenario, alinha_semente, BRACOS, parser, cfg_de_flags
 PROIBIDO = [r'\bimport\s+(?!torch\b|math\b)', r'\bfrom\s+(?!torch\b|math\b)', r'\b(os|sys|subprocess|open|exec|eval|__import__|compile|globals|locals|getattr|setattr)\s*\(', r'\.px\b', r'\.pxd\b', r'\.serv\[', r'\.serv_msk', r'\.g\b', r'\.dest\b']
 _OLD29 = [n for n in NOMES_F[:NF] if n != 'livre' and not n.startswith('ret_') and n not in ('est_sin', 'est_cos')]
 assert not (RETINA or REGIME) or len(_OLD29) == 29, f'layout antigo de 29 colunas exige NM_RISCO=1 NM_PONTO=1 (achei {len(_OLD29)})'
 IDX_LAYOUT29 = torch.tensor([NOMES_F.index(n) for n in _OLD29], device=DEV)
-def carrega(path):
+def carrega(path, fonte=None):
     """devolve (classe involucrada, erro). Nunca levanta: erro vira string para o placar."""
     try:
-        src = open(path).read()
+        if fonte is None:
+            with open(path) as arquivo: src = arquivo.read()
+        else:
+            src = fonte
         for pat in PROIBIDO:
             if re.search(pat, src): return None, f'padrao proibido {pat!r}'
         ns = {'torch': torch, 'math': __import__('math'), 'G': G, 'S': S, 'NF': NF, 'NOMES_OP': NOMES_OP, 'NOMES_CORPO': NOMES_CORPO, 'Linear': Linear, 'DEV': DEV}
@@ -18,7 +21,7 @@ def carrega(path):
     except Exception as e: return None, f'carga: {type(e).__name__}: {str(e)[:120]}'
     class POL:
         NP = Linear.NP
-        def __init__(s): s.p = POL0() if isinstance(POL0, type) else POL0
+        def __init__(s): s.p = POL0() if isinstance(POL0, type) else copy.deepcopy(POL0)
         def _call(s, nome, *args):
             fn = getattr(s.p, nome, None)
             if fn is None: return None
@@ -46,7 +49,7 @@ def mundo(cenario_path=None, nevoa=None):
     cfg = cfg_de_flags(fl, ex, T_aval)
     teste = [gerar_mapa(1000 + s, L=fl.L, distinto=fl.mundo == 'distinto', perfis=ex['perfis'], K=ex['K'], ruas=ex['ruas']) for s in range(3)]
     chave = hashlib.md5(json.dumps(cen, sort_keys=True).encode()).hexdigest()[:8] if cen else 'base'
-    return cfg, teste, int(240*fl.dias), chave
+    return cfg, teste, T_aval, chave
 def braco(d, nome, cfg):
     """[10/09 astra/a4] classe e cfg de UM braco de uma bateria e43: rotulo -> ser.nome (classe em BRACOS) + ajustes de cerebro do ser (ex. 'COMPLETO talamo fixo');
     bateria antiga (sem 'ser') = rotulo e a propria classe. Antes: KeyError no rotulo e o ajuste nunca era aplicado."""
@@ -54,29 +57,50 @@ def braco(d, nome, cfg):
     for k, v in (ser.get('cerebro') or {}).items(): setattr(c, k, v)
     return A, c
 def mede(Arq, W, cfg, teste, T, seeds, copias=128):
-    r = {k: [] for k in ('mortos', 'ent', 'rec', 'panes', 'fome_fim', 'n_come', 'n_posto', 'dinh_fim', 'agua_fim', 'dia_morte', 'c_fome', 'c_sede', 'c_divida', 'c_dano', 'n_oficina')}
+    cfg = copy.copy(cfg); cfg.corte_vivos = 0.; cfg.jardim_comum = False
+    r = {k: [] for k in ('mortos', 'ent', 'rec', 'panes', 'fome_fim', 'n_come', 'n_posto', 'dinh_fim', 'agua_fim', 'dia_morte', 'c_fome', 'c_sede', 'c_divida', 'c_dano', 'n_oficina', 'fit', 't_vida_media', 'frac_teto')}
     for sd in seeds:
         m = rodar(Arq, W[None, :].repeat(copias, 1), teste, cfg, T, sd, R=1); morto = m.vida <= 0; nm = morto.float().sum().clamp(min=1.)
         r['mortos'].append(float(morto.float().mean())); r['ent'].append(float(m.ent.mean())); r['rec'].append(float(m.rec.mean())); r['panes'].append(float(m.av_fuel.mean())); r['fome_fim'].append(float(m.fome.mean()))
         r['n_come'].append(float(m.n_come.mean())); r['n_posto'].append(float(m.n_posto.mean())); r['n_oficina'].append(float(m.n_oficina.mean())); r['dinh_fim'].append(float(m.dinh.mean())); r['agua_fim'].append(float(m.agua.mean()))
-        r['dia_morte'].append(float((m.t_vida[morto]/240.).mean()) if bool(morto.any()) else 10.)
+        # dia_morte é legado, condicional aos mortos; não usar para reconstruir fitness.
+        r['dia_morte'].append(float((m.t_vida[morto]/240.).mean()) if bool(morto.any()) else T/240.)
+        r['fit'].append(float(_fit(m, cfg, T).mean()))
+        r['t_vida_media'].append(float((m.t_vida/240.).mean()))
+        r['frac_teto'].append(float((m.t_vida >= T).float().mean()))
         fome = morto & (m.fome >= cfg.FOME_CRIT); sede = morto & (m.agua <= cfg.AGUA_CRIT); div = morto & (m.dinh < -cfg.LIMITE_DIVIDA)
         r['c_fome'].append(float(fome.float().sum()/nm)); r['c_sede'].append(float(sede.float().sum()/nm)); r['c_divida'].append(float(div.float().sum()/nm)); r['c_dano'].append(float((morto & ~fome & ~sede & ~div).float().sum()/nm))
     med = {k: sum(v)/len(v) for k, v in r.items()}; med['mortos_por_seed'] = [round(x, 3) for x in r['mortos']]
-    for k, v in r.items(): med[k + '_por_semente'] = [round(x, 4) for x in v]   # [spec I1c] regua pareada (analise_campo.py) sobre o placar
+    for k, v in r.items(): med[k + '_por_semente'] = list(v)
     return med
-def traco(Arq, W, cfg, teste, T=2400, B=64):
-    """histograma das escolhas na vida inteira + 'ficar' separado em NO RAIO de um servico (funcional) vs FORA (desperdicio)"""
-    m = Campo(teste, B, cfg, seed=7777, R=1); Wb = W[None, :].repeat(B, 1)[m.gidx]; ar = Arq(); ar.reset(m, Wb); cont = torch.zeros(G + S, device=DEV); fic_raio = 0.; fic_fora = 0.
-    for t in range(T):
-        F, val = m.obs(); sc = torch.einsum('bgf,bf->bg', F, Wb[:, :NF]) + ar.extra(m, Wb, F); sc = sc - sc.mean(1, keepdim=True)
-        svn, sv = m.serv_need(); ss = (svn*Wb[:, NF:NF+S] + Wb[:, NF+S:NF+S+1]).masked_fill(sv <= 0, -1e9); tudo = torch.cat([sc, ss], 1)
-        esc = ar.decidir(tudo, m) if hasattr(ar, 'decidir') else tudo.argmax(1); esc = esc.long().clamp(0, G + S - 1); vivo = m.vida > 0
-        fic = (esc == G - 1) & vivo; perto = m._dist.min(1).values <= cfg.raio; fic_raio += float((fic & perto).float().sum()); fic_fora += float((fic & ~perto).float().sum())
-        cont += torch.bincount(esc[vivo], minlength=G + S).float(); m.passo(esc); ar.atualizar(m)
-    tot = float(cont.sum()); f = (cont/max(tot, 1.)).tolist(); nomes = [f'{t}{int(q) if q else ""}' for t, q in ACOES]
-    d = {'mover': sum(f[:G - 1]), 'ficar_no_raio': fic_raio/max(tot, 1.), 'ficar_fora': fic_fora/max(tot, 1.)}; d.update({nomes[k]: f[G + k] for k in range(S)})
+def traco(Arq, W, cfg, teste, T=2400, B=64, seed=7777):
+    """Histograma pelo mesmo motor de mede(); protocolo explícito no chamador."""
+    class Observada(Arq):
+        def reset(self, m, Wb):
+            super().reset(m, Wb)
+            m.hist_acoes = torch.zeros(G + S, device=DEV)
+            m.hist_fic_raio = torch.zeros((), device=DEV)
+            m.hist_fic_fora = torch.zeros((), device=DEV)
+
+        def decidir(self, tudo, m):
+            esc = super().decidir(tudo, m) if hasattr(Arq, 'decidir') else tudo.argmax(1)
+            vivo = m.vida > 0
+            ficar = (esc == G - 1) & vivo
+            perto = m._dist.min(1).values <= m.cfg.raio
+            m.hist_acoes += torch.bincount(esc, weights=vivo.float(), minlength=G + S)
+            m.hist_fic_raio += (ficar & perto).float().sum()
+            m.hist_fic_fora += (ficar & ~perto).float().sum()
+            return esc
+
+    cfg = copy.copy(cfg); cfg.corte_vivos = 0.; cfg.jardim_comum = False
+    m = rodar(Observada, W[None, :].repeat(B, 1), teste, cfg, T, seed, R=1)
+    total = max(float(m.hist_acoes.sum()), 1.)
+    f = (m.hist_acoes/total).tolist()
+    d = dict(mover=sum(f[:G - 1]), ficar_no_raio=float(m.hist_fic_raio)/total,
+             ficar_fora=float(m.hist_fic_fora)/total)
+    d.update({f'{tipo}{int(q) if q else ""}': f[G + k] for k, (tipo, q) in enumerate(ACOES)})
     return d
+
 def linha(nome, med, tr=None):
     s = (f"{nome[:34]:<34} mortos {med['mortos']:.2f} {med['mortos_por_seed']} ent {med['ent']:5.1f} renda {med['rec']:5.0f} panes {med['panes']:4.1f} refeicoes {med['n_come']:4.1f} abast {med['n_posto']:4.1f} oficina {med['n_oficina']:3.1f} "
          f"| dia {med['dia_morte']:.1f}: fome {100*med['c_fome']:.0f}% sede {100*med['c_sede']:.0f}% divida {100*med['c_divida']:.0f}% dano {100*med['c_dano']:.0f}% | fim: fome {med['fome_fim']:.0f} agua {med['agua_fim']:.0f} $ {med['dinh_fim']:.0f}")
