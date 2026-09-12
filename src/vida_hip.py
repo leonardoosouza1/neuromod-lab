@@ -38,7 +38,8 @@ def rodar_hip(W, mapas, cfg, T, seed, R=1, alvo=None, grava=False):
         elif st[k].dtype != torch.float32: st[k] = st[k].float().contiguous()
     if grava: st['acoes'] = torch.zeros(T, B, dtype=torch.int32, device=DEV); st['traj'] = torch.zeros(T, B, 7, device=DEV)
     cfg_i = dict(dia=int(cfg.dia), K=int(K), NPTS=int(NPTS), loja=int(bool(cfg.loja_no_posto)), T=int(T), injeta_alvo=int(alvo is not None), grava=int(grava))
-    modulo().vida(st, dict(_cfg_f(cfg), amp_preco=float(m.amp_preco))   # [11/09 astra K1-2] amplitude EFETIVA: Campo zera a oscilacao sem mapa distinto (campo.py:164); o wrapper mandava cfg.amp_preco cru, cfg_i, int(seed)*7919 + 13); torch.cuda.synchronize()
+    # [11/09 astra K1-2] amplitude EFETIVA: Campo zera a oscilacao sem mapa distinto (campo.py:164); o wrapper mandava cfg.amp_preco cru
+    modulo().vida(st, dict(_cfg_f(cfg), amp_preco=float(m.amp_preco)), cfg_i, int(seed)*7919 + 13); torch.cuda.synchronize()
     m.pos = torch.stack([st['px'], st['py']], 1)
     for k in ('fuel', 'fome', 'agua', 'dinh', 'vida', 'calor', 'fad', 'res', 'tpar', 'cons', 'pd_', 't_ult', 'ent', 'rec', 'avar', 'av_fuel', 'n_posto', 'litros', 'n_oficina', 'n_come', 'n_agua', 'dano_soma', 't_vida'): setattr(m, k, st[k])
     m.dest = torch.stack([st['destx'], st['desty']], 1); m.emb = torch.stack([st['embx'], st['emby']], 1); m.orig_d = st['orig_d'].long(); m.px = st['pxs'].view(B, -1, 2); m.pxd = st['pxd'].view(B, -1, 2); m.px_ok = st['px_ok'].bool(); m.t = torch.tensor(T, device=DEV)
