@@ -76,6 +76,14 @@ mesma coisa que a pressão**: um vínculo global, imposto instantaneamente, que
 Foi daí que saiu o §E do `TAREFAS-CLAUDE-CODE.md`: orçamento de atividade em vez de
 imposto metabólico.
 
+> **Correção 12/09 (revisão externa, conferida no código e no doc 72).** "Estruturalmente a
+> mesma coisa" é forte demais: a pressão resolve uma Poisson (acoplamento espacial global,
+> vínculo de incompressibilidade); a normalização divisiva regula amplitude por um pool local.
+> Mesmo PAPEL (vínculo que redistribui), operador diferente. E o resultado medido não foi
+> neutro: `docs/72` registra fit 4,115 → 3,874 (−5,9 %), pior em 3/5 sementes, com o ganho
+> global travado no mesmo braço (confundido). O que sobrevive: a ideia de vínculo; o que não
+> sobrevive: a identificação dos dois operadores e a leitura "neutra".
+
 ---
 
 ## O outro caminho que você intuiu: a distribuição do líquido
@@ -104,6 +112,15 @@ O que isso muda, e é bastante:
 
 Isso é um projeto real, não uma metáfora — e é a única forma de Navier–Stokes entrar no
 laboratório fazendo trabalho de verdade em vez de decorar.
+
+> **Ressalvas 12/09.** (i) A equação é reação–difusão sem advecção; o alcance é ℓ ~ √(D/λ),
+> logo um gene `D` só controla alcance com λ fixo. (ii) Não há custo energético na equação —
+> "espalhar custa" tem de ser modelado à parte. (iii) Com fonte persistente o campo satura
+> quase uniforme, o mesmo modo de falha do N19. (iv) Separar os quatro mecanismos antes de
+> medir: difusão (mistura entre regiões), decaimento (reduz), transporte (desloca), escrita
+> (injeta). Viscosidade não é esquecimento: em Lamb–Oseen a circulação total se conserva
+> enquanto a vorticidade se espalha. Entra só com pergunta concreta: qual região precisa de
+> qual sinal, com qual atraso, e por que o escalar global falha.
 
 ---
 

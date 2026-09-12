@@ -18,5 +18,6 @@ if a.saida != 'false': args += [a.saida, a.out]
 cmd = ['nice', '-n', str(a.nice), exe] + [str(x) for x in args]
 print('universe_run:', ' '.join(cmd), flush=True); t0 = time.time()
 env = dict(os.environ); env.setdefault('HSA_OVERRIDE_GFX_VERSION', '10.3.0')
+env.pop('DISPLAY', None)  # u0c 12/09: run completo, exit 1 so no encerramento por `XIO: fatal IO error 17 on X server :0` (Universe/CLAUDE.md usa `env -u DISPLAY`)
 rc = subprocess.call(cmd, cwd=UNI, env=env)
 print(f'universe_run: exit {rc} em {time.time()-t0:.0f}s', flush=True); sys.exit(rc)
