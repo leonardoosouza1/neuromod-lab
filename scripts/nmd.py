@@ -29,7 +29,7 @@ RESPOSTA
   <spool>/log/<id>.log        stdout+stderr da bateria
   <spool>/feitos/<id>.json    o pedido, arquivado, quando termina
 """
-import argparse, json, os, re, shutil, signal, subprocess, sys, threading, time
+import argparse, hashlib, json, os, re, shutil, signal, subprocess, sys, threading, time
 from datetime import datetime, timezone
 
 REPO  = '/home/leonardo/projects/LLM/neuromod-lab'
@@ -116,10 +116,42 @@ def escreve(caminho, d):
 RE_GER  = re.compile(r'^\s*ger\s+(\d+)\s*\|\s*(.*?)\s*\(melhor')
 RE_ARM  = re.compile(r'^\s{2}(\S.*?)\s{2,}NP\s+(\d+)')
 
+def sha256_of(path):
+    try:
+        h = hashlib.sha256()
+        with open(path, 'rb') as f:
+            for chunk in iter(lambda: f.read(1 << 20), b''): h.update(chunk)
+        return h.hexdigest()
+    except OSError: return None
+
+def git_head(repo):
+    try: return subprocess.run(['git', '-C', repo, 'rev-parse', '--short=12', 'HEAD'], capture_output=True, text=True, timeout=10).stdout.strip() or None
+    except Exception: return None
+
+UNIVERSE = os.path.expanduser('~/projects/LLM/Universe')
+
+def manifest(ped, argv, env, out):
+    """[12/09, handbook] one manifest.json per run: what actually ran (commit, binary/script SHA-256, exact command,
+    env subset, seeds) — written BEFORE the process starts, so a crash still leaves the record."""
+    script = argv[1] if len(argv) > 1 else None
+    m = dict(id=ped['id'], written=agora(), script=script, script_sha256=sha256_of(script) if script else None,
+             lab_commit=git_head(REPO), command=argv, env={k: env[k] for k in sorted(env) if k in ENVS}, out=out,
+             args=ped.get('args', {}))
+    if '--bin' in argv:
+        b = os.path.join(UNIVERSE, 'target', 'release', argv[argv.index('--bin') + 1])
+        m.update(binary=b, binary_sha256=sha256_of(b), universe_commit=git_head(UNIVERSE),
+                 binary_mtime=datetime.fromtimestamp(os.path.getmtime(b), timezone.utc).isoformat(timespec='seconds') if os.path.exists(b) else None)
+    a = ped.get('args', {}) or {}
+    m['seeds'] = {k: a[k] for k in a if 'seed' in k or k in ('sementes', 'semente')}
+    escreve(os.path.join(out, 'manifest.json'), m)
+    return m
+
 def executa(ped, argv, env, out):
     pid = ped['id']; est = os.path.join(SPOOL, 'estado', pid + '.json')
     logp = os.path.join(SPOOL, 'log', pid + '.log'); t0 = time.time()
     os.makedirs(out, exist_ok=True)
+    try: manifest(ped, argv, env, out)
+    except Exception as ex: print(f'[nmd] manifest failed for {pid}: {ex!r}', flush=True)
     e = dict(id=pid, fase='rodando', inicio=agora(), argv=argv[1:], out=out,
              geracao=None, melhor_por_semente=None, bracos_prontos=[], segundos=0)
     escreve(est, e)
