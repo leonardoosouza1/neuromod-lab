@@ -24,7 +24,7 @@ import torch
 
 sys.path.insert(0, os.path.dirname(__file__))
 from flybrain import load_connectome
-from flybrain.dynamics import LifBrain, LifParams
+from flybrain.dynamics import LifBrain, LifParams, RateBrain
 from flybrain.eye import motion_chart
 from flybrain.selection import MAP_VARIANTS
 
@@ -48,6 +48,10 @@ def main():
     ap.add_argument('--t-run-ms', type=float, default=300.0)
     ap.add_argument('--n-cells', type=int, default=2000, help='motion cells driven per arm')
     ap.add_argument('--map', choices=sorted(MAP_VARIANTS), default='real')
+    ap.add_argument('--model', choices=['lif', 'rate'], default='lif',
+                    help='lif = the spiking reference (Shiu et al. 2024); rate = the model the Universe kernel runs')
+    ap.add_argument('--rate-scale', type=float, default=1e-3, help='rate model: synaptic scale')
+    ap.add_argument('--rate-tau', type=float, default=4.0, help='rate model: tau in steps')
     ap.add_argument('--seed', type=int, default=0)
     ap.add_argument('--out', required=True)
     a = ap.parse_args()
@@ -70,14 +74,28 @@ def main():
     }
     out = {}
     for name, driven in arms.items():
-        brain = LifBrain(cm, a.trials, LifParams())
-        brain.set_poisson(driven, a.hz)
-        steps = int(round(a.t_run_ms / brain.p.dt))
         t0 = time.time()
-        for _ in range(steps):
-            brain.step()
-        torch.cuda.synchronize()
-        rates = brain.rates_hz().cpu().numpy()
+        if a.model == 'lif':
+            brain = LifBrain(cm, a.trials, LifParams())
+            brain.set_poisson(driven, a.hz)
+            steps = int(round(a.t_run_ms / brain.p.dt))
+            for _ in range(steps):
+                brain.step()
+            torch.cuda.synchronize()
+            rates = brain.rates_hz().cpu().numpy()
+        else:
+            # The rate model the Universe kernel runs (`src/gpu/fly_map/fly_map.wgsl`): one step per
+            # tick, x <- x + alpha(-x + scale*W*r + u), r = tanh(x). The drive `u` plays the role the
+            # Poisson input plays in the LIF: a constant excitation on the driven cells, normalised so
+            # that a driven cell saturates (tanh -> ~1), which is what `--hz` does in the spiking model.
+            brain = RateBrain(cm, a.trials, device='cuda', tau_steps=a.rate_tau, scale=a.rate_scale, act='tanh')
+            u = torch.zeros((cm.n, a.trials), device='cuda')
+            u[torch.as_tensor(driven, device='cuda', dtype=torch.long), :] = 1.0
+            steps = int(round(a.t_run_ms / 15.625))  # one step per Universe tick (64 Hz)
+            for _ in range(max(steps, 20)):
+                brain.step(u)
+            torch.cuda.synchronize()
+            rates = brain.rates().mean(1).abs().cpu().numpy()
         res = {'driven': int(len(driven)), 'active': int((rates > 0).sum()), 'wall_s': time.time() - t0}
         for g, idx in groups.items():
             asy, r, l = asymmetry(rates, idx, side_arr)
@@ -85,7 +103,7 @@ def main():
         out[name] = res
         parts = ' '.join(f"{g} {res[g]['right_hz']:6.1f}/{res[g]['left_hz']:6.1f}" for g in ('DNa02', 'DNa_all', 'DNp01', 'HS', 'VS'))
         print(f"{name:10s} driven {len(driven):5d} active {res['active']:6d}  R/L: {parts}  {res['wall_s']:.0f}s", flush=True)
-    with open(os.path.join(a.out, f'fly_reflex_{a.map}_s{a.seed}.json'), 'w') as f:
+    with open(os.path.join(a.out, f'fly_reflex_{a.model}_{a.map}_s{a.seed}.json'), 'w') as f:
         json.dump({'args': vars(a), 'arms': out}, f, indent=1)
     print('\n--- asymmetry index (right-left)/(right+left), by driven side ---')
     print(f"{'group':10s} {'left drive':>11s} {'right drive':>12s} {'bilateral':>10s} {'scramble':>9s}   swing(L->R)")
