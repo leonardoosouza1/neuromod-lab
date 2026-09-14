@@ -103,13 +103,6 @@ def test_flymap_file_roundtrip():
     assert z['in_group_of'][2] == NONE and z['out_members'].tolist() == [5]
 
 
-if __name__ == "__main__":
-    for name, fn in list(globals().items()):
-        if name.startswith('test_'):
-            fn(); print('ok', name)
-    print('ALL PASSED')
-
-
 # ── flymap v2 (docs/96-flymap-v2.md) ─────────────────────────────────────────────────────────
 def _toy_flymap_arrays():
     """The toy map as flymap tables: v1 CSR (by post), presynaptic CSR, and the small tables."""
@@ -156,7 +149,7 @@ def test_flymap_v1_bytes_unchanged_by_v2():
 
 def test_flymap_v2_roundtrip_and_prefix():
     import tempfile
-    from flybrain.flymap_file import FLAG_NO_REFRACTORY, FLAG_PHOTORECEPTOR, FLAG_PRE_CSR, pack_bitmap, read_flymap
+    from flybrain.flymap_file import FLAG_NO_REFRACTORY, FLAG_PIXEL_BINDING, FLAG_PRE_CSR, pack_bitmap, read_flymap
     t = _toy_flymap_arrays()
     n = len(t['type_of'])
     pixel = np.full(n, 0xFFFFFFFF, np.uint32); pixel[0] = 7; pixel[1] = 1763
@@ -165,16 +158,20 @@ def test_flymap_v2_roundtrip_and_prefix():
         p1 = os.path.join(d, 'v1.bin'); _write(p1, t)
         p2 = os.path.join(d, 'v2.bin')
         _write(p2, t, pre_indptr=t['pre_indptr'], pre_indices=t['pre_indices'], pre_weights=t['pre_weights'],
-               pixel_of_photoreceptor=pixel, no_refractory=no_rfc)
+               pixel_of_neuron=pixel, no_refractory=no_rfc)
         b1, b2 = open(p1, 'rb').read(), open(p2, 'rb').read()
         z = read_flymap(p2)
         z1 = read_flymap(p1)
-    assert z['version'] == 2 and z['flags'] == FLAG_PRE_CSR | FLAG_PHOTORECEPTOR | FLAG_NO_REFRACTORY
+    flags_expected = FLAG_PRE_CSR | FLAG_PIXEL_BINDING | FLAG_NO_REFRACTORY
+    assert z['version'] == 2 and z['flags'] == flags_expected
     assert z1['version'] == 1 and z1['flags'] == 0 and 'pre_indptr' not in z1
     assert b2[:8] == b'FLYMAP02' and b2[40:len(b1)] == b1[40:], 'v2 must extend v1, not reshuffle it'
+    # header word 6 (byte 32..36) is the flag word, word 7 (byte 36..40) stays reserved = 0
+    hdr = np.frombuffer(b2[8:40], dtype='<u4')
+    assert hdr[6] == flags_expected and hdr[7] == 0, 'flags must sit at header word 6, reserved at word 7'
     for k in ('indptr', 'indices', 'weights', 'pre_indptr', 'pre_indices', 'pre_weights'):
         assert np.array_equal(z[k], t[k] if k in t else z[k]), k
-    assert np.array_equal(z['pixel_of_photoreceptor'], pixel)
+    assert np.array_equal(z['pixel_of_neuron'], pixel)
     assert np.array_equal(z['no_refractory'], pack_bitmap(no_rfc))
 
 
@@ -208,21 +205,50 @@ def test_retina_pixel_angles_match_the_shader():
 
 
 def test_photoreceptor_binding_known_angles():
-    from flybrain.eye import NONE_PIXEL, pixel_of_photoreceptor
+    from flybrain.eye import NONE_PIXEL, pixel_of_neuron
     chart = pd.DataFrame({'index': [0, 1, 2, 3],
                           'azimuth_deg': [60.0, -60.0, 0.0, 120.0],          # last one looks outside the window
                           'elevation_deg': [-3.4377468, -2.0, -0.6875493, -1.0]})
     n = 6
-    p = pixel_of_photoreceptor(chart, n)
+    p = pixel_of_neuron(chart, n, fit='strip')
     assert p[0] == 13 * 126 + 125, p[0]          # bottom-right corner pixel
     assert p[1] == 6 * 126 + 0, p[1]             # elevation -2.0 falls in row 6 (-1.957), leftmost column
     assert p[2] // 126 == 0 and abs(int(p[2] % 126) - 62.5) <= 0.5             # straight ahead, fovea row, centre
-    assert p[3] == NONE_PIXEL and p[4] == NONE_PIXEL and p[5] == NONE_PIXEL   # outside the FOV / not photoreceptors
+    assert p[3] == NONE_PIXEL and p[4] == NONE_PIXEL and p[5] == NONE_PIXEL   # outside the FOV / not in the chart
     bound = p != NONE_PIXEL
-    assert p[bound].max() < 14 * 126 and bound.sum() == 3
-    # stretch binds every photoreceptor, including the one looking 120 degrees to the right
-    q = pixel_of_photoreceptor(chart, n, fit='stretch')
+    assert p[bound].max() < 14 * 126 and bound.sum() == 3                     # ~strip: only 3/4 charted neurons bound
+    # stretch binds every charted neuron, including the one looking 120 degrees to the right
+    q = pixel_of_neuron(chart, n, fit='stretch')
     assert (q[:4] != NONE_PIXEL).all() and (q[4:] == NONE_PIXEL).all() and q[:4].max() < 14 * 126
+
+
+def test_motion_chart_shares_photoreceptor_chart_machinery():
+    """motion_chart (T4/T5) must produce the same PCA-sheet chart shape as photoreceptor_chart (R1-6),
+    with no cross-talk between the two cell-type selections, on a synthetic connectome + annotations file."""
+    import tempfile
+    from flybrain.connectome import Connectome
+    from flybrain.eye import motion_chart, photoreceptor_chart
+    rng = np.random.default_rng(0)
+    n_r, n_t4, n_t5, n_other = 20, 15, 12, 5
+    n = n_r + n_t4 + n_t5 + n_other
+    cell_type = ['R1-6'] * n_r + ['T4a'] * n_t4 + ['T5b'] * n_t5 + ['Mi1'] * n_other
+    side = (['left'] * (n_r // 2) + ['right'] * (n_r - n_r // 2) + ['left'] * (n_t4 // 2) + ['right'] * (n_t4 - n_t4 // 2)
+           + ['left'] * (n_t5 // 2) + ['right'] * (n_t5 - n_t5 // 2) + ['left'] * n_other)
+    root_ids = np.arange(n, dtype=np.int64) + 1000
+    neurons = pd.DataFrame({'cell_type': cell_type, 'side': side, 'root_id': root_ids})
+    cm = Connectome(n, root_ids, np.zeros(0, np.int32), np.zeros(0, np.int32), np.zeros(0, np.int32), neurons)
+    # a flat sheet plus noise is enough for PCA to recover two in-plane axes per side
+    pos = rng.normal(size=(n, 3)) * np.array([[10.0, 10.0, 0.1]])
+    ann = pd.DataFrame({'root_id': root_ids, 'pos_x': pos[:, 0], 'pos_y': pos[:, 1], 'pos_z': pos[:, 2]})
+    with tempfile.TemporaryDirectory() as d:
+        p = os.path.join(d, 'annotations.tsv'); ann.to_csv(p, sep='\t', index=False)
+        rc = photoreceptor_chart(cm, p)
+        mc = motion_chart(cm, p)
+    assert set(rc['index']) == set(range(n_r)), 'photoreceptor_chart must select only R1-6'
+    assert set(mc['index']) == set(range(n_r, n_r + n_t4 + n_t5)), 'motion_chart must select only T4+T5'
+    for chart in (rc, mc):
+        assert {'index', 'side', 'azimuth_deg', 'elevation_deg'} <= set(chart.columns)
+        assert chart['azimuth_deg'].between(-180.0, 180.0).all() and chart['elevation_deg'].between(-60.0, 60.0).all()
 
 
 def test_no_refractory_bitmap_matches_the_binding():
@@ -235,3 +261,10 @@ def test_no_refractory_bitmap_matches_the_binding():
     back = unpack_bitmap(words, n)
     assert np.array_equal(back, pixel != NONE) and back.sum() == 5
     assert bool(words[0] & (1 << 3)) and bool(words[1] & 1) and not bool(words[0] & 1)
+
+
+if __name__ == "__main__":
+    for name, fn in list(globals().items()):
+        if name.startswith('test_'):
+            fn(); print('ok', name)
+    print('ALL PASSED')

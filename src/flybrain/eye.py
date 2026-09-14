@@ -1,13 +1,23 @@
-"""The fly's eye as an input organ: photoreceptors placed on angular coordinates.
+"""The fly's eye (and its retinotopic motion detectors) as input organs placed on angular
+coordinates.
 
-FlyWire gives every R1-6 photoreceptor a position in the EM volume (`pos_x/y/z`, one
-eye per hemisphere). The retina/lamina is a curved 2-D sheet, so the first two principal
-axes of the positions of one eye give a (u, v) chart of that sheet; we map it linearly
-to azimuth (0° = straight ahead, 180° = behind, per side) and elevation (−60°..+60°).
-The chart orientation is fixed by anatomy up to a flip; `assume_front_medial` picks the
-convention that the medial edge of the eye (towards the head midline) looks forward.
-This is a first-order retinotopy — no ommatidium clustering, no eye curvature model —
-enough to bind a rendered retina to the right region of the eye.
+FlyWire gives every neuron a position in the EM volume (`pos_x/y/z`, one eye per
+hemisphere). The retina/lamina — and, downstream, the retinotopic T4/T5 motion-detector
+sheets — are curved 2-D sheets, so the first two principal axes of the positions of one
+side give a (u, v) chart of that sheet; we map it linearly to azimuth (0° = straight
+ahead, 180° = behind, per side) and elevation (−60°..+60°). The chart orientation is
+fixed by anatomy up to a flip, resolved by `_sheet_chart` so the medial edge of the sheet
+(towards the head midline) looks forward and the dorsal side looks up. This is a
+first-order retinotopy — no ommatidium clustering, no eye curvature model — enough to
+bind a rendered retina to the right region of the eye or of the motion-detector sheet.
+
+`photoreceptor_chart` (R1-6) drives the RATE brain (it handles the eye's graded, non-
+spiking stages correctly). `motion_chart` (T4+T5) drives the SPIKING brain instead: a
+measurement on 14/09/2026 (`neuromod-lab/PREDICOES.md` #189v, `src/fly_diag_vision.py`)
+found the optic lobe does not propagate under LIF — photoreceptors reach the lamina but
+the medulla is net inhibitory (Mi1 receives −3214 synapse·Hz) — while driving T4/T5
+directly reaches LPLC2, HS/VS and the giant fiber DNp01 at 95 Hz. Both charts share the
+same PCA-sheet machinery; only the cell-type selection differs.
 """
 from __future__ import annotations
 
@@ -18,14 +28,15 @@ from .connectome import Connectome
 
 AZIMUTH_SPAN_DEG = (5.0, 175.0)       # each eye sees roughly one hemifield
 ELEVATION_SPAN_DEG = (-60.0, 60.0)
+MOTION_CELL_TYPE_REGEX = r'^(T4|T5)'  # 4 subtypes each (a-d); 6241 T4 + 6005 T5 in FlyWire v783
+NONE_PIXEL = 0xFFFFFFFF
 
 
-def photoreceptor_chart(cm: Connectome, annotations_tsv: str, cell_type: str = 'R1-6') -> pd.DataFrame:
-    """One row per photoreceptor: index, side, azimuth_deg (signed: left < 0), elevation_deg."""
-    ann = pd.read_csv(annotations_tsv, sep='\t', low_memory=False, usecols=['root_id', 'pos_x', 'pos_y', 'pos_z'])
-    ann = ann.drop_duplicates('root_id').set_index('root_id')
-    nrn = cm.neurons
-    sel = nrn[nrn['cell_type'] == cell_type].join(ann, on='root_id')
+def _sheet_chart(nrn: pd.DataFrame, sel_mask: np.ndarray, ann: pd.DataFrame) -> pd.DataFrame:
+    """Shared PCA-sheet chart builder: `sel_mask` (bool[len(nrn)]) picks the neurons that make
+    up the sheet (R1-6 for the eye, T4+T5 for the motion detectors); one row per selected
+    neuron: index, side, azimuth_deg (signed: left < 0), elevation_deg."""
+    sel = nrn[sel_mask].join(ann, on='root_id')
     out = []
     midline_x = float(nrn.join(ann, on='root_id')['pos_x'].median())
     for side, q in sel.groupby('side'):
@@ -49,6 +60,24 @@ def photoreceptor_chart(cm: Connectome, annotations_tsv: str, cell_type: str = '
         out.append(pd.DataFrame({'index': q.index.to_numpy(), 'side': side,
                                  'azimuth_deg': np.where(side == 'left', -az, az), 'elevation_deg': el}))
     return pd.concat(out, ignore_index=True)
+
+
+def photoreceptor_chart(cm: Connectome, annotations_tsv: str, cell_type: str = 'R1-6') -> pd.DataFrame:
+    """One row per photoreceptor: index, side, azimuth_deg (signed: left < 0), elevation_deg."""
+    ann = pd.read_csv(annotations_tsv, sep='\t', low_memory=False, usecols=['root_id', 'pos_x', 'pos_y', 'pos_z'])
+    ann = ann.drop_duplicates('root_id').set_index('root_id')
+    nrn = cm.neurons
+    return _sheet_chart(nrn, (nrn['cell_type'] == cell_type).to_numpy(), ann)
+
+
+def motion_chart(cm: Connectome, annotations_tsv: str, cell_type_regex: str = MOTION_CELL_TYPE_REGEX) -> pd.DataFrame:
+    """One row per T4/T5 motion detector (retinotopic, no chart shipped by FlyWire): same PCA-sheet
+    construction as `photoreceptor_chart`, built from `pos_x/y/z` of the matching cell types."""
+    ann = pd.read_csv(annotations_tsv, sep='\t', low_memory=False, usecols=['root_id', 'pos_x', 'pos_y', 'pos_z'])
+    ann = ann.drop_duplicates('root_id').set_index('root_id')
+    nrn = cm.neurons
+    mask = nrn['cell_type'].astype(str).str.match(cell_type_regex).to_numpy()
+    return _sheet_chart(nrn, mask, ann)
 
 
 def photoreceptors_in(chart: pd.DataFrame, az_center: float, el_center: float, radius_deg: float) -> np.ndarray:
@@ -125,23 +154,24 @@ def _bin_into_cells(values: np.ndarray, centers: np.ndarray):
     return (len(c) - 1 - k if descending else k), inside
 
 
-def pixel_of_photoreceptor(chart: pd.DataFrame, n: int, rows: int = RETINA_ROWS, cols: int = RETINA_COLS,
-                           fov_deg: float = RETINA_FOV_DEG, min_pitch_rad: float = RETINA_MIN_PITCH_RAD,
-                           max_pitch_rad: float = RETINA_MAX_PITCH_RAD, fit: str = 'strip',
-                           warp_row0: bool = True) -> np.ndarray:
-    """u32[n]: the rendered-retina pixel (row-major, `row * cols + col`) that drives each neuron,
-    0xFFFFFFFF for every neuron that is not a bound photoreceptor.
+def pixel_of_neuron(chart: pd.DataFrame, n: int, rows: int = RETINA_ROWS, cols: int = RETINA_COLS,
+                    fov_deg: float = RETINA_FOV_DEG, min_pitch_rad: float = RETINA_MIN_PITCH_RAD,
+                    max_pitch_rad: float = RETINA_MAX_PITCH_RAD, fit: str = 'strip',
+                    warp_row0: bool = True) -> np.ndarray:
+    """u32[n]: the rendered-retina pixel (row-major, `row * cols + col`) that drives each neuron of
+    `chart` (a `photoreceptor_chart` or a `motion_chart` — this function is agnostic to which),
+    `NONE_PIXEL` for every neuron that is not in `chart` or falls outside the rendered window.
 
-    fit='strip' (default, anatomically honest): a photoreceptor is bound to the pixel whose sampled
-      direction owns its (azimuth, elevation); receptors looking outside the rendered window stay
-      unbound. The tan-warp of row 0 is INVERTED — binding uses the angle the pixel really samples,
-      not a linear column index.
-    fit='stretch' (experiment): the chart's full azimuth AND elevation span is mapped linearly onto
-      the columns and rows, so every photoreceptor is bound. Not angle-faithful by construction;
-      it exists because the rendered retina is a thin strip (see docs/96-flymap-v2.md).
+    fit='strip' (anatomically honest): a neuron is bound to the pixel whose sampled direction owns
+      its (azimuth, elevation); neurons looking outside the rendered window stay unbound. The
+      tan-warp of row 0 is INVERTED — binding uses the angle the pixel really samples, not a linear
+      column index.
+    fit='stretch' (default in the exporter): the chart's full azimuth AND elevation span is mapped
+      linearly onto the columns and rows, so every charted neuron is bound. Not angle-faithful by
+      construction; it exists because the rendered retina is a thin strip (see docs/96-flymap-v2.md).
     """
     assert fit in ('strip', 'stretch'), fit
-    out = np.full(int(n), 0xFFFFFFFF, dtype=np.uint32)
+    out = np.full(int(n), NONE_PIXEL, dtype=np.uint32)
     idx = chart['index'].to_numpy().astype(np.int64)
     az = chart['azimuth_deg'].to_numpy(dtype=np.float64)
     el = chart['elevation_deg'].to_numpy(dtype=np.float64)
