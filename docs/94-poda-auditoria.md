@@ -14,6 +14,16 @@ não é repositório git.
 | entregas em 5 cidades novas | 13,76 ± 2,59 | 15,38 ± 2,39 | +1,62 ± 0,84 | 1,93 | 0,068 | 12/20 |
 
 Poda melhor em **57 das 60 gerações** (média entre sementes); esparsidade final **0,34**.
+
+> **CORREÇÃO 14/09 12:45 (revisão do Astra, conferida por mim — `docs/97`).** Tratar 57/60 como 57
+> confirmações é errado: gerações sucessivas compartilham população, elite e histórico, logo não são
+> independentes. O que a curva mostra é que a vantagem não é artefato do ponto de parada — não que seja
+> significativa 57 vezes. Duas outras correções ao que está acima: (1) a comparação `gerar` × `podar`
+> muda DUAS variáveis (σ 0,30 → 0,15 **e** a máscara), e o controle que isola o σ (`gerar_fino`, que
+> existe em `poda2.py:21`) nunca foi rodado nas 20 sementes — **sem ele não se pode afirmar que a poda
+> vence**; (2) `taxi_np.py:126` atualiza o nó na chegada ANTES de a ação ser aplicada (`:157`), então no
+> tique de chegada o índice escolhido olhando o nó A é aplicado aos vizinhos do nó B — o "núcleo
+> convergente" de features fica suspenso até o conserto. Detalhe e reprodução em `docs/97`.
 Núcleo convergente reproduzido: `d_alvo` mantido em 20/20, cinco features descartadas em 20/20.
 
 **Correções ao doc recebido:** (1) o p do treino é 1,7e-4, não "< 0,00001" — o efeito continua
