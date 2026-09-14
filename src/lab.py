@@ -5,6 +5,9 @@ from datetime import datetime
 DEV = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 GMAX = 5    # grau maximo de um no
+# [14/09/2026] Se 1, mantem a ordem antiga (acao aplicada ao no de CHEGADA, indice escolhido no no
+# de ORIGEM) — so para reproduzir baterias anteriores ao conserto documentado em docs/97 §1.
+CHEGADA_LEGADO = os.environ.get('NM_CHEGADA_LEGADO', '0') == '1'
 NPX  = 6    # passageiros disponiveis por mundo
 
 # ============================ CIDADES ============================
@@ -734,7 +737,15 @@ def passo(m, esc):
         rep = ap & ((~noite) | (m.e15_dist[m.cidx, m.no] == m.casa))
         m.n_rua += (ap & (~rep)).float()
     m.fad  = torch.where(rep, torch.full_like(m.fad,40.), m.fad)
+    # [14/09/2026, revisao do Astra + docs/97] BUG DE PERCEPCAO->ACAO: `obs()` roda ANTES de
+    # `passo()` e le o no de ORIGEM; a chegada acima ja trocou `m.no` para o destino, entao
+    # aplicar `esc` neste tique usaria a lista de vizinhos do no NOVO para um indice escolhido
+    # olhando o no VELHO (o indice 2 de A nao e o indice 2 de B). `~cg` faz quem acabou de chegar
+    # perder a acao deste tique; no proximo, `obs()` ja ve o no novo e a escolha casa com o estado.
+    # Controlado por PASSO_CHEGADA_LEGADO=1 para reproduzir baterias anteriores ao conserto.
     pode = livre & (m.rest<=0) & (~ap)
+    if not CHEGADA_LEGADO:
+        pode = pode & (~cg)
     if viva is not None: pode = pode & viva
     sv = m.serv_ab(noite)
     # servicos (sem closures: compile-friendly)
