@@ -15,7 +15,6 @@ sys.path.insert(0, os.path.dirname(__file__))
 from flybrain import load_connectome
 from flybrain.connectome import type_key
 from flybrain.flymap_file import NONE, write_flymap
-from flybrain.selection import shuffle_targets
 
 
 def build_tables(cm):
@@ -53,13 +52,15 @@ def main():
     a = ap.parse_args()
     t0 = time.time()
     cm = load_connectome()
-    if a.shuffle_targets is not None:
-        cm = shuffle_targets(cm, a.shuffle_targets)
     keep = np.abs(cm.weight) >= a.min_weight
     if a.exclude_optic:
         non_optic = (cm.neurons['super_class'].to_numpy() != 'optic')
         keep &= non_optic[cm.pre] & non_optic[cm.post]
     pre, post, w = cm.pre[keep], cm.post[keep], cm.weight[keep].astype(np.float32)
+    if a.shuffle_targets is not None:
+        # control map: permute the postsynaptic endpoints AMONG THE KEPT EDGES, so the shuffled map has
+        # exactly the same edge count, out-degrees, in-degrees and signs as the real map it controls for
+        post = post[np.random.default_rng(a.shuffle_targets).permutation(len(post))]
     order = np.argsort(post, kind='stable')
     indptr = np.zeros(cm.n + 1, np.int64); np.add.at(indptr, post + 1, 1); indptr = np.cumsum(indptr)
     type_of, type_names, in_group_of, in_names, out_indptr, out_members, out_names = build_tables(cm)
