@@ -29,7 +29,47 @@ from flybrain import load_connectome
 from flybrain.connectome import ROOT_DEFAULT, type_key
 from flybrain.eye import (RETINA_COLS, RETINA_FOV_DEG, RETINA_MAX_PITCH_RAD, RETINA_MIN_PITCH_RAD, RETINA_ROWS,
                           motion_chart, photoreceptor_chart, pixel_of_neuron)
-from flybrain.flymap_file import FLAG_NO_REFRACTORY, FLAG_PIXEL_BINDING, FLAG_PRE_CSR, NONE, write_flymap
+from flybrain.flymap_file import (FLAG_NO_REFRACTORY, FLAG_PIXEL_BINDING, FLAG_PRE_CSR, FLAG_REFLEX_READOUT,
+                                   NONE, write_flymap)
+
+
+REFLEX_GROUPS = {
+    'REFLEX_STEER_RIGHT': (r'^(HS|VS)', 'right'),
+    'REFLEX_STEER_LEFT': (r'^(HS|VS)', 'left'),
+    'REFLEX_LOOM': (r'^LPLC2$', None),
+    'REFLEX_LOOM_CONTROL': (r'^LC1[01]', None),
+}
+
+
+def reflex_tables(cm, out_names, out_indptr, out_members):
+    """Append the four anatomical readout groups and the (plus, minus) triples that use them.
+
+    Measured 14/09/2026 (predictions 191v and 193v): driving the motion detectors on one side of the
+    visual field swings the HS/VS asymmetry by +2.000 in the spiking model and +1.74/+1.92 in the rate
+    model the Universe kernel runs, and the swing disappears on a degree-preserving shuffled map. So
+    steer = mean(HS+VS on the right) - mean(HS+VS on the left) is a reflex the animal already has.
+    Brake is looming (LPLC2) above a same-order visual-projection baseline (LC10/LC11, small-object
+    cells that do not respond to expansion). Throttle is NONE: the host supplies a fixed cruise, so
+    the experiment measures steering, not speed control.
+    """
+    nrn = cm.neurons
+    names = list(out_names)
+    indptr = list(out_indptr)
+    members = list(out_members)
+    for name, (regex, side) in REFLEX_GROUPS.items():
+        sel = nrn['cell_type'].str.match(regex).to_numpy().copy()
+        if side is not None:
+            sel &= (nrn['side'].to_numpy() == side)
+        idx = np.flatnonzero(sel)
+        assert len(idx) > 0, f'reflex group {name} is empty'
+        names.append(name)
+        members.extend(idx.tolist())
+        indptr.append(len(members))
+    g = {name: names.index(name) for name in REFLEX_GROUPS}
+    reflex_out = np.array([NONE, NONE,                                   # throttle: host-supplied
+                           g['REFLEX_STEER_RIGHT'], g['REFLEX_STEER_LEFT'],
+                           g['REFLEX_LOOM'], g['REFLEX_LOOM_CONTROL']], dtype=np.uint32)
+    return names, np.array(indptr, np.uint32), np.array(members, np.uint32), reflex_out
 
 
 def build_tables(cm):
@@ -73,6 +113,7 @@ def main():
     ap.add_argument('--shuffle-targets', type=int, default=None, help='seed; degree-preserving shuffled control map')
     ap.add_argument('--no-pre-csr', action='store_true', help='skip the presynaptic CSR block (half the file size)')
     ap.add_argument('--no-eye', action='store_true', help='skip the pixel binding and no-refractory blocks')
+    ap.add_argument('--no-reflex', action='store_true', help='skip the anatomical reflex readout block')
     ap.add_argument('--eye-target', choices=['photoreceptor', 'motion'], default='photoreceptor',
                     help='photoreceptor: R1-6, for the rate brain. motion: T4+T5, for the spiking brain '
                          '(the optic lobe does not propagate photoreceptor drive under LIF)')
@@ -100,6 +141,9 @@ def main():
     indptr, indices, weights = csr(post, pre, w, cm.n)                  # v1 CSR: rows = postsynaptic
     pre_csr = (None, None, None) if a.no_pre_csr else csr(pre, post, w, cm.n)   # rows = presynaptic
     type_of, type_names, in_group_of, in_names, out_indptr, out_members, out_names = build_tables(cm)
+    reflex_out = None
+    if not a.no_reflex:
+        out_names, out_indptr, out_members, reflex_out = reflex_tables(cm, out_names, out_indptr, out_members)
 
     pixel_of, no_rfc = None, None
     n_eye = n_bound = n_bound_strip = n_bound_stretch = 0
@@ -116,14 +160,15 @@ def main():
         n_bound_strip = int((pixel_of_neuron(chart, cm.n, fit='strip', **fit_kw) != NONE).sum())
         n_bound_stretch = int((pixel_of_neuron(chart, cm.n, fit='stretch', **fit_kw) != NONE).sum())
 
-    v2 = not (a.no_pre_csr and a.no_eye)
+    v2 = not (a.no_pre_csr and a.no_eye and a.no_reflex)
     name = a.name or ('flymap_783' + (f'_w{a.min_weight}' if a.min_weight > 1 else '') + ('_nooptic' if a.exclude_optic else '')
                       + (f'_shuf{a.shuffle_targets}' if a.shuffle_targets is not None else '')
                       + ('_motion' if (not a.no_eye and a.eye_target == 'motion') else '')
                       + ('_v2' if v2 else ''))
     path = os.path.join(a.out_dir, name + '.bin')
     src = os.path.join(ROOT_DEFAULT, 'Connectivity_783.parquet')
-    flags = (0 if a.no_pre_csr else FLAG_PRE_CSR) | (0 if a.no_eye else FLAG_PIXEL_BINDING | FLAG_NO_REFRACTORY)
+    flags = ((0 if a.no_pre_csr else FLAG_PRE_CSR) | (0 if a.no_eye else FLAG_PIXEL_BINDING | FLAG_NO_REFRACTORY)
+             | (0 if a.no_reflex else FLAG_REFLEX_READOUT))
     sidecar = dict(name=name, format_version=2 if v2 else 1, flags=flags,
                    n=int(cm.n), m=int(len(pre)), n_types=len(type_names), k_in=len(in_names), k_out=len(out_names),
                    min_weight=a.min_weight, exclude_optic=a.exclude_optic, shuffle_targets=a.shuffle_targets,
@@ -135,10 +180,12 @@ def main():
                    eye_neurons_total=n_eye, eye_neurons_bound=n_bound,
                    eye_neurons_bound_strip=n_bound_strip, eye_neurons_bound_stretch=n_bound_stretch,
                    synapses=int(np.abs(w).sum()), source=src, source_sha256=hashlib.sha256(open(src, 'rb').read()).hexdigest(),
-                   type_names=type_names, in_group_names=in_names, out_group_names=out_names)
+                   type_names=type_names, in_group_names=in_names, out_group_names=out_names,
+                   reflex_out=None if reflex_out is None else [int(v) for v in reflex_out],
+                   reflex_groups=None if reflex_out is None else {n: int(out_indptr[out_names.index(n) + 1] - out_indptr[out_names.index(n)]) for n in REFLEX_GROUPS})
     write_flymap(path, indptr, indices, weights, type_of, in_group_of, out_indptr, out_members, sidecar,
                  pre_indptr=pre_csr[0], pre_indices=pre_csr[1], pre_weights=pre_csr[2],
-                 pixel_of_neuron=pixel_of, no_refractory=no_rfc)
+                 pixel_of_neuron=pixel_of, no_refractory=no_rfc, reflex_out=reflex_out)
     print(f'{path}: v{sidecar["format_version"]} flags 0x{flags:x} n {cm.n} m {len(pre)} types {len(type_names)} '
           f'k_in {len(in_names)} k_out {len(out_names)} eye_target {a.eye_target if not a.no_eye else "none"} '
           f'bound {n_bound}/{n_eye} ({a.eye_fit}) [strip {n_bound_strip} stretch {n_bound_stretch}] '

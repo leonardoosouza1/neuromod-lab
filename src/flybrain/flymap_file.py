@@ -42,6 +42,11 @@ NONE = 0xFFFFFFFF
 FLAG_PRE_CSR = 1 << 0
 FLAG_PIXEL_BINDING = 1 << 1
 FLAG_NO_REFRACTORY = 1 << 2
+# bit 3 FLAG_REFLEX_READOUT  reflex_out u32[6] — the anatomical readout: (plus, minus) OUT-GROUP
+#   index for throttle, steer and brake, in that order. NONE in a slot means "this command is not
+#   produced by the map" (the host supplies it). Lets a run read the fly's own reflex instead of
+#   the genome-selected group pairs; the groups themselves live at the end of the out-group table.
+FLAG_REFLEX_READOUT = 1 << 3
 
 
 def pack_bitmap(mask, n: int | None = None) -> np.ndarray:
@@ -63,7 +68,7 @@ def unpack_bitmap(words, n: int) -> np.ndarray:
 
 def write_flymap(path, indptr, indices, weights, type_of, in_group_of, out_indptr, out_members,
                  sidecar: dict | None = None, pre_indptr=None, pre_indices=None, pre_weights=None,
-                 pixel_of_neuron=None, no_refractory=None):
+                 pixel_of_neuron=None, no_refractory=None, reflex_out=None):
     """Write a flymap. With no optional block this is byte-identical to the v1 writer."""
     n, m = len(indptr) - 1, len(indices)
     k_out = len(out_indptr) - 1
@@ -85,6 +90,12 @@ def write_flymap(path, indptr, indices, weights, type_of, in_group_of, out_indpt
         assert len(words) == (n + 31) // 32, 'no_refractory must be bool[n] or u32[ceil(n/32)]'
         flags |= FLAG_NO_REFRACTORY
         blocks.append((words, '<u4'))
+    if reflex_out is not None:
+        reflex_out = np.asarray(reflex_out, dtype='<u4')
+        assert reflex_out.shape == (6,), 'reflex_out is (plus, minus) x (throttle, steer, brake)'
+        assert all(v == NONE or v < k_out for v in reflex_out), 'reflex_out indexes the out-group table'
+        flags |= FLAG_REFLEX_READOUT
+        blocks.append((reflex_out, '<u4'))
     with open(path, 'wb') as f:
         f.write(MAGIC_V2 if flags else MAGIC_V1)
         np.array([n, m, n_types, k_in, k_out, len(out_members), flags, 0], dtype='<u4').tofile(f)
@@ -121,6 +132,8 @@ def read_flymap(path):
             out['pixel_of_neuron'] = np.fromfile(f, '<u4', n)
         if flags & FLAG_NO_REFRACTORY:
             out['no_refractory'] = np.fromfile(f, '<u4', (int(n) + 31) // 32)
+        if flags & FLAG_REFLEX_READOUT:
+            out['reflex_out'] = np.fromfile(f, '<u4', 6)
         assert f.read(1) == b'', 'trailing bytes'
     for key in ('indptr', 'indices', 'weights', 'type_of', 'in_group_of', 'out_indptr', 'out_members'):
         assert len(out[key]) > 0 or (key == 'out_members' and oml == 0), f'truncated block {key}'

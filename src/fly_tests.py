@@ -263,8 +263,64 @@ def test_no_refractory_bitmap_matches_the_binding():
     assert bool(words[0] & (1 << 3)) and bool(words[1] & 1) and not bool(words[0] & 1)
 
 
+def test_reflex_block_roundtrip_and_groups():
+    import tempfile
+    from flybrain.flymap_file import FLAG_REFLEX_READOUT, NONE, read_flymap, write_flymap
+    cm = toy()
+    order = np.argsort(cm.post, kind='stable')
+    indptr = np.zeros(cm.n + 1, np.int64); np.add.at(indptr, cm.post + 1, 1); indptr = np.cumsum(indptr)
+    type_of = np.array([0, 0, 1, 1, 1, 2], np.uint32)
+    in_group_of = np.full(cm.n, NONE, np.uint32)
+    out_indptr, out_members = np.array([0, 1, 3], np.uint32), np.array([5, 3, 4], np.uint32)
+    reflex = np.array([NONE, NONE, 0, 1, 0, 1], np.uint32)
+    with tempfile.TemporaryDirectory() as d:
+        p = os.path.join(d, 'toy_reflex.bin')
+        write_flymap(p, indptr, cm.pre[order], cm.weight[order].astype(np.float32), type_of, in_group_of,
+                     out_indptr, out_members, sidecar=dict(k_in=0, n_types=3), reflex_out=reflex)
+        z = read_flymap(p)
+    assert z['flags'] & FLAG_REFLEX_READOUT, 'the reflex flag must be set'
+    assert list(z['reflex_out']) == [NONE, NONE, 0, 1, 0, 1]
+    # a map written without the block must not carry the flag
+    with tempfile.TemporaryDirectory() as d:
+        p = os.path.join(d, 'toy_plain.bin')
+        write_flymap(p, indptr, cm.pre[order], cm.weight[order].astype(np.float32), type_of, in_group_of,
+                     out_indptr, out_members, sidecar=dict(k_in=0, n_types=3))
+        z2 = read_flymap(p)
+    assert not (z2['flags'] & FLAG_REFLEX_READOUT) and 'reflex_out' not in z2
+
+
+def test_reflex_groups_are_appended_without_moving_existing_indices():
+    import sys as _sys
+    _sys.path.insert(0, os.path.dirname(__file__))
+    from fly_export import REFLEX_GROUPS, build_tables, reflex_tables
+    from flybrain import load_connectome
+    cm = load_connectome()
+    type_of, type_names, in_group_of, in_names, out_indptr, out_members, out_names = build_tables(cm)
+    k0 = len(out_names)
+    names, indptr2, members2, reflex = reflex_tables(cm, out_names, out_indptr, out_members)
+    assert names[:k0] == list(out_names), 'existing out-group names must not move'
+    assert list(indptr2[:k0 + 1]) == list(out_indptr), 'existing group boundaries must not move'
+    assert len(names) == k0 + len(REFLEX_GROUPS)
+    steer_plus, steer_minus = int(reflex[2]), int(reflex[3])
+    assert names[steer_plus] == 'REFLEX_STEER_RIGHT' and names[steer_minus] == 'REFLEX_STEER_LEFT'
+    n_right = indptr2[steer_plus + 1] - indptr2[steer_plus]
+    n_left = indptr2[steer_minus + 1] - indptr2[steer_minus]
+    assert n_right > 0 and n_left > 0 and abs(int(n_right) - int(n_left)) <= 4, 'the two sides must be comparable'
+
+
+# Keep this block LAST: anything defined below it is never reached, and that silently disabled
+# half of this file once (6 of 12 tests, 14/09/2026) — and again a few hours later when new tests
+# were appended after it. The guard below fails loudly instead of skipping.
 if __name__ == "__main__":
-    for name, fn in list(globals().items()):
-        if name.startswith('test_'):
-            fn(); print('ok', name)
-    print('ALL PASSED')
+    import inspect as _inspect
+
+    _src = open(__file__).read()
+    _defined = [n for n, o in list(globals().items())
+                if n.startswith('test_') and callable(o)]
+    _all_in_file = [ln.split('(')[0][4:] for ln in _src.splitlines() if ln.startswith('def test_')]
+    _missing = [n for n in _all_in_file if n not in _defined]
+    assert not _missing, f'these tests are defined after the __main__ block and never run: {_missing}'
+    for _name in _all_in_file:
+        globals()[_name]()
+        print('ok', _name)
+    print(f'ALL PASSED ({len(_all_in_file)} tests)')
