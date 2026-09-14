@@ -345,6 +345,13 @@ if __name__ == '__main__':
     ap.add_argument('--juntas', action='store_true',
                     help='todas as arqs evoluem no mesmo run, geracao a geracao')
     # docs/98: flags do --prune-battery (evolve_masked, controle poda vs geracao livre)
+    # -P e -R (acima) so' tem forma CURTA: o daemon nmd sempre reconstroi "--<flag>"
+    # (nunca "-<flag>"), entao um pedido de fila nao alcancava -P/-R. --pop-size e
+    # --reps sao NOVOS, so' para --prune-battery, sem tocar -P/-R (usados por --bateria).
+    ap.add_argument('--pop-size', type=int, default=512, dest='pop_size',
+                    help='populacao por semente (prune-battery; -P so tem forma curta, nmd nao alcanca)')
+    ap.add_argument('--reps', type=int, default=1, dest='reps',
+                    help='replicas por genoma na EVOLUCAO (prune-battery; -R so tem forma curta)')
     ap.add_argument('--evo-seeds', type=int, nargs='+', dest='evo_seeds',
                     default=list(range(20)),
                     help='sementes evolutivas, MESMAS nos 3 bracos (prune-battery)')
@@ -375,7 +382,7 @@ if __name__ == '__main__':
                 mundo=a.mundo, do_zero=a.do_zero, n_cidade=a.n_cidade,
                 juntas=a.juntas)
     if a.prune_battery:
-        prune_control_battery(a.P, a.geracoes, a.R, a.tevo, a.taval,
+        prune_control_battery(a.pop_size, a.geracoes, a.reps, a.tevo, a.taval,
                               a.treino, a.teste, a.evo_seeds, a.out,
                               n_cidade=a.n_cidade, mundo=a.mundo,
                               eval_reps=a.eval_reps, modes=a.modes)
