@@ -81,7 +81,29 @@ def test_rate_brain_matches_dense():
     assert torch.allclose(rb.x, ref, atol=1e-5)
 
 
-if __name__ == '__main__':
+def test_flymap_file_roundtrip():
+    import tempfile
+    from flybrain.flymap_file import NONE, read_flymap, write_flymap
+    cm = toy()
+    order = np.argsort(cm.post, kind='stable')
+    indptr = np.zeros(cm.n + 1, np.int64); np.add.at(indptr, cm.post + 1, 1); indptr = np.cumsum(indptr)
+    type_of = np.array([0, 0, 1, 1, 1, 2], np.uint32)
+    in_group_of = np.array([0, 0, NONE, NONE, NONE, NONE], np.uint32)
+    out_indptr, out_members = np.array([0, 1], np.uint32), np.array([5], np.uint32)
+    with tempfile.TemporaryDirectory() as d:
+        p = os.path.join(d, 'toy.bin')
+        write_flymap(p, indptr, cm.pre[order], cm.weight[order].astype(np.float32), type_of, in_group_of, out_indptr, out_members,
+                     sidecar=dict(k_in=1, n_types=3))
+        z = read_flymap(p)
+    assert z['n'] == 6 and z['m'] == 6 and z['k_in'] == 1 and z['n_types'] == 3 and z['k_out'] == 1
+    assert np.array_equal(z['indptr'], indptr) and np.array_equal(z['indices'], cm.pre[order])
+    # row 3 (post=3) has inputs from pre 1 (200) and pre 2 (30)
+    r = slice(z['indptr'][3], z['indptr'][4])
+    assert sorted(zip(z['indices'][r].tolist(), z['weights'][r].tolist())) == [(1, 200.0), (2, 30.0)]
+    assert z['in_group_of'][2] == NONE and z['out_members'].tolist() == [5]
+
+
+if __name__ == "__main__":
     for name, fn in list(globals().items()):
         if name.startswith('test_'):
             fn(); print('ok', name)

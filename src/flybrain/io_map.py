@@ -11,7 +11,7 @@ from __future__ import annotations
 import numpy as np
 import torch
 
-from .connectome import Connectome
+from .connectome import Connectome, type_key
 
 
 class Groups:
@@ -20,8 +20,7 @@ class Groups:
     def __init__(self, cm: Connectome, flow: str, min_size: int = 1, device: str = 'cuda'):
         nrn = cm.neurons
         sel = nrn[nrn.flow == flow]
-        key = sel['cell_type'].where(sel['cell_type'] != '', sel['cell_class'] + '?')  # unnamed types fall back to class
-        grouped = sel.groupby(key.to_numpy()).indices
+        grouped = sel.groupby(type_key(sel)).indices
         self.names = [k for k, v in grouped.items() if len(v) >= min_size]
         self.members = [sel.index.to_numpy()[grouped[k]] for k in self.names]
         self.K = len(self.names)

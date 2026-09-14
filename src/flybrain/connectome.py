@@ -72,6 +72,13 @@ class Connectome:
                 f'{(self.weight < 0).mean():.1%}; super_class {sc}')
 
 
+def type_key(neurons: pd.DataFrame) -> np.ndarray:
+    """One cell-type label per neuron; unnamed types fall back to `class?super_class` so every
+    neuron has a type. Shared by io_map.Groups and fly_export (the Universe map file)."""
+    ct = neurons['cell_type']
+    return ct.where(ct != '', neurons['cell_class'] + '?' + neurons['super_class']).to_numpy()
+
+
 def _csr(rows, cols, vals, n):
     order = np.argsort(rows, kind='stable')
     r = rows[order]
