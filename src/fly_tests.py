@@ -108,3 +108,130 @@ if __name__ == "__main__":
         if name.startswith('test_'):
             fn(); print('ok', name)
     print('ALL PASSED')
+
+
+# ── flymap v2 (docs/96-flymap-v2.md) ─────────────────────────────────────────────────────────
+def _toy_flymap_arrays():
+    """The toy map as flymap tables: v1 CSR (by post), presynaptic CSR, and the small tables."""
+    cm = toy()
+    order = np.argsort(cm.post, kind='stable')
+    indptr = np.zeros(cm.n + 1, np.int64); np.add.at(indptr, cm.post + 1, 1); indptr = np.cumsum(indptr)
+    pre_order = np.argsort(cm.pre, kind='stable')
+    pre_indptr = np.zeros(cm.n + 1, np.int64); np.add.at(pre_indptr, cm.pre + 1, 1); pre_indptr = np.cumsum(pre_indptr)
+    return dict(cm=cm, indptr=indptr.astype(np.uint32), indices=cm.pre[order].astype(np.uint32),
+                weights=cm.weight[order].astype(np.float32), type_of=np.array([0, 0, 1, 1, 1, 2], np.uint32),
+                in_group_of=np.array([0, 0, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF], np.uint32),
+                out_indptr=np.array([0, 1], np.uint32), out_members=np.array([5], np.uint32),
+                pre_indptr=pre_indptr.astype(np.uint32), pre_indices=cm.post[pre_order].astype(np.uint32),
+                pre_weights=cm.weight[pre_order].astype(np.float32))
+
+
+def _v1_reference_bytes(t, k_in=1, n_types=3):
+    """The v1 layout spelled out here, so the byte-identity test does not trust the module it checks."""
+    n, m = len(t['indptr']) - 1, len(t['indices'])
+    buf = bytearray(b'FLYMAP01')
+    buf += np.array([n, m, n_types, k_in, len(t['out_indptr']) - 1, len(t['out_members']), 0, 0], '<u4').tobytes()
+    for key, dt in (('indptr', '<u4'), ('indices', '<u4'), ('weights', '<f4'), ('type_of', '<u4'),
+                    ('in_group_of', '<u4'), ('out_indptr', '<u4'), ('out_members', '<u4')):
+        buf += np.ascontiguousarray(t[key], dt).tobytes()
+    return bytes(buf)
+
+
+def _write(path, t, **kw):
+    from flybrain.flymap_file import write_flymap
+    write_flymap(path, t['indptr'], t['indices'], t['weights'], t['type_of'], t['in_group_of'],
+                 t['out_indptr'], t['out_members'], sidecar=dict(k_in=1, n_types=3), **kw)
+
+
+def test_flymap_v1_bytes_unchanged_by_v2():
+    """Writing without any optional block must still produce the exact v1 file."""
+    import tempfile
+    t = _toy_flymap_arrays()
+    with tempfile.TemporaryDirectory() as d:
+        p = os.path.join(d, 'v1.bin'); _write(p, t)
+        got = open(p, 'rb').read()
+    assert got == _v1_reference_bytes(t), 'v1 output changed'
+    assert got[:8] == b'FLYMAP01' and got[36:40] == b'\x00\x00\x00\x00'
+
+
+def test_flymap_v2_roundtrip_and_prefix():
+    import tempfile
+    from flybrain.flymap_file import FLAG_NO_REFRACTORY, FLAG_PHOTORECEPTOR, FLAG_PRE_CSR, pack_bitmap, read_flymap
+    t = _toy_flymap_arrays()
+    n = len(t['type_of'])
+    pixel = np.full(n, 0xFFFFFFFF, np.uint32); pixel[0] = 7; pixel[1] = 1763
+    no_rfc = pixel != 0xFFFFFFFF
+    with tempfile.TemporaryDirectory() as d:
+        p1 = os.path.join(d, 'v1.bin'); _write(p1, t)
+        p2 = os.path.join(d, 'v2.bin')
+        _write(p2, t, pre_indptr=t['pre_indptr'], pre_indices=t['pre_indices'], pre_weights=t['pre_weights'],
+               pixel_of_photoreceptor=pixel, no_refractory=no_rfc)
+        b1, b2 = open(p1, 'rb').read(), open(p2, 'rb').read()
+        z = read_flymap(p2)
+        z1 = read_flymap(p1)
+    assert z['version'] == 2 and z['flags'] == FLAG_PRE_CSR | FLAG_PHOTORECEPTOR | FLAG_NO_REFRACTORY
+    assert z1['version'] == 1 and z1['flags'] == 0 and 'pre_indptr' not in z1
+    assert b2[:8] == b'FLYMAP02' and b2[40:len(b1)] == b1[40:], 'v2 must extend v1, not reshuffle it'
+    for k in ('indptr', 'indices', 'weights', 'pre_indptr', 'pre_indices', 'pre_weights'):
+        assert np.array_equal(z[k], t[k] if k in t else z[k]), k
+    assert np.array_equal(z['pixel_of_photoreceptor'], pixel)
+    assert np.array_equal(z['no_refractory'], pack_bitmap(no_rfc))
+
+
+def test_flymap_v2_pre_csr_is_the_same_edge_multiset():
+    """Both CSRs must carry exactly the same (pre, post, weight) triples."""
+    import tempfile
+    from flybrain.flymap_file import read_flymap
+    t = _toy_flymap_arrays()
+    with tempfile.TemporaryDirectory() as d:
+        p = os.path.join(d, 'v2.bin')
+        _write(p, t, pre_indptr=t['pre_indptr'], pre_indices=t['pre_indices'], pre_weights=t['pre_weights'])
+        z = read_flymap(p)
+    post_side = sorted((int(z['indices'][e]), j, float(z['weights'][e]))
+                       for j in range(z['n']) for e in range(z['indptr'][j], z['indptr'][j + 1]))
+    pre_side = sorted((i, int(z['pre_indices'][e]), float(z['pre_weights'][e]))
+                      for i in range(z['n']) for e in range(z['pre_indptr'][i], z['pre_indptr'][i + 1]))
+    assert post_side == pre_side, 'presynaptic CSR is a different edge multiset'
+    cm = t['cm']
+    assert pre_side == sorted(zip(cm.pre.tolist(), cm.post.tolist(), cm.weight.astype(np.float32).tolist()))
+
+
+def test_retina_pixel_angles_match_the_shader():
+    from flybrain.eye import RETINA_MAX_PITCH_RAD, RETINA_MIN_PITCH_RAD, retina_pixel_angles
+    el, az = retina_pixel_angles()
+    assert el.shape == (14,) and az.shape == (14, 126)
+    assert np.isclose(el[0], np.degrees(RETINA_MIN_PITCH_RAD)) and np.isclose(el[-1], np.degrees(RETINA_MAX_PITCH_RAD))
+    assert np.isclose(az[1, 0], -60.0) and np.isclose(az[1, -1], 60.0)          # uniform rows span the FOV
+    assert np.isclose(az[0, 0], -60.0) and np.isclose(az[0, -1], 60.0)          # warped row 0 has the same extent
+    assert abs(az[0, 63] - az[0, 62]) < abs(az[1, 63] - az[1, 62])              # ... but is denser at the centre
+    assert np.all(np.diff(az[0]) > 0) and np.all(np.diff(el) < 0)               # monotone: col -> right, row -> down
+
+
+def test_photoreceptor_binding_known_angles():
+    from flybrain.eye import NONE_PIXEL, pixel_of_photoreceptor
+    chart = pd.DataFrame({'index': [0, 1, 2, 3],
+                          'azimuth_deg': [60.0, -60.0, 0.0, 120.0],          # last one looks outside the window
+                          'elevation_deg': [-3.4377468, -2.0, -0.6875493, -1.0]})
+    n = 6
+    p = pixel_of_photoreceptor(chart, n)
+    assert p[0] == 13 * 126 + 125, p[0]          # bottom-right corner pixel
+    assert p[1] == 6 * 126 + 0, p[1]             # elevation -2.0 falls in row 6 (-1.957), leftmost column
+    assert p[2] // 126 == 0 and abs(int(p[2] % 126) - 62.5) <= 0.5             # straight ahead, fovea row, centre
+    assert p[3] == NONE_PIXEL and p[4] == NONE_PIXEL and p[5] == NONE_PIXEL   # outside the FOV / not photoreceptors
+    bound = p != NONE_PIXEL
+    assert p[bound].max() < 14 * 126 and bound.sum() == 3
+    # stretch binds every photoreceptor, including the one looking 120 degrees to the right
+    q = pixel_of_photoreceptor(chart, n, fit='stretch')
+    assert (q[:4] != NONE_PIXEL).all() and (q[4:] == NONE_PIXEL).all() and q[:4].max() < 14 * 126
+
+
+def test_no_refractory_bitmap_matches_the_binding():
+    from flybrain.flymap_file import NONE, pack_bitmap, unpack_bitmap
+    n = 100
+    pixel = np.full(n, NONE, np.uint32)
+    pixel[[3, 31, 32, 64, 99]] = [0, 1, 2, 3, 1763]
+    words = pack_bitmap(pixel != NONE)
+    assert len(words) == (n + 31) // 32 == 4
+    back = unpack_bitmap(words, n)
+    assert np.array_equal(back, pixel != NONE) and back.sum() == 5
+    assert bool(words[0] & (1 << 3)) and bool(words[1] & 1) and not bool(words[0] & 1)
