@@ -230,3 +230,33 @@ o que rodou (conferido por `git blame`/`sha256sum`), mas a mensagem daquele
 commit não descreve esta mudança. Registrado aqui para quem for ler o log
 depois não estranhar a atribuição. `src/rodar.py` (CLI, `prune_control_battery`)
 ficou em commit próprio (`18b14c7`), feito por mim.
+
+---
+
+## ADENDO 14/09/2026 13:30 — repetição no simulador CONSERTADO (a tabela acima fica como está)
+
+A bateria acima rodou no simulador com o bug de ordem percepção→ação que o Astra achou
+(`docs/97` §1): `lab.py:722` troca o nó na chegada antes de `lab.py:858` aplicar a ação.
+Consertado em `08ae9d1` (quem acaba de chegar não age neste tique; `NM_CHEGADA_LEGADO=1`
+reproduz o antigo) com regressão em `src/test_arrival_action.py`. Repetição com as MESMAS
+20 sementes e o mesmo protocolo (636 s):
+
+| braço | treino | cidades novas | densidade |
+|---|---|---|---|
+| `generate` | 16,089 ± 0,482 | 25,43 ± 2,69 | 1,000 |
+| `generate_fine` | 16,313 ± 0,553 | 24,23 ± 3,18 | 1,000 |
+| `prune` | **17,033 ± 0,742** | **32,06 ± 3,54** | 0,294 |
+
+| comparação | treino | cidades novas |
+|---|---|---|
+| prune − generate | +0,943 (p 1,6e-4, 17/20) | +6,626 (p 1,7e-5, 17/20) |
+| **prune − generate_fine** | +0,719 (p 4,8e-4, 16/20) | **+7,825** IC95 [+5,48, +10,18] (p 1,2e-6, 18/20) |
+| generate_fine − generate | +0,224 (p 0,15) | −1,199 (p 0,21) |
+
+**Duas leituras.** (1) O bug custava caro: `generate` passou de 9,95 para 25,43 entregas em
+cidades novas — cerca de 60 % do desempenho estava sendo jogado fora numa ação aplicada ao nó
+errado a cada chegada. (2) A conclusão não muda de direção, muda de tamanho: sem o bug a
+vantagem da poda sobre `generate_fine` em cidades novas **dobra** (+3,44 → +7,83). A hipótese
+de que tudo era o σ menor está refutada nos dois cenários (σ isolado é nulo: p 0,15 e 0,21).
+
+Veredito registrado em `PREDICOES.md` linha 192v, com a predição escrita antes da repetição.
