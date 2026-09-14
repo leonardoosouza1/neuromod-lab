@@ -15,6 +15,7 @@ import torch
 sys.path.insert(0, os.path.dirname(__file__))
 from flybrain import load_connectome
 from flybrain.dynamics import LifBrain, LifParams
+from flybrain.selection import MAP_VARIANTS
 
 SUGAR_R = [720575940624963786, 720575940630233916, 720575940637568838, 720575940638202345,
            720575940617000768, 720575940630797113, 720575940632889389, 720575940621754367,
@@ -31,6 +32,8 @@ def main():
     ap.add_argument('--trials', type=int, default=30)
     ap.add_argument('--t-run-ms', type=float, default=1000.0)
     ap.add_argument('--silence', type=int, nargs='*', default=[], help='root ids to silence (outgoing edges = 0)')
+    ap.add_argument('--map', choices=sorted(MAP_VARIANTS), default='real',
+                    help='real, or a degree/sign preserving control (shuffle_targets, shuffle_signs, shuffle_weights)')
     ap.add_argument('--seed', type=int, default=0)
     ap.add_argument('--out', required=True)
     a = ap.parse_args()
@@ -38,8 +41,8 @@ def main():
     torch.manual_seed(a.seed)
 
     t0 = time.time()
-    cm = load_connectome()
-    print(cm.summary(), flush=True)
+    cm = MAP_VARIANTS[a.map](load_connectome(), a.seed)
+    print(f'[map] {a.map}', cm.summary(), flush=True)
     lut = cm._lut()
     present = [r for r in SUGAR_R if r in lut]
     if len(present) < len(SUGAR_R):   # the notebook ids are from FlyWire v630; one root id was re-proofread in v783
@@ -74,10 +77,10 @@ def main():
     top = [dict(root_id=int(cm.root_ids[i]), rate_hz=float(rates[i]), cell_type=str(cm.neurons.cell_type[i]),
                 super_class=str(cm.neurons.super_class[i])) for i in order]
     res = dict(rate_hz=a.rate_hz, trials=a.trials, t_run_ms=a.t_run_ms, steps=steps, wall_s=wall,
-               mn9_rate_hz=float(per_trial_mn9.mean()), mn9_rate_sd=float(per_trial_mn9.std()),
+               map=a.map, mn9_rate_hz=float(per_trial_mn9.mean()), mn9_rate_sd=float(per_trial_mn9.std()),
                mn9_trials_firing=int((per_trial_mn9 > 0).sum()), active_neurons=active,
                total_spikes=int(brain.spike_count.sum().item()), silenced=a.silence, top=top)
-    with open(os.path.join(a.out, f'fly_gate_{int(a.rate_hz)}hz.json'), 'w') as f:
+    with open(os.path.join(a.out, f'fly_gate_{a.map}_{int(a.rate_hz)}hz.json'), 'w') as f:
         json.dump(res, f, indent=1)
     print(json.dumps({k: v for k, v in res.items() if k != 'top'}))
     for t in top[:12]:
