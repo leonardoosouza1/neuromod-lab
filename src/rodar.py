@@ -5,6 +5,7 @@
     python src/rodar.py --perito              # PORTAO de validacao (obrigatorio)
     python src/rodar.py --bateria             # bateria completa
     python src/rodar.py --bateria -P 8192 -G 100 -R 8
+    python src/rodar.py --prune-battery --evo-seeds 0 1 2 ... 19   # docs/98
 """
 import argparse, json, os, sys, time
 from datetime import datetime
@@ -12,7 +13,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import torch, numpy as np
 from lab import (DEV, GMAX, NPX, NF, gerar_cidade, Cfg, Lote, passo,
                  Reativo, BancoEMA, Diadica, Corpo, Hibrido, ARQS,
-                 rodar, avaliar, evoluir, evoluir_juntas, um_passo, modo_execucao)
+                 rodar, avaliar, evoluir, evoluir_juntas, evolve_masked,
+                 um_passo, modo_execucao)
 
 NOMES_F = (['d_alvo','custo_rua','congestao','semaforo',
             'd_posto','d_comida','d_descanso','d_oficina','d_loja',
@@ -258,12 +260,70 @@ def bateria(P, GER, R, T_EVO, T, n_treino, n_teste, seeds, saida_dir, seed_evo=0
     return cam
 
 
+def prune_control_battery(P, GER, R, T_EVO, T, n_treino, n_teste, evo_seeds,
+                          saida_dir, n_cidade=24, mundo='base', eval_reps=64,
+                          modes=('generate', 'generate_fine', 'prune')):
+    """docs/98 -- o controle que docs/97 SS2 pede: `generate` (sigma .30) x
+    `generate_fine` (sigma .15, MESMO sigma da poda, sem mascara) x `prune`
+    (sigma .15 + mascara heritavel). MESMAS cidades de treino/teste e MESMAS
+    evo_seeds nos tres bracos -- so' o operador de mutacao muda (evolve_masked,
+    src/lab.py). Avaliacao em cidades held-out que nenhum braco treinou.
+    Grava um JSON com os numeros por (modo, semente): fitness de treino final,
+    entregas/avarias held-out (media de eval_reps replicas) e densidade final
+    da mascara -- e' o que src/analise_poda_gpu.py le para o ttest pareado."""
+    treino = [gerar_cidade(s, n=n_cidade) for s in range(n_treino)]
+    teste  = [gerar_cidade(1000+s, n=n_cidade) for s in range(n_teste)]
+    cfg = Cfg(1.0, trafego=.35, imposto=.18, mundo=mundo)
+    os.makedirs(saida_dir, exist_ok=True)
+    print(f'mundos/geracao/semente: {P*n_treino*R:,} | mundos/geracao (S sementes): '
+          f'{P*n_treino*R*len(evo_seeds):,}')
+    out = dict(
+        data=datetime.now().isoformat(),
+        config=dict(P=P, geracoes=GER, R=R, T_evo=T_EVO, T_aval=T,
+                    cidades_treino=n_treino, cidades_teste=n_teste,
+                    n_cidade=n_cidade, mundo=mundo, evo_seeds=list(evo_seeds),
+                    eval_reps=eval_reps, arquitetura=Reativo.nome, NP=int(Reativo.NP)),
+        dispositivo=(torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'cpu'),
+        modos={})
+    t0 = time.time()
+    for modo in modes:
+        print(f'\n=== modo={modo}  ({len(evo_seeds)} sementes) ===', flush=True)
+        ta = time.time()
+        res_modo = evolve_masked(Reativo, treino, cfg, P=P, ger=GER, T=T_EVO,
+                                 seeds=tuple(evo_seeds), R=R, mode=modo, verbose=True)
+        por_semente = {}
+        for sd in evo_seeds:
+            w_eff, hist, snaps, mask, dens = res_modo[sd]
+            m = rodar(Reativo, w_eff[None, :].repeat(eval_reps, 1), teste, cfg,
+                      T=T, seed=7777, R=1)
+            por_semente[str(sd)] = dict(
+                fit_treino=hist[-1],
+                fit_treino_hist=hist,
+                entregas_teste=round(float(m.ent.mean()), 4),
+                entregas_teste_dp=round(float(m.ent.std()), 4),
+                avarias_teste=round(float(m.avar.mean()), 4),
+                densidade_mascara=dens,
+                n_amostras_teste=int(m.ent.numel()))
+            del m
+            limpar()
+        out['modos'][modo] = dict(tempo_s=round(time.time()-ta, 1), por_semente=por_semente)
+        print(f'  modo={modo} pronto em {time.time()-ta:.0f}s', flush=True)
+    out['tempo_total_s'] = round(time.time()-t0, 1)
+    cam = os.path.join(saida_dir, f'poda-gpu-controle-{datetime.now():%Y%m%d-%H%M}.json')
+    salvar_json(cam, out)
+    print('\nsalvo:', cam, '|', round(os.path.getsize(cam)/1e6, 3), 'MB')
+    print(f'TOTAL: {out["tempo_total_s"]:.0f}s')
+    return cam
+
+
 if __name__ == '__main__':
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--smoke',   action='store_true', help='teste rapido')
     ap.add_argument('--perito',  action='store_true', help='portao de validacao')
     ap.add_argument('--bateria', action='store_true', help='bateria completa')
+    ap.add_argument('--prune-battery', action='store_true', dest='prune_battery',
+                    help='docs/98: controle generate x generate_fine x prune (evolve_masked)')
     ap.add_argument('-P', type=int, default=2048, help='populacao')
     ap.add_argument('-G', '--geracoes', type=int, default=60)
     ap.add_argument('-R', type=int, default=8, help='replicas por genoma')
@@ -284,6 +344,16 @@ if __name__ == '__main__':
                     help='nos por cidade (max 255; cidades maiores = rotas longas)')
     ap.add_argument('--juntas', action='store_true',
                     help='todas as arqs evoluem no mesmo run, geracao a geracao')
+    # docs/98: flags do --prune-battery (evolve_masked, controle poda vs geracao livre)
+    ap.add_argument('--evo-seeds', type=int, nargs='+', dest='evo_seeds',
+                    default=list(range(20)),
+                    help='sementes evolutivas, MESMAS nos 3 bracos (prune-battery)')
+    ap.add_argument('--modes', nargs='+', dest='modes',
+                    default=['generate', 'generate_fine', 'prune'],
+                    choices=['generate', 'generate_fine', 'prune'],
+                    help='modos de mutacao a rodar (prune-battery)')
+    ap.add_argument('--eval-reps', type=int, default=64, dest='eval_reps',
+                    help='replicas de avaliacao held-out por campeao (prune-battery)')
     ap.add_argument('--out', default=os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'resultados'))
     a = ap.parse_args()
@@ -304,5 +374,10 @@ if __name__ == '__main__':
                 a.treino, a.teste, a.seeds, a.out, seed_evo=a.seed_evo,
                 mundo=a.mundo, do_zero=a.do_zero, n_cidade=a.n_cidade,
                 juntas=a.juntas)
-    if not (a.smoke or a.perito or a.bateria):
+    if a.prune_battery:
+        prune_control_battery(a.P, a.geracoes, a.R, a.tevo, a.taval,
+                              a.treino, a.teste, a.evo_seeds, a.out,
+                              n_cidade=a.n_cidade, mundo=a.mundo,
+                              eval_reps=a.eval_reps, modes=a.modes)
+    if not (a.smoke or a.perito or a.bateria or a.prune_battery):
         ap.print_help()

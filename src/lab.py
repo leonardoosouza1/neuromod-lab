@@ -1888,3 +1888,91 @@ def evoluir_juntas(arqs, cidades, cfg, P=512, ger=25, T=1500, seed=0, elite=.15,
         if verbose and it % 5 == 0:
             print(f'  {it:>4} | ' + ' '.join(linha), flush=True)
     return {n: (e['W'][0], e['hist'], e['snaps']) for n, e in ests.items()}
+
+
+# ============================ MASKED MUTATION (docs/98) ============================
+# [14/09, resposta ao Astra docs/97 §2] O achado do Colab ("poda supera mutacao
+# livre") muda DUAS variaveis ao mesmo tempo: sigma (.30 -> .15) E a mascara.
+# O controle que falta, `generate_fine` (sigma .15, SEM mascara), isola o sigma.
+# evolve_masked porta o operador de colab/pruning/poda2.py (`gerar`/`gerar_fino`/
+# `podar`) para este motor (mega-lote de sementes, como evoluir_sementes) e
+# ACRESCENTA a mascara: heritavel por individuo (filho herda a mascara do pai,
+# so DEPOIS sofre a mutacao do modo) e multiplicativa (a politica LE W*M, nunca
+# W puro -- ver rodar()/um_passo() chamados com Wef abaixo).
+def evolve_masked(Arq, cidades, cfg, P=512, ger=25, T=1500, seeds=(0, 1, 2),
+                   elite=.15, verbose=True, R=1, mode='generate', avaliar_fn=None):
+    """Mega-lote de sementes (como evoluir_sementes) com mascara binaria M
+    (P, NP) HERDAVEL por individuo sobre a populacao de pesos W. A politica so
+    ve `Wef = W*M`.
+
+    Tres modos, EXATOS a colab/pruning/poda2.py:21 (a comparacao publicada usava
+    so os dois primeiros com sigma DIFERENTE -- ver docs/97 §2):
+      generate       sigma .30, sem mascara (M fica 1 sempre)
+      generate_fine  sigma .15, sem mascara -- ISOLA o sigma da poda
+      prune          sigma .15, mascara nasce toda ligada (M=1); cada bit
+                     DESLIGA com p=.05 e RELIGA com p=.015 por geracao
+
+    Bit-exatidao com mode='generate': p_off=p_on=0, entao o bloco de mutacao
+    da mascara NUNCA desenha do gerador (nao so' "nao muda M" -- nao CONSOME
+    draw nenhum). O stream de RNG e' identico ao de evoluir_sementes(sigma_mut=
+    .30) e Wef = W*1.0 == W bit a bit (multiplicar por 1.0 e' exato em ponto
+    flutuante). Ver test_evolve_masked_generate_matches_evoluir_sementes em
+    src/test_evolve_masked.py.
+
+    Devolve {semente: (campeao_efetivo=W*M, hist, snaps, mascara_campeao,
+    densidade_final)}. campeao_efetivo e' o vetor que a politica realmente usa
+    (passe direto para rodar()/avaliar() como W); mascara_campeao e' o M puro
+    do campeao, para relatar esparsidade."""
+    assert mode in ('generate', 'generate_fine', 'prune'), f'modo desconhecido: {mode!r}'
+    if mode == 'generate':
+        sigma, p_off, p_on = .30, 0., 0.
+    elif mode == 'generate_fine':
+        sigma, p_off, p_on = .15, 0., 0.
+    else:  # prune
+        sigma, p_off, p_on = .15, .05, .015
+    use_mask = mode == 'prune'
+
+    S = len(seeds); NPQ = Arq.NP
+    gs, Ws, Ms = [], [], []
+    for sd in seeds:
+        g = torch.Generator(device=DEV); g.manual_seed(sd)
+        gs.append(g)
+        Ws.append(torch.randn(P, NPQ, generator=g, device=DEV)*.8)
+        Ms.append(torch.ones(P, NPQ, device=DEV))   # prune nasce DENSO (poda2.py:9)
+    W = torch.cat(Ws); M = torch.cat(Ms)
+    hist = {sd: [] for sd in seeds}; snaps = {sd: [] for sd in seeds}
+    ne = max(2, int(P*elite))
+    for it in range(ger):
+        Wef = W*M
+        f = (avaliar_fn or avaliar)(Arq, Wef, cidades, cfg, T, seed=777000+it*13, R=R).view(S, P)
+        Wv = W.view(S, P, NPQ); Mv = M.view(S, P, NPQ)
+        novos_w, novos_m = [], []
+        for si, sd in enumerate(seeds):
+            o = f[si].argsort(descending=True)
+            Wb = Wv[si][o]; Mb = Mv[si][o]; fb = f[si][o]
+            hist[sd].append(float(fb[0]))
+            idx = torch.randint(0, ne, (P-ne,), generator=gs[si], device=DEV)
+            fw = (Wb[idx] + torch.randn(P-ne, NPQ, generator=gs[si], device=DEV)*sigma).clamp(-5, 5)
+            fm = Mb[idx].clone()                    # filho HERDA a mascara do pai
+            if use_mask:                             # so' entao muta a mascara
+                off = torch.rand(P-ne, NPQ, generator=gs[si], device=DEV) < p_off
+                fm = torch.where(off, torch.zeros_like(fm), fm)
+                on = torch.rand(P-ne, NPQ, generator=gs[si], device=DEV) < p_on
+                fm = torch.where(on, torch.ones_like(fm), fm)
+            Wn = torch.cat([Wb[:ne], fw]); Mn = torch.cat([Mb[:ne], fm])
+            if it % 5 == 0:
+                q = torch.tensor([0., .25, .5, .75, 1.], device=DEV)
+                snaps[sd].append({'ger': it,
+                    'fit_percentis': [float(x) for x in torch.quantile(fb, q)],
+                    'fit_media': float(fb.mean()),
+                    'diversidade': float(Wn.std(0).mean()),
+                    'densidade_mascara': float(Mn.mean())})
+            novos_w.append(Wn); novos_m.append(Mn)
+        W = torch.cat(novos_w); M = torch.cat(novos_m)
+        if verbose and it % 5 == 0:
+            linha = ' '.join(f'{hist[sd][-1]:>8.2f}' for sd in seeds)
+            print(f'  ger {it:>3} | {linha}   (melhor por semente, modo={mode})', flush=True)
+    Wv = W.view(S, P, NPQ); Mv = M.view(S, P, NPQ)
+    return {sd: (Wv[si][0]*Mv[si][0], hist[sd], snaps[sd], Mv[si][0].clone(),
+                 float(Mv[si][0].mean()))
+            for si, sd in enumerate(seeds)}
