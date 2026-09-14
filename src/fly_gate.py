@@ -40,7 +40,11 @@ def main():
     t0 = time.time()
     cm = load_connectome()
     print(cm.summary(), flush=True)
-    sugar = cm.index_of(SUGAR_R)
+    lut = cm._lut()
+    present = [r for r in SUGAR_R if r in lut]
+    if len(present) < len(SUGAR_R):   # the notebook ids are from FlyWire v630; one root id was re-proofread in v783
+        print(f'  {len(SUGAR_R) - len(present)} of {len(SUGAR_R)} sugar GRN ids absent from v783, using {len(present)}', flush=True)
+    sugar = cm.index_of(present)
     mn9 = int(cm.index_of([MN9])[0])
     edge_scale = None
     if a.silence:

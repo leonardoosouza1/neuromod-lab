@@ -18,7 +18,7 @@ from flybrain import load_connectome
 from flybrain.dynamics import RateBrain
 from flybrain.io_map import Bindings, Groups
 from flybrain.replay import being_frames, observation_matrix
-from flybrain.selection import MAP_VARIANTS
+from flybrain.selection import MAP_VARIANTS, filter_edges
 
 
 def run_variant(name, cm, obs, intent, B, seed, tau_steps, scale, act, gain, log):
@@ -76,6 +76,7 @@ def main():
     ap.add_argument('--gain', type=float, default=1.0)
     ap.add_argument('--act', default='tanh')
     ap.add_argument('--variants', nargs='*', default=['real', 'shuffle_targets', 'shuffle_signs'])
+    ap.add_argument('--min-weight', type=int, default=1, help='drop edges with |synapses| below this (speed)')
     ap.add_argument('--out', required=True)
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
@@ -83,7 +84,7 @@ def main():
     def log(s):
         print(s, flush=True); logf.write(s + '\n'); logf.flush()
     torch.manual_seed(a.seed)
-    cm = load_connectome(); log(cm.summary())
+    cm = filter_edges(load_connectome(), a.min_weight); log(cm.summary())
     header, frames = being_frames(a.replay, a.being)
     frames = frames[:a.frames]
     obs = observation_matrix(frames)

@@ -51,5 +51,13 @@ def shuffle_weights(cm: Connectome, seed: int) -> Connectome:
     return Connectome(cm.n, cm.root_ids, cm.pre, cm.post, mag * np.sign(cm.weight).astype(np.int32), cm.neurons)
 
 
+def filter_edges(cm: Connectome, min_weight: int) -> Connectome:
+    """Keep only edges with |synapse count| >= min_weight (3 keeps 33 % of edges, 76 % of synapses)."""
+    if min_weight <= 1:
+        return cm
+    k = np.abs(cm.weight) >= min_weight
+    return Connectome(cm.n, cm.root_ids, cm.pre[k], cm.post[k], cm.weight[k], cm.neurons)
+
+
 MAP_VARIANTS = {'real': lambda cm, s: cm, 'shuffle_targets': shuffle_targets, 'shuffle_signs': shuffle_signs,
                 'shuffle_weights': shuffle_weights}
