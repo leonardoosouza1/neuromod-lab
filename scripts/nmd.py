@@ -50,12 +50,24 @@ LIVRE   = re.compile(r'e4[0-9]_campo\.py|e44_prefeito\.py|diag_oraculo\.py')   #
 PARALLEL = {'universe_run': 4}
 
 def parallel_slots(script):
+    """Max concurrent instances of `script`, or 0 when the script is EXCLUSIVE (not listed in
+    parallel.json / PARALLEL): an exclusive job needs an empty GPU and blocks everything else.
+    Listed scripts coexist with each other (e.g. 4 gpu_evolve + 1 torch fly test) — 14/09."""
     global PARALLEL
     pj = os.path.join(SPOOL, 'parallel.json')
     if os.path.exists(pj):
         try: PARALLEL = {str(k): int(v) for k, v in json.load(open(pj)).items()}
         except Exception as ex: print(f'[nmd] parallel.json ignored: {ex}', flush=True)
-    return int(PARALLEL.get(script, 1))
+    return int(PARALLEL.get(script, 0))
+
+
+def can_start(script, running):
+    """Scheduling rule (pure, unit-testable): `running` = list of running script names."""
+    slots = parallel_slots(script)
+    if not running: return True
+    if slots <= 0: return False                                  # exclusive: wait for an empty GPU
+    if any(parallel_slots(r) <= 0 for r in running): return False   # an exclusive job holds the GPU
+    return sum(1 for r in running if r == script) < slots
 
 def agora(): return datetime.now(timezone.utc).isoformat(timespec='seconds')
 
@@ -213,23 +225,26 @@ def atende(uma_vez=False, intervalo=5):
         if not fila:
             if uma_vez and not running: return
             time.sleep(intervalo); continue
-        name = fila[0]; cam = os.path.join(SPOOL, 'pedidos', name)
-        try: ped = json.load(open(cam, encoding='utf-8'))
-        except Exception as ex:
-            shutil.move(cam, os.path.join(SPOOL, 'recusados', name))
-            escreve(os.path.join(SPOOL, 'recusados', name + '.motivo'), dict(motivo=f'json ilegível: {ex}')); continue
-        try: argv, env, out = valida(ped)
-        except ValueError as ex:
-            shutil.move(cam, os.path.join(SPOOL, 'recusados', name))
-            escreve(os.path.join(SPOOL, 'estado', str(ped.get('id', 'sem-id')) + '.json'),
-                    dict(id=ped.get('id'), fase='recusado', motivo=str(ex), quando=agora()))
-            print(f'[nmd] RECUSADO {name}: {ex}', flush=True); continue
-        script = ped.get('script'); slots = parallel_slots(script)
-        # a slot is free when: nothing exclusive is running, every running job is the SAME parallel script,
-        # fewer than `slots` of them are running, and no foreign GPU battery (torch) is alive
-        same = all(r['script'] == script for r in running.values())
-        if running and (slots <= 1 or not same or len(running) >= slots):
+        # [14/09] no head-of-line blocking: the first pedido (alphabetical) whose script can coexist with what is
+        # running starts; an exclusive pedido waits for an empty GPU and may be overtaken by coexisting ones.
+        picked = None
+        for name in fila:
+            cam = os.path.join(SPOOL, 'pedidos', name)
+            try: ped = json.load(open(cam, encoding='utf-8'))
+            except Exception as ex:
+                shutil.move(cam, os.path.join(SPOOL, 'recusados', name))
+                escreve(os.path.join(SPOOL, 'recusados', name + '.motivo'), dict(motivo=f'json ilegível: {ex}')); continue
+            try: argv, env, out = valida(ped)
+            except ValueError as ex:
+                shutil.move(cam, os.path.join(SPOOL, 'recusados', name))
+                escreve(os.path.join(SPOOL, 'estado', str(ped.get('id', 'sem-id')) + '.json'),
+                        dict(id=ped.get('id'), fase='recusado', motivo=str(ex), quando=agora()))
+                print(f'[nmd] RECUSADO {name}: {ex}', flush=True); continue
+            if can_start(ped.get('script'), [r['script'] for r in running.values()]):
+                picked = (name, ped, argv, env, out); break
+        if picked is None:
             time.sleep(intervalo); continue
+        name, ped, argv, env, out = picked
         viva = ocupado()
         if viva:
             print(f'[nmd] GPU ocupada ({len(viva)} bateria(s)), esperando', flush=True)
