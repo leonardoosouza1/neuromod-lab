@@ -15,7 +15,7 @@ não é repositório git.
 
 Poda melhor em **57 das 60 gerações** (média entre sementes); esparsidade final **0,34**.
 
-> **CORREÇÃO 14/09 12:45 (revisão do Astra, conferida por mim — `docs/97`).** Tratar 57/60 como 57
+> **CORREÇÃO 14/09 12:42 (revisão do Astra, conferida por mim — `docs/97`).** Tratar 57/60 como 57
 > confirmações é errado: gerações sucessivas compartilham população, elite e histórico, logo não são
 > independentes. O que a curva mostra é que a vantagem não é artefato do ponto de parada — não que seja
 > significativa 57 vezes. Duas outras correções ao que está acima: (1) a comparação `gerar` × `podar`
