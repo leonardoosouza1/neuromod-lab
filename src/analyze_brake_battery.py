@@ -15,24 +15,44 @@ from __future__ import annotations
 
 import argparse
 import csv
+import itertools
 import json
 import os
 from collections import defaultdict
 
 SUMS = ('alive_ticks', 'brake_ticks', 'impact_ticks', 'near_wall_ticks', 'stationary_ticks',
         'reverse_ticks', 'distance_m', 'collision_energy_j', 'throttle_sum', 'brake_sum',
-        'contact_events', 'speed_sum')
+        'contact_ticks', 'contact_events', 'overlap_ticks', 'speed_sum')
 
 
 def per_generation(path: str) -> dict[int, dict[str, float]]:
-    """Sum every window of every being into one row per generation."""
+    """Sum every window and retain enough coverage data to reject partial generations."""
     gens: dict[int, dict[str, float]] = defaultdict(lambda: defaultdict(float))
+    last_tick: dict[int, dict[int, int]] = defaultdict(dict)
     with open(path) as f:
         for row in csv.DictReader(f):
             g = int(row['generation'])
+            being = int(row['being'])
             for k in SUMS:
                 gens[g][k] += float(row[k])
-    return {g: dict(v) for g, v in gens.items()}
+            last_tick[g][being] = max(last_tick[g].get(being, 0), int(row['last_tick']))
+    result = {g: dict(v) for g, v in gens.items()}
+    for g, ticks in last_tick.items():
+        result[g]['_being_count'] = float(len(ticks))
+        result[g]['_min_last_tick'] = float(min(ticks.values(), default=0))
+    return result
+
+
+def complete_generations(
+    gens: dict[int, dict[str, float]], expected_ticks: int, expected_beings: int
+) -> dict[int, dict[str, float]]:
+    """Return only generations whose every expected being reached the final tick."""
+    return {
+        g: values
+        for g, values in gens.items()
+        if int(values.get('_being_count', 0)) == expected_beings
+        and int(values.get('_min_last_tick', 0)) >= expected_ticks
+    }
 
 
 def metrics(agg: dict[str, float]) -> dict[str, float]:
@@ -50,6 +70,14 @@ def metrics(agg: dict[str, float]) -> dict[str, float]:
         'impacts_per_km': agg['impact_ticks'] / km,
         'collision_kj_per_km': agg['collision_energy_j'] / 1000.0 / km,
         'near_wall_pct_alive': 100.0 * agg['near_wall_ticks'] / alive,
+        'overlap_pct_alive': 100.0 * agg['overlap_ticks'] / alive,
+        # POST-HOC decomposition, added 15/09 after the interim read, and labelled as such:
+        # `overlap_ticks` counts ticks with brake > 0.05 AND throttle > 0.1, i.e. both pedals
+        # at once — the missing mutual exclusion flagged in the architecture audit. The
+        # pre-registered ruler (`brake_pct_alive`) counts every braking tick, including those.
+        # This one counts braking that is NOT fighting the throttle, which is the only kind
+        # that decelerates. It is a decomposition of the declared ruler, not a replacement.
+        'brake_alone_pct_alive': 100.0 * max(agg['brake_ticks'] - agg['overlap_ticks'], 0.0) / alive,
         'stationary_pct_alive': 100.0 * agg['stationary_ticks'] / alive,
         'reverse_pct_alive': 100.0 * agg['reverse_ticks'] / alive,
         'throttle_mean': agg['throttle_sum'] / alive,
@@ -73,22 +101,46 @@ def main() -> None:
     ap.add_argument('--seeds', nargs='+', type=int, default=[31, 77, 113])
     ap.add_argument('--last', type=int, default=5)
     ap.add_argument('--out', default=None)
+    ap.add_argument('--allow-partial', action='store_true',
+                    help='analyze completed generations from runs that are still in progress')
     a = ap.parse_args()
 
     table: dict[str, dict[int, dict[str, float]]] = {}
     curves: dict[str, dict[int, dict[int, float]]] = {}
     missing = []
+    incomplete = []
     for arm in a.arms:
         table[arm] = {}
         curves[arm] = {}
         for s in a.seeds:
             path = os.path.join(a.runs_root, f'{a.prefix}_{arm}_s{s}', 'driving.csv')
+            manifest_path = os.path.join(os.path.dirname(path), 'manifest.json')
             if not os.path.exists(path):
                 missing.append(path)
                 continue
-            gens = per_generation(path)
+            if not os.path.exists(manifest_path):
+                missing.append(manifest_path)
+                continue
+            with open(manifest_path) as f:
+                manifest = json.load(f)
+            run_args = manifest.get('args', {})
+            expected_gens = int(run_args.get('gens', 0))
+            expected_ticks = int(run_args.get('ticks', 0))
+            expected_beings = int(run_args.get('beings', 0))
+            if min(expected_gens, expected_ticks, expected_beings) <= 0:
+                missing.append(f'{manifest_path} (missing gens/ticks/beings)')
+                continue
+            observed = per_generation(path)
+            gens = complete_generations(observed, expected_ticks, expected_beings)
             if not gens:
                 missing.append(path)
+                continue
+            if len(gens) != expected_gens:
+                incomplete.append((path, len(gens), expected_gens))
+                if not a.allow_partial:
+                    continue
+            if len(gens) < a.last:
+                missing.append(f'{path} (only {len(gens)} complete generations)')
                 continue
             m, used = tail_mean(gens, a.last)
             m['generations_used'] = float(len(used))
@@ -99,9 +151,17 @@ def main() -> None:
         print(f'[warn] {len(missing)} run(s) without data yet:')
         for p in missing[:6]:
             print('   ', p)
+    if incomplete:
+        label = 'warn' if a.allow_partial else 'error'
+        print(f'[{label}] {len(incomplete)} incomplete run(s):')
+        for p, got, expected in incomplete:
+            print(f'    {p}: {got}/{expected} complete generations')
+    if incomplete and not a.allow_partial:
+        raise SystemExit('battery is incomplete; pass --allow-partial for an interim analysis')
 
-    order = ['brake_pct_alive', 'impacts_per_km', 'collision_kj_per_km', 'near_wall_pct_alive',
-             'distance_m', 'mean_speed_mps', 'throttle_mean', 'stationary_pct_alive']
+    order = ['brake_pct_alive', 'brake_alone_pct_alive', 'brake_mean_when_on', 'overlap_pct_alive', 'impacts_per_km',
+             'collision_kj_per_km', 'near_wall_pct_alive', 'distance_m', 'mean_speed_mps',
+             'throttle_mean', 'stationary_pct_alive', 'reverse_pct_alive']
     print(f'\n=== mean of the last {a.last} generations, per arm and seed ===')
     head = f"{'metric':22s}" + ''.join(f'{arm[:9]:>11s}' for arm in a.arms for _ in a.seeds)
     print(f"{'':22s}" + ''.join(f'  s{s:<8d}' for _ in a.arms for s in a.seeds))
@@ -115,18 +175,23 @@ def main() -> None:
         print(line)
 
     print(f'\n=== paired differences (same seed), primary ruler first ===')
-    base = a.arms[-1] if 'nocost' in a.arms else a.arms[0]
+    requested_pairs = []
+    if 'fixed' in a.arms and 'legacy' in a.arms:
+        requested_pairs.append(('fixed', 'legacy'))
+    if 'fixed' in a.arms and 'nocost' in a.arms:
+        requested_pairs.append(('fixed', 'nocost'))
+    for left, right in itertools.combinations(a.arms, 2):
+        if (left, right) not in requested_pairs and (right, left) not in requested_pairs:
+            requested_pairs.append((left, right))
     for k in order:
-        for arm in a.arms:
-            if arm == base:
-                continue
-            diffs = [(table[arm][s][k] - table[base][s][k])
-                     for s in a.seeds if s in table[arm] and s in table[base]]
+        for left, right in requested_pairs:
+            diffs = [(table[left][s][k] - table[right][s][k])
+                     for s in a.seeds if s in table[left] and s in table[right]]
             if not diffs:
                 continue
             mean = sum(diffs) / len(diffs)
             agree = sum(1 for d in diffs if (d > 0) == (mean > 0))
-            print(f'  {k:22s} {arm:>8s} - {base:<8s} = {mean:+10.3f}   '
+            print(f'  {k:22s} {left:>8s} - {right:<8s} = {mean:+10.3f}   '
                   f'per seed {[round(d, 3) for d in diffs]}   same direction {agree}/{len(diffs)}')
         if k == order[0]:
             print()
