@@ -108,15 +108,19 @@ def count_true(rows: dict, arm: str, key: str) -> tuple[int, int]:
     return sum(1 for v in avail if v), len(avail)
 
 
-def two_arm_crossing_bet(rows: dict, bet: str, track: int, key: str) -> dict:
+def two_arm_crossing_bet(rows: dict, bet: str, track: int, key: str,
+                         easy_max: int | None = None) -> dict:
     """Shared shape of bets (a) and (c): tight11 AND tight8 cross in >= 3/4 seeds
-    each; refuted if either is <= 2/4; pending if either arm has < 4 evals."""
+    each; refuted if either is <= 2/4; pending if either arm has < 4 evals. Bet (c) also
+    requires easy to cross in <= easy_max seeds (B6r: `easy` <= 2/4 on 8250)."""
     t11_true, t11_n = count_true(rows, 'tight11', key)
     t8_true, t8_n = count_true(rows, 'tight8', key)
     easy_true, easy_n = count_true(rows, 'easy', key)
     if t11_n < 4 or t8_n < 4:
         status = 'pending'
-    elif t11_true >= 3 and t8_true >= 3:
+    elif easy_max is not None and easy_n < 4:
+        status = 'pending'
+    elif t11_true >= 3 and t8_true >= 3 and (easy_max is None or easy_true <= easy_max):
         status = 'confirmed'
     else:
         status = 'refuted'
@@ -221,7 +225,7 @@ def main() -> None:
     bets = [
         two_arm_crossing_bet(rows, 'a', 8200, 'crossed_8200'),
         bet_b_dose_8218(rows),
-        two_arm_crossing_bet(rows, 'c', 8250, 'crossed_8250'),
+        two_arm_crossing_bet(rows, 'c', 8250, 'crossed_8250', easy_max=2),
         bet_d_laps_8005(rows),
         bet_e_additivity(rows),
     ]
