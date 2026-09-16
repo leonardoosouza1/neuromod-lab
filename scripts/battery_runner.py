@@ -246,9 +246,21 @@ class Runner:
                 return False
         return True
 
-    def loop(self, interval: int) -> None:
+    def ingest_progress(self) -> None:
+        """Re-ingest this battery's own runs so the panel shows a battery in flight; the final
+        `ingest` stage still ingests the whole tree. Failures are logged, never fatal."""
+        log_path = os.path.join(STATE_ROOT, self.name, 'progress_ingest.out')
+        with open(log_path, 'w') as log:
+            subprocess.run([PYTHON, 'src/lab_db.py', 'ingest', BASE, '--match', f'{self.name}_*'],
+                           cwd=REPO, stdout=log, stderr=subprocess.STDOUT)
+
+    def loop(self, interval: int, ingest_every: int) -> None:
         event('INFO', self.name, f"runner started (pid {os.getpid()}): {self.state['spec']}")
+        last_ingest = 0.0
         while not self.step():
+            if ingest_every and time.time() - last_ingest >= ingest_every:
+                self.ingest_progress()
+                last_ingest = time.time()
             time.sleep(interval)
         self.state['finished'] = now()
         self.save()
@@ -308,6 +320,8 @@ def main() -> None:
     p.add_argument('spec')
     p.add_argument('--interval', type=int, default=60)
     p.add_argument('--once', action='store_true', help='advance one step and exit')
+    p.add_argument('--ingest-every', type=int, default=180,
+                   help='seconds between progress ingests of this battery (0 disables)')
     sub.add_parser('status')
     p = sub.add_parser('wait')
     p.add_argument('--idle-minutes', type=int, default=5)
@@ -319,7 +333,7 @@ def main() -> None:
             runner.step()
             runner.save()
         else:
-            runner.loop(a.interval)
+            runner.loop(a.interval, a.ingest_every)
     elif a.command == 'status':
         status()
     else:

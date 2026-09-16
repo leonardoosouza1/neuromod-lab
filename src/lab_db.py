@@ -461,15 +461,20 @@ def ingest_run(db: sqlite3.Connection, out_dir: str, project: str = 'universe',
 
 
 def ingest_tree(db: sqlite3.Connection, root: str, project: str = 'universe',
-                battery: str | None = None) -> list[str]:
+                battery: str | None = None, match: str | None = None) -> list[str]:
     """Ingest every run directory directly under `root`. Symlinks are skipped: two names
     for the same run would double-count it in any paired comparison. `battery` is passed
     through to `ingest_run` for trees whose directory names carry no battery of their
-    own (see its docstring) -- e.g. `Universe/artifacts`."""
+    own (see its docstring) -- e.g. `Universe/artifacts`. `match` is an fnmatch pattern on
+    the directory name: a battery in flight re-ingests only its own runs (`b8_*`) instead of
+    the whole tree, which took 93 s of CPU on 16/09."""
+    import fnmatch
     done = []
     for entry in sorted(os.listdir(root)):
         path = os.path.join(root, entry)
         if not os.path.isdir(path) or os.path.islink(path) or entry.startswith('_'):
+            continue
+        if match and not fnmatch.fnmatch(entry, match):
             continue
         name = ingest_run(db, path, project, battery=battery)
         if name:
@@ -836,6 +841,8 @@ def main() -> None:
     p.add_argument('--project', default='universe')
     p.add_argument('--battery', help='override battery for runs whose name/args carry'
                    ' none, e.g. Universe/artifacts/* -> --battery b1eval')
+    p.add_argument('--match', help="only run directories whose name matches this fnmatch"
+                   " pattern, e.g. 'b8_*'")
 
     p = sub.add_parser('list', help='list batteries, or the runs of one')
     p.add_argument('--battery')
@@ -869,7 +876,7 @@ def main() -> None:
     db = connect(a.db)
 
     if a.command == 'ingest':
-        names = ingest_tree(db, a.root, a.project, battery=a.battery)
+        names = ingest_tree(db, a.root, a.project, battery=a.battery, match=a.match)
         print(f'ingested {len(names)} run(s) into {a.db}')
         for n in names:
             print('   ', n)
