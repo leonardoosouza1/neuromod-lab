@@ -625,8 +625,14 @@ def drop_battery(db: sqlite3.Connection, battery: str) -> dict[str, Any]:
         'SELECT out_dir FROM run WHERE battery = ?', (battery,))]
     removed = db.execute('DELETE FROM run WHERE battery = ?', (battery,)).rowcount
     db.commit()
-    return {'battery': battery, 'runs_removed': removed, 'files': files, 'dirs': dirs,
-            'bytes': sum(f['bytes'] or 0 for f in files)}
+    # Report only what is actually on disk NOW. The artifact rows remember sizes from the last
+    # ingest; a directory deleted since then must not be announced as remaining (16/09: `rm b2`
+    # said "48 files, 0.32 GiB remain" about directories removed the night before).
+    present = [f for f in files if os.path.exists(f['path'])]
+    return {'battery': battery, 'runs_removed': removed, 'files': present,
+            'dirs': [d for d in dirs if os.path.isdir(d)],
+            'missing_files': len(files) - len(present),
+            'bytes': sum(os.path.getsize(f['path']) for f in present)}
 
 
 # ── annotations (lab-ui PRD §6: "scientific annotations go to lab.db, never to
@@ -875,6 +881,8 @@ def main() -> None:
             sys.exit(f'this would delete the rows of battery {a.battery}; pass --yes')
         report = drop_battery(db, a.battery)
         print(f"removed {report['runs_removed']} run(s) from the database")
+        if report['missing_files']:
+            print(f"{report['missing_files']} referenced file(s) were already gone from disk")
         print(f"{len(report['files'])} file(s), {report['bytes'] / 2**30:.2f} GiB, remain on disk:")
         for d in report['dirs']:
             print('   ', d)

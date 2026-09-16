@@ -363,3 +363,18 @@ def test_connect_adds_eval_track_to_an_existing_database(tmp_path):
     assert 'eval_track' in {r[1] for r in db.execute('PRAGMA table_info(run)')}
     assert db.execute("SELECT name FROM run").fetchone()[0] == 'k'
     db.execute("SELECT eval_track FROM v_last5").fetchall()
+
+
+def test_drop_battery_reports_only_files_that_still_exist(tmp_path):
+    import lab_db
+    db = lab_db.connect(str(tmp_path / 'lab.db'))
+    kept = tmp_path / 'kept.replay'; kept.write_bytes(b'x' * 10)
+    db.execute("INSERT INTO run (name, project, battery, out_dir, status, ingested)"
+               " VALUES ('bz_a_s1', 'u', 'bz', ?, 'finished', 'now')", (str(tmp_path),))
+    db.execute("INSERT INTO artifact VALUES ('bz_a_s1', 'replay', 0, ?, 10, '')", (str(kept),))
+    db.execute("INSERT INTO artifact VALUES ('bz_a_s1', 'replay', 1, ?, 999, '')", (str(tmp_path / 'gone.replay'),))
+    db.commit()
+    report = lab_db.drop_battery(db, 'bz')
+    assert report['runs_removed'] == 1
+    assert [f['path'] for f in report['files']] == [str(kept)]
+    assert report['missing_files'] == 1 and report['bytes'] == 10
