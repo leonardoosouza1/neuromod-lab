@@ -62,9 +62,12 @@ def pid_alive(pid) -> bool:
 
 
 def request_status(rid: str) -> str:
-    """queued | running | stale | ok | failed | refused | absent, read from the nmd spool."""
-    if glob.glob(os.path.join(SPOOL, 'pedidos', f'*_{rid}.json')):
-        return 'queued'
+    """queued | running | stale | ok | failed | refused | absent, read from the nmd spool.
+
+    nmd keeps a request file in `pedidos/` while it runs and moves it to `feitos/` only when
+    it ends, so a live `estado` must be checked before the queue.
+    """
+    state = None
     path = os.path.join(SPOOL, 'estado', f'{rid}.json')
     if os.path.exists(path):
         try:
@@ -72,18 +75,22 @@ def request_status(rid: str) -> str:
                 state = json.load(f)
         except (OSError, json.JSONDecodeError):
             return 'running'  # being rewritten by the daemon heartbeat
+    if state and state.get('fase') == 'rodando' and pid_alive(state.get('pid')):
+        return 'running'
+    if glob.glob(os.path.join(SPOOL, 'pedidos', f'*_{rid}.json')):
+        return 'queued'
+    if state:
         if state.get('fase') == 'terminou':
             return 'ok' if state.get('exit_code') == 0 else 'failed'
-        return 'running' if pid_alive(state.get('pid')) else 'stale'
+        return 'stale'
     if glob.glob(os.path.join(SPOOL, 'recusados', f'*_{rid}.json')):
         return 'refused'
     return 'absent'
 
 
 def queue_pressure() -> tuple[int, int]:
-    """(queued requests, live running requests) across the whole daemon."""
-    queued = len(glob.glob(os.path.join(SPOOL, 'pedidos', '*.json')))
-    running = 0
+    """(waiting requests, live running requests) across the whole daemon."""
+    live = set()
     for path in glob.glob(os.path.join(SPOOL, 'estado', '*.json')):
         try:
             with open(path) as f:
@@ -91,8 +98,10 @@ def queue_pressure() -> tuple[int, int]:
         except (OSError, json.JSONDecodeError):
             continue
         if state.get('fase') == 'rodando' and pid_alive(state.get('pid')):
-            running += 1
-    return queued, running
+            live.add(state.get('id'))
+    waiting = [p for p in glob.glob(os.path.join(SPOOL, 'pedidos', '*.json'))
+               if os.path.basename(p)[:-5].split('_', 1)[-1] not in live]
+    return len(waiting), len(live)
 
 
 def daemon_alive() -> bool:

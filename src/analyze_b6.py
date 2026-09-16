@@ -96,6 +96,8 @@ def collect() -> dict:
                 'crossed_8250': (prog[8250] > CROSS_M[8250]) if prog[8250] is not None else None,
                 'crossed_8218_12m': (prog[8218] > CROSS_8218['12m']) if prog[8218] is not None else None,
                 'crossed_8218_8m': (prog[8218] > CROSS_8218['8m']) if prog[8218] is not None else None,
+                # B6x (f): 14 m curve with a 300 m side opening at 720-750 m.
+                'crossed_8218_14m': (prog[8218] > 790.0) if prog[8218] is not None else None,
             }
     return rows
 
@@ -201,6 +203,31 @@ def bet_e_additivity(rows: dict) -> dict:
     }
 
 
+# Side openings (free width > 30 m on one side, `pista_check --ate <lap>`), arc ranges in m.
+OPENINGS = {
+    8200: [(1390, 1420), (2200, 2200)],
+    8250: [(550, 550), (1400, 1420), (1640, 1640)],
+    8218: [(720, 740), (1060, 1090), (1990, 2020), (2090, 2110)],
+}
+
+
+def stops_at_openings(rows: dict) -> dict:
+    """Per arm: (stops inside an opening window, stops) on held-out tracks. A stop is an
+    evaluation that ended before one lap; the window is [start - 40 m, end + 30 m]."""
+    out = {}
+    for arm in ARMS:
+        inside = total = 0
+        for seed in SEEDS:
+            for track, spans in OPENINGS.items():
+                p = rows[(arm, seed)]['progress_m'][track]
+                if p is None or p >= LAP_M[track]:
+                    continue
+                total += 1
+                inside += any(a - 40 <= p <= b + 30 for a, b in spans)
+        out[arm] = (inside, total)
+    return out
+
+
 def fmt(v) -> str:
     if v is None:
         return '    NA'
@@ -228,8 +255,13 @@ def main() -> None:
         two_arm_crossing_bet(rows, 'c', 8250, 'crossed_8250', easy_max=2),
         bet_d_laps_8005(rows),
         bet_e_additivity(rows),
+        two_arm_crossing_bet(rows, 'f', 8218, 'crossed_8218_14m'),
     ]
-    print('\n=== bets (pre-registered, B6r) ===')
+    stops = stops_at_openings(rows)
+    print('\n=== stops at side openings (B6x descriptive; window -40/+30 m) ===')
+    for arm, (inside, total) in stops.items():
+        print(f'{arm:12s} {inside}/{total}')
+    print('\n=== bets (pre-registered, B6r + B6x) ===')
     for b in bets:
         extra = ', '.join(f'{k}={v}' for k, v in b.items() if k not in ('bet', 'status'))
         print(f"({b['bet']}) status={b['status']} | {extra}")
