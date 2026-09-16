@@ -378,3 +378,18 @@ def test_drop_battery_reports_only_files_that_still_exist(tmp_path):
     assert report['runs_removed'] == 1
     assert [f['path'] for f in report['files']] == [str(kept)]
     assert report['missing_files'] == 1 and report['bytes'] == 10
+
+
+def test_connect_on_an_up_to_date_database_writes_nothing(tmp_path):
+    """A reader must not write: the file's bytes and mtime stay put across a second connect."""
+    import os, time
+    import lab_db
+    path = str(tmp_path / 'lab.db')
+    lab_db.connect(path).close()
+    before = (os.path.getsize(path), open(path, 'rb').read(), os.path.getmtime(path))
+    time.sleep(0.05)
+    db = lab_db.connect(path)
+    db.execute('SELECT count(*) FROM v_last5').fetchall()
+    db.close()
+    after = (os.path.getsize(path), open(path, 'rb').read(), os.path.getmtime(path))
+    assert before == after

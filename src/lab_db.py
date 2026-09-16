@@ -272,12 +272,25 @@ def connect(path: str = DEFAULT_PATH) -> sqlite3.Connection:
     db.execute('PRAGMA journal_mode = WAL')
     # An existing database keeps its old table and view: `CREATE ... IF NOT EXISTS` adds no
     # column and replaces no view. Add missing columns, then rebuild the view from SCHEMA.
+    #
+    # Only when something is actually missing: an earlier version dropped and rebuilt the view on
+    # EVERY connection, so every reader wrote DDL into the file and a reader running next to an
+    # ingest hit "database is locked" (found by the lab-ui S3 tester, 16/09). A read-only
+    # connection must stay read-only in effect.
     existing = {row[1] for row in db.execute('PRAGMA table_info(run)')}
     if existing:
+        added = False
         for column, kind in RUN_COLUMNS_ADDED:
             if column not in existing:
                 db.execute(f'ALTER TABLE run ADD COLUMN {column} {kind}')
-        db.execute('DROP VIEW IF EXISTS v_last5')
+                added = True
+        view_columns = {row[1] for row in db.execute('PRAGMA table_info(v_last5)')}
+        if added or (view_columns and 'eval_track' not in view_columns):
+            db.execute('DROP VIEW IF EXISTS v_last5')
+        tables = {row[0] for row in db.execute("SELECT name FROM sqlite_master WHERE type IN ('table', 'view')")}
+        needed = set(re.findall(r'CREATE (?:TABLE|VIEW) IF NOT EXISTS (\w+)', SCHEMA))
+        if needed <= tables and not added:
+            return db
     db.executescript(SCHEMA)
     return db
 
