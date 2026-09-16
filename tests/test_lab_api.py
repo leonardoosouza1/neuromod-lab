@@ -32,7 +32,20 @@ from lab_api.app import create_app  # noqa: E402
 from lab_api.settings import Settings  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 
-LLM_ROOT = Path(os.environ.get("LLM_ROOT", Path(__file__).resolve().parents[3]))
+def _llm_root() -> Path:
+    """The workspace holding Universe/ and lab-ui/: one level above this repo on main
+    (`LLM/neuromod-lab`), two levels above in a worktree (`LLM/.worktrees/<slice>`).
+    A fixed `parents[3]` only worked in worktrees and broke the merged suite (16/09)."""
+    if "LLM_ROOT" in os.environ:
+        return Path(os.environ["LLM_ROOT"])
+    repo_root = Path(__file__).resolve().parents[1]
+    for candidate in (repo_root.parent, repo_root.parents[1]):
+        if (candidate / "Universe").is_dir():
+            return candidate
+    return repo_root.parent
+
+
+LLM_ROOT = _llm_root()
 UNIVERSE_ROOT = str(LLM_ROOT / "Universe")
 LAB_UI_REPO = Path(os.environ.get("LAB_UI_REPO", LLM_ROOT / "lab-ui"))
 FIXTURE_DIR = LAB_UI_REPO / "fixtures" / "trace-v1" / "universe-b2-gen0"
