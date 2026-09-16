@@ -251,7 +251,75 @@ def test_clean_fixture_hashes_are_internally_consistent():
         assert hashlib.sha256(chunk).hexdigest() == block["sha256"], block["name"]
 
 
+def test_vendored_schema_diverges_from_lab_ui_contract_only_by_documented_s2_additions():
+    """S2 made two additive/non-breaking changes to the VENDORED schema copy only:
+    `blocks.minItems` 1->0 (DEVIATIONS.md #2, the 'summary' profile has zero blocks)
+    and the new OPTIONAL `recorder_config` object (DEVIATIONS.md #9,
+    SCHEMA-CHANGE-recorder_config.md). This worktree has no `lab-ui` checkout, so
+    `lab-ui/contract/trace-v1.schema.json` could not be edited here.
+
+    This test exists so the gap is not silently forgotten: it pins the EXACT diff (if
+    S2 changed anything else, this fails) and states plainly that whoever next touches
+    the canonical schema must apply `SCHEMA-CHANGE-recorder_config.md` and the
+    `blocks.minItems` fix, at which point this test should be DELETED and the original
+    `test_vendored_schema_is_byte_identical_to_lab_ui_contract` (below, kept for
+    reference) restored in its place.
+    """
+    _require_fixture()
+    schema_in_lab_ui = CONTRACT_DIR / "trace-v1.schema.json"
+    assert schema_in_lab_ui.exists(), schema_in_lab_ui
+    assert VENDORED_SCHEMA.exists(), VENDORED_SCHEMA
+
+    canonical = json.loads(schema_in_lab_ui.read_text())
+    vendored = json.loads(VENDORED_SCHEMA.read_text())
+
+    if canonical == vendored:
+        pytest.fail(
+            "the two schemas are identical again -- the canonical lab-ui copy was "
+            "apparently already updated; DELETE this test and restore "
+            "test_vendored_schema_is_byte_identical_to_lab_ui_contract instead"
+        )
+
+    # The two known, documented differences.
+    assert canonical["properties"]["blocks"]["minItems"] == 1
+    assert vendored["properties"]["blocks"]["minItems"] == 0
+    assert "recorder_config" not in canonical["properties"]
+    assert "recorder_config" in vendored["properties"]
+    assert "recorder_config" not in canonical.get("required", [])
+    assert "recorder_config" not in vendored.get("required", []), (
+        "recorder_config must stay OPTIONAL -- making it required would fail every "
+        "manifest produced before this change, including the S0 fixture"
+    )
+
+    # disabled_flags' description also changed (DEVIATIONS.md #3: --no-neuron-period is
+    # a real, separate 4th flag the original prose omitted) -- a wording fix, not a
+    # structural change (no effect on what validates), but still part of the pinned diff.
+    assert "no-neuron-period" not in canonical["properties"]["disabled_flags"]["description"]
+    assert "no-neuron-period" in vendored["properties"]["disabled_flags"]["description"]
+
+    # Apply exactly those three known patches to the canonical schema in memory; if the
+    # result is not byte-for-byte the vendored schema, S2 changed something else too and
+    # this test (and SCHEMA-CHANGE-recorder_config.md) need updating.
+    patched = json.loads(schema_in_lab_ui.read_text())
+    patched["properties"]["blocks"]["minItems"] = 0
+    patched["properties"]["blocks"]["description"] = vendored["properties"]["blocks"]["description"]
+    patched["properties"]["disabled_flags"]["description"] = vendored["properties"]["disabled_flags"]["description"]
+    patched["properties"]["recorder_config"] = vendored["properties"]["recorder_config"]
+    assert patched == vendored, (
+        "vendored trace-v1.schema.json has changes beyond the three documented in "
+        "DEVIATIONS.md #2, #3 and #9 -- update this test and SCHEMA-CHANGE-recorder_config.md"
+    )
+
+
 def test_vendored_schema_is_byte_identical_to_lab_ui_contract():
+    """Kept for reference / to restore once the canonical schema is patched (see the
+    test above). Marked xfail rather than deleted so re-enabling it is a one-line diff.
+    """
+    pytest.xfail(
+        "expected to fail until lab-ui/contract/trace-v1.schema.json adopts "
+        "SCHEMA-CHANGE-recorder_config.md and the blocks.minItems fix -- see "
+        "test_vendored_schema_diverges_from_lab_ui_contract_only_by_documented_s2_additions"
+    )
     _require_fixture()
     schema_in_lab_ui = CONTRACT_DIR / "trace-v1.schema.json"
     assert schema_in_lab_ui.exists(), schema_in_lab_ui
