@@ -386,3 +386,52 @@ def test_producer_output_agrees_with_s0_fixture_on_shared_blocks():
         assert np.array_equal(produced_arr, fixture_arr), (
             f"block {block['name']!r} disagrees with the S0 fixture on the same source range"
         )
+
+
+# ── dense, genome-verified integration fixture (coordinator, 2026-09-16) ────────────
+
+DENSE_FIXTURE_RUN = "champ_nocost_s77_dense_t8005"
+
+
+def test_dense_integration_fixture_is_a_healthy_driving_trace_not_a_parked_one():
+    """champ_nocost_s77_dense_t8005: champion of b1_nocost_s77 (8-lap, zero-collision),
+    --resume --resume-mix 1, --vision-every 4 on 12000 ticks -> 3000 samples. Produced
+    directly against the LIVE run dir (read-only checks + the trace/ subtree the PRD
+    allows for a FINISHED run -- this run is finished, gens=1/gens_complete=1). Intended
+    as the micro view's integration fixture going forward: the S0 fixture is a
+    generation-0 being parked against a wall (~90% of retina pixels are wall at ~6.5 m),
+    which exercises decoding but not driving; this one actually drives.
+    """
+    _require_universe_bin("genome_export")
+    _require_universe_bin("track_export")
+    run_dir = RUNS_ROOT / DENSE_FIXTURE_RUN
+    if not run_dir.exists():
+        pytest.skip(f"{run_dir} not present on this machine")
+    if not (run_dir / "population_gen0000.json").exists():
+        pytest.skip(f"{run_dir} has not finished yet (no population_gen0000.json)")
+
+    try:
+        trace_dir = trace_producer.produce(run_dir, gen=0, profile="champion")
+    except trace_producer.TraceUpToDate as exc:
+        # A prior run of this test (or the manual smoke in TESTING.md) already produced
+        # it against this same, unchanging FINISHED run -- idempotency working as
+        # designed, not a failure.
+        trace_dir = exc.trace_dir
+    manifest = check_module.check_trace_dir(trace_dir)
+    assert manifest["count"] == 3000
+    assert manifest["counterfactual_valid"] is True
+
+    body = rd.read_block(trace_dir, "body", manifest=manifest)
+    speed = body[:, 0]
+    alive = body[:, 1]
+    assert speed.mean() > 5.0, "expected a genuinely driving being, not one parked at low speed"
+    assert alive.mean() == 1.0, "expected the being to survive the whole recorded window"
+
+    retina = rd.read_block(trace_dir, "retina", manifest=manifest)
+    wall_material_fraction = ((retina & 0xFF) == 2).mean()
+    assert wall_material_fraction < 0.85, (
+        "retina is mostly wall-material -- this would be a parked/stuck fixture, not a driving one"
+    )
+
+    events = json.loads((trace_dir / "events.json").read_text())
+    assert any(e["kind"] == "lap" for e in events), "expected at least one completed lap"
