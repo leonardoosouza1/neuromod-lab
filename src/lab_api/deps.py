@@ -22,7 +22,10 @@ def get_settings(request: Request) -> Settings:
 
 def get_db(request: Request) -> Iterator[sqlite3.Connection]:
     settings: Settings = request.app.state.settings
-    db = lab_db.connect(settings.db)
+    # FastAPI runs a sync yield-dependency and the sync route in different threadpool
+    # threads; the default check raised `sqlite3.ProgrammingError` on ~1 in 10 requests under
+    # the UI's parallel fetches (16/09). The connection is still private to this request.
+    db = lab_db.connect(settings.db, check_same_thread=False)
     try:
         yield db
     finally:

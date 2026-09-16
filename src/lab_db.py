@@ -264,9 +264,14 @@ DRIVING_SUMS = ('alive_ticks', 'brake_ticks', 'overlap_ticks', 'impact_ticks',
                 'speed_sum')
 
 
-def connect(path: str = DEFAULT_PATH) -> sqlite3.Connection:
-    """Open (creating if needed) the laboratory database with the schema applied."""
-    db = sqlite3.connect(path)
+def connect(path: str = DEFAULT_PATH, check_same_thread: bool = True) -> sqlite3.Connection:
+    """Open (creating if needed) the laboratory database with the schema applied.
+
+    `check_same_thread=False` is for a caller that opens and uses one connection per unit of
+    work across threads it controls (the FastAPI dependency opens it in one worker thread and
+    the route runs in another); never share such a connection between concurrent requests.
+    """
+    db = sqlite3.connect(path, check_same_thread=check_same_thread)
     db.row_factory = sqlite3.Row
     db.execute('PRAGMA foreign_keys = ON')
     db.execute('PRAGMA journal_mode = WAL')

@@ -696,3 +696,30 @@ class TestCounterfactual:
         r = client.post("/api/counterfactual", json={"trace": "b2_cost_s113/0/0/champion", "tick": 16, "remove": []})
         assert r.status_code == 501
         assert "S2" in r.json()["detail"]["error"]
+
+
+def test_db_dependency_connection_is_usable_from_another_thread(settings: Settings) -> None:
+    """FastAPI opens a sync yield-dependency in one threadpool thread and runs the sync route
+    in another; with sqlite3's default thread check 182 of 200 parallel requests failed with
+    500 (16/09). The per-request connection must work across threads."""
+    import threading
+    from types import SimpleNamespace
+
+    from lab_api.deps import get_db
+
+    request = SimpleNamespace(app=SimpleNamespace(state=SimpleNamespace(settings=settings)))
+    gen = get_db(request)
+    db = next(gen)
+    errors: list[BaseException] = []
+
+    def use() -> None:
+        try:
+            db.execute('SELECT 1').fetchone()
+        except BaseException as exc:  # noqa: BLE001 - the assertion reports it
+            errors.append(exc)
+
+    worker = threading.Thread(target=use)
+    worker.start()
+    worker.join()
+    gen.close()
+    assert errors == []
