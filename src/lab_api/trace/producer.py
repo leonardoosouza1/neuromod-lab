@@ -187,6 +187,44 @@ def _being_selection_text(being: int, gen: int, meta: dict, run_manifest: dict) 
     )
 
 
+def _counterfactual_valid(being: int, meta: dict, run_manifest: dict) -> bool:
+    """True only when this trace's `being` is VERIFIED to own `genome.bin`'s exact
+    weights -- i.e. `weights.json` (from `genome.bin`) and `neural.trace` (from this
+    being's recorded activity) describe the SAME individual, so a Counterfactual /
+    `brain_step` recomputation over them is meaningful at all.
+
+    Verified empirically (S2 follow-up, 2026-09-16, coordinator-routed): for
+    `--resume --resume-mix 1`, population slot 0 is ALWAYS an exact, unmutated clone of
+    the loaded checkpoint (`Universe/src/bin/gpu_evolve/main.rs`: `pop.push(best.clone())`
+    runs before ANY `--resume-mix` scaling is applied to the OTHER slots). Confirmed by
+    direct whole-file sha256 comparison against the source checkpoint for 4 real runs
+    (`b3_fixed_s31_t8005`, `b3_legacy_s31_t8005`, `b3_fixed_s113_t8200`,
+    `b3_legacy_nocost_s77_t8005`): every one of `evolve_best_gen0000.bin`'s hashes matched
+    its `/media/llm-data/snapshots/b1-champions/*.bin` source exactly.
+
+    Deliberately conservative: slot 0 is ALSO always the unmutated elite when
+    `resume-mix < 1` (that code path is unconditional on the mix value), but this
+    producer does not claim that case valid without the same kind of direct
+    verification -- with `mix < 1` the OTHER slots are weaker, so slot 0 likely still
+    wins the fitness ranking that decides what gets saved as `evolve_best_gen<gen>.bin`,
+    but "likely" is not "verified". See `Universe/docs/LAB-UI-S2-GENOME-EXPORT.md` for
+    the full writeup, including that `counterfactual_valid=True` says nothing about
+    whether `brain_step` itself currently reproduces the recorded `raw_intent` (it does
+    NOT, within the stage's quantisation, even for a verified-valid trace -- see the
+    same doc's per-run error table. This field is about the GENOME being the right one,
+    not about the reference forward being accurate yet).
+    """
+    args = run_manifest.get("args", {}) or {}
+    if being != meta.get("selected_being"):
+        return False  # explicit --being override: no relationship checked at all
+    if not args.get("resume"):
+        return False
+    if being != 0:
+        return False
+    resume_mix = args.get("resume-mix")
+    return resume_mix == 1 or resume_mix == 1.0
+
+
 def _disabled_flags(run_manifest: dict) -> list[str]:
     command = run_manifest.get("command") or []
     present = [flag for flag in DISABLED_FLAG_NAMES if flag in command]
@@ -577,6 +615,11 @@ def produce(run_dir: str | Path, gen: int, being: int | None = None, profile: st
         # a genuine schema change; see SCHEMA-CHANGE-recorder_config.md and
         # DEVIATIONS.md #9 for why only the vendored copy could be updated here.
         "recorder_config": _recorder_config(meta),
+        # Coordinator follow-up (2026-09-16): whether `being` is VERIFIED to own
+        # genome.bin's exact weights -- see _counterfactual_valid's docstring and
+        # SCHEMA-CHANGE-counterfactual_valid.md. Independent of whether brain_step
+        # itself currently matches (it does not yet -- Universe/docs/LAB-UI-S2-GENOME-EXPORT.md).
+        "counterfactual_valid": _counterfactual_valid(being, meta, run_manifest),
     }
     # NOTE: 'full' is produced identically to 'champion' by this producer today (PRD S2
     # task text says so explicitly) -- NOT recorded as an extra manifest key, because

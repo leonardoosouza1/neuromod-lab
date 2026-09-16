@@ -297,17 +297,27 @@ def test_vendored_schema_diverges_from_lab_ui_contract_only_by_documented_s2_add
     assert "no-neuron-period" not in canonical["properties"]["disabled_flags"]["description"]
     assert "no-neuron-period" in vendored["properties"]["disabled_flags"]["description"]
 
-    # Apply exactly those three known patches to the canonical schema in memory; if the
+    # counterfactual_valid: a 4th known difference (coordinator follow-up,
+    # DEVIATIONS.md #12, SCHEMA-CHANGE-counterfactual_valid.md) -- same optional-only rule.
+    assert "counterfactual_valid" not in canonical["properties"]
+    assert "counterfactual_valid" in vendored["properties"]
+    assert "counterfactual_valid" not in canonical.get("required", [])
+    assert "counterfactual_valid" not in vendored.get("required", []), (
+        "counterfactual_valid must stay OPTIONAL, same reasoning as recorder_config"
+    )
+
+    # Apply exactly those four known patches to the canonical schema in memory; if the
     # result is not byte-for-byte the vendored schema, S2 changed something else too and
-    # this test (and SCHEMA-CHANGE-recorder_config.md) need updating.
+    # this test (and the SCHEMA-CHANGE-*.md files) need updating.
     patched = json.loads(schema_in_lab_ui.read_text())
     patched["properties"]["blocks"]["minItems"] = 0
     patched["properties"]["blocks"]["description"] = vendored["properties"]["blocks"]["description"]
     patched["properties"]["disabled_flags"]["description"] = vendored["properties"]["disabled_flags"]["description"]
     patched["properties"]["recorder_config"] = vendored["properties"]["recorder_config"]
+    patched["properties"]["counterfactual_valid"] = vendored["properties"]["counterfactual_valid"]
     assert patched == vendored, (
-        "vendored trace-v1.schema.json has changes beyond the three documented in "
-        "DEVIATIONS.md #2, #3 and #9 -- update this test and SCHEMA-CHANGE-recorder_config.md"
+        "vendored trace-v1.schema.json has changes beyond the four documented in "
+        "DEVIATIONS.md #2, #3, #9 and #12 -- update this test and the SCHEMA-CHANGE-*.md files"
     )
 
 

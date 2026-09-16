@@ -175,3 +175,31 @@ exercised against a real rotating run (`b5_rot_*`, in flight during this task, e
 off-limits). A future rotating run needs a real per-generation seed lookup, not a single
 fixed index; until then this is a known, narrow gap, not a silent wrong answer (single
 -track runs -- the only ones this producer has been run against -- are unaffected).
+
+## 12. `counterfactual_valid`: a new, OPTIONAL top-level manifest boolean
+
+Coordinator follow-up to the brain_step acceptance check (2026-09-16): "make the
+producer refuse (or mark `counterfactual_valid: false` in the manifest) for traces whose
+`being_selection` is not guaranteed to be the genome's owner." Implemented as
+`producer.py::_counterfactual_valid` -- see that function's docstring for the exact,
+empirically-verified condition (`--resume --resume-mix 1`, `being==0==selected_being`)
+and the 4-run sha256 proof. Chose MARKING over refusing production (see
+`SCHEMA-CHANGE-counterfactual_valid.md`'s last section for why: a trace with unverified
+genome ownership is still fully valid for every panel except Counterfactual).
+
+New OPTIONAL top-level schema property, same additionalProperties:false situation as
+`recorder_config` (#10): only the vendored schema copy could be edited here; the patch
+for the canonical `lab-ui/contract/trace-v1.schema.json` is in
+`SCHEMA-CHANGE-counterfactual_valid.md`, and
+`test_vendored_schema_diverges_from_lab_ui_contract_only_by_documented_s2_additions`
+now pins all four accumulated differences (#2, #3, #9/#10, #12) instead of three.
+
+**Important scope note:** `counterfactual_valid=True` means the GENOME is verified to be
+the recorded being's own -- it says NOTHING about whether `brain_step`'s reference
+forward actually reproduces the recorded `raw_intent`. It currently does not, even for a
+`counterfactual_valid=True` trace -- see `Universe/docs/LAB-UI-S2-GENOME-EXPORT.md`'s
+per-run error table (case 3: the reference forward itself is incomplete, most likely
+missing the P1.7 per-neuron mechanisms, which require cross-tick state a single-sample
+forward does not have). Until that is fixed, a real `/api/counterfactual` route (PRD S5,
+not built in this task) should return 501 regardless of `counterfactual_valid`, and say
+so in its error message -- see the same Universe doc for the exact wording proposed.

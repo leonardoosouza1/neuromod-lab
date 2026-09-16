@@ -181,6 +181,10 @@
         "sample_every": { "type": "integer" },
         "road_view_calibration_version": {}
       }
+    },
+    "counterfactual_valid": {
+      "type": "boolean",
+      "description": "OPTIONAL (added by S2, not in 'required'; see src/lab_api/DEVIATIONS.md #12 and SCHEMA-CHANGE-counterfactual_valid.md in the neuromod-lab repo). True only when 'being' is VERIFIED to own genome.bin's exact weights, so a Counterfactual / brain_step recomputation over weights.json + neural.trace is comparing the same individual to itself. Verified condition (2026-09-16): --resume --resume-mix 1 with being==the recorder's own selected_being==0 -- population slot 0 is unconditionally an exact, unmutated clone of the loaded checkpoint (Universe/src/bin/gpu_evolve/main.rs), confirmed by direct sha256 match against the source checkpoint for 4 real runs. A manifest without this field predates the check; treat as unverified (not necessarily invalid), same as false. IMPORTANT: true here says nothing about whether brain_step's reference forward currently reproduces the recorded raw_intent -- it does not yet, even for a verified-valid trace (Universe/docs/LAB-UI-S2-GENOME-EXPORT.md); this field is about genome OWNERSHIP, not about brain_step's own accuracy."
     }
   },
   "$defs": {

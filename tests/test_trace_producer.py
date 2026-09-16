@@ -134,6 +134,53 @@ def test_produce_sparse_resumed_run_validates_and_decodes(b3_scratch_copy):
     assert track["seed"] == manifest["world_seed"]
     assert len(track["waypoints"]) > 0
 
+    assert manifest["counterfactual_valid"] is True, (
+        "b3_fixed_s31_t8005 is --resume --resume-mix 1, being 0 -- must be marked verified"
+    )
+
+
+B1_CHAMPIONS_DIR = Path("/media/llm-data/snapshots/b1-champions")
+
+
+def test_resume_mix_one_slot_zero_is_byte_identical_to_the_loaded_champion(b3_scratch_copy):
+    """Regression guard for the coordinator's genome-ownership check (2026-09-16):
+    population slot 0 under --resume is ALWAYS `best.clone()` with no --resume-mix
+    scaling applied (Universe/src/bin/gpu_evolve/main.rs, `pop.push(best.clone())` runs
+    before the mix loop touches any OTHER slot), so `evolve_best_gen0000.bin` saved at
+    the end of a --resume --resume-mix 1 run must be byte-identical to the checkpoint
+    that was loaded. b3_fixed_s31_t8005 loaded b1_fixed_s31.bin
+    (neuromod-lab/scripts/enqueue_b3_b2.py's B3 recipe: the champion is copied to
+    <out>/evolve_best_gen0000.bin before --resume runs).
+    """
+    champion_source = B1_CHAMPIONS_DIR / "b1_fixed_s31.bin"
+    if not champion_source.exists():
+        pytest.skip(f"{champion_source} not present on this machine")
+
+    saved = b3_scratch_copy / "evolve_best_gen0000.bin"
+    assert saved.exists()
+
+    import hashlib
+
+    def sha256_file(p: Path) -> str:
+        return hashlib.sha256(p.read_bytes()).hexdigest()
+
+    assert sha256_file(saved) == sha256_file(champion_source), (
+        "evolve_best_gen0000.bin must be byte-identical to the loaded champion for a "
+        "--resume --resume-mix 1 run -- if this fails, either the run's own recipe "
+        "changed or the counterfactual_valid=True guarantee no longer holds"
+    )
+
+
+def test_counterfactual_valid_false_when_run_did_not_resume(b5_scratch_copy):
+    _require_universe_bin("genome_export")
+    _require_universe_bin("track_export")
+    # force=True: another test in this module-scoped-fixture file may already have
+    # produced this exact (gen, being, profile) -- this test wants the artifact, not to
+    # re-test idempotency (covered elsewhere).
+    trace_dir = trace_producer.produce(b5_scratch_copy, gen=B5_DENSE_GEN, profile="champion", force=True)
+    manifest = json.loads((trace_dir / "manifest.json").read_text())
+    assert manifest["counterfactual_valid"] is False
+
 
 def test_check_cli_exits_zero_on_produced_trace(b3_scratch_copy):
     _require_universe_bin("genome_export")
@@ -227,7 +274,11 @@ def test_produce_dense_unresumed_run_champion_profile(b5_scratch_copy):
     _require_universe_bin("genome_export")
     _require_universe_bin("track_export")
 
-    trace_dir = trace_producer.produce(b5_scratch_copy, gen=B5_DENSE_GEN, profile="champion")
+    # force=True: test_counterfactual_valid_false_when_run_did_not_resume (above) may
+    # already have produced this exact (gen, being, profile) via the same module-scoped
+    # fixture; idempotency itself is covered by
+    # test_idempotent_refuses_then_force_rebuilds_byte_identically.
+    trace_dir = trace_producer.produce(b5_scratch_copy, gen=B5_DENSE_GEN, profile="champion", force=True)
     manifest = check_module.check_trace_dir(trace_dir)
     assert manifest["count"] == 750  # 12000 ticks / sample_every=16
     assert "NOT verified to be the fitness champion" in manifest["being_selection"]
