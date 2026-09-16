@@ -1,0 +1,211 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lab-ui.local/contract/trace-v1.schema.json",
+  "title": "trace-v1 manifest",
+  "description": "manifest.json of a trace-v1 directory (lab-ui PRD S5). Identity, provenance and the block table of neural.trace. lab-ui refuses to open a manifest that fails this schema (PRD S5, 'Rules').",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "magic",
+    "schema_version",
+    "endian",
+    "run",
+    "generation",
+    "being",
+    "being_selection",
+    "profile",
+    "first_tick",
+    "count",
+    "stride",
+    "samples_tick",
+    "blocks",
+    "body_schema_version",
+    "brain_schema_version",
+    "hashes",
+    "universe_commit",
+    "world_seed",
+    "absent",
+    "disabled_flags"
+  ],
+  "properties": {
+    "magic": {
+      "const": "trace-v1",
+      "description": "Fixed marker identifying this file as a trace-v1 manifest. Any other value means the reader is looking at the wrong contract version."
+    },
+    "schema_version": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Version of this JSON schema the manifest was written against. Bumped whenever a field is added, removed or reinterpreted."
+    },
+    "endian": {
+      "type": "string",
+      "enum": ["little"],
+      "description": "Byte order of every block in neural.trace and of physical.replay. Universe writes little-endian only (bytemuck::Pod on x86_64/amd64); the field exists so a reader never has to assume it."
+    },
+    "run": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Run directory name as indexed by lab.db (e.g. 'b2_cost_s113'). Identifies which battery/arm/seed produced this trace."
+    },
+    "generation": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Generation index this trace was cut from (0-based, matches the 'gen<NNNN>' the run directory writes, e.g. gen0000.replay, evolve_best_gen0000.bin)."
+    },
+    "being": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Population slot index whose sensory/brain/body samples this trace carries. This is the index the recorder calls 'being' in observation.jsonl and 'being_idx' in physical.replay, NOT necessarily the fitness-ranked champion of the generation -- see 'being_selection'."
+    },
+    "being_selection": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Exact criterion used to pick 'being', stated honestly (never assume it is the champion). E.g. 'fixed_population_slot_0 (--vision-being default; not verified to equal the fitness champion for a fresh run without --resume)'. Without this it is possible to display weights from genome.bin (always the generation's evolve_best_gen*.bin) that did not produce the movements shown by this being -- the exact risk PRD S5 warns about."
+    },
+    "profile": {
+      "type": "string",
+      "enum": ["summary", "champion", "event", "full"],
+      "description": "Trace profile from PRD S3: 'summary' = replay + events only (no neural.trace blocks beyond what is listed here); 'champion' = full brain of one being sampled every 2-4 ticks; 'event' = full brain only inside windows around events; 'full' = every tick, requested deliberately."
+    },
+    "first_tick": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Tick number of the first sample in every block of neural.trace (the smallest value in samples_tick)."
+    },
+    "count": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Number of samples (T) carried by every block of neural.trace. Equals the length of samples_tick and the first dimension of every block's shape."
+    },
+    "stride": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Nominal tick spacing between consecutive samples (e.g. 16 for a 64 Hz run sampled at 4 Hz). samples_tick is the source of truth for the exact tick of each sample; stride is the nominal/expected spacing used to detect gaps."
+    },
+    "samples_tick": {
+      "type": "array",
+      "items": { "type": "integer", "minimum": 0 },
+      "minItems": 1,
+      "description": "Explicit tick number of every sample, in order, one entry per row of every block. Length must equal 'count'. Recorded explicitly (not just derived from first_tick+i*stride) because a profile such as 'event' samples irregular windows."
+    },
+    "blocks": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Block table of neural.trace, in the recorder's brain_flow execution order (sensor -> wave -> brain stages -> motor chain -> pose/body). A stage the recorder did not write is listed in 'absent' instead of appearing here.",
+      "items": { "$ref": "#/$defs/block" }
+    },
+    "body_schema_version": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Schema version of the 'body' block's channel layout (see contract/EVENTS.md and the block's 'unit' field for the channel order). Bumped whenever the channel list changes."
+    },
+    "brain_schema_version": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Schema version of the brain-stage blocks (cfc today; l1/l2/intent when the kernels land, per Universe/docs/KERNELS-OBSERVATION-L1L2.md). Bumped whenever a stage's channel layout changes."
+    },
+    "hashes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["checkpoint", "replay", "config"],
+      "description": "sha256 of the three source artifacts this trace was produced from. The producer refuses to overwrite a trace whose source hashes still match (PRD S5, 'Rules'); a reader can use these to know whether the trace is stale.",
+      "properties": {
+        "checkpoint": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "sha256 (lowercase hex) of the genome.bin this trace's checkpoint field points at (the generation's evolve_best_gen<NNNN>.bin)."
+        },
+        "replay": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "sha256 (lowercase hex) of the physical.replay file (or of the full gen<NNNN>.replay it was cut from -- state which in the producer's own notes)."
+        },
+        "config": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "sha256 (lowercase hex) of the run's launch configuration (the universe_run.py manifest.json for this run directory)."
+        }
+      }
+    },
+    "universe_commit": {
+      "type": "string",
+      "minLength": 7,
+      "description": "Short git commit hash of the Universe checkout that produced this run's binary (from the run's own manifest.json 'universe_commit')."
+    },
+    "world_seed": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "World seed recorded in physical.replay's header (ReplayHeader.world_seed, u64 in Rust)."
+    },
+    "absent": {
+      "type": "array",
+      "description": "Channels/stages/artifacts this trace does NOT carry, each with why. A stage the recorder did not write is absent, never zero-filled (PRD S5, 'Rules').",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "reason"],
+        "properties": {
+          "name": { "type": "string", "description": "Name of the missing block/stage/artifact, e.g. 'l1', 'weights.json', 'track.json'." },
+          "reason": { "type": "string", "description": "Why it is missing, stated as fact, e.g. 'not recorded by this binary' or 'produced by S2'." }
+        }
+      }
+    },
+    "disabled_flags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "CLI flags active for this run that disable memory, threshold or heterogeneous activation in the brain (Universe/src/bin/gpu_evolve/cli_flags.rs: --no-neuron-memory, --no-neuron-threshold, --no-heterogeneous-activation). Empty when none of these control-arm flags were set."
+    }
+  },
+  "$defs": {
+    "block": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "dtype", "shape", "unit", "scale", "offset", "length", "compression", "stage"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Block identifier, stable across runs, e.g. 'retina', 'wave', 'cfc', 'raw_intent', 'after_head', 'after_modulation', 'final_command', 'pose', 'body'."
+        },
+        "dtype": {
+          "type": "string",
+          "enum": ["u8", "i8", "u16", "i16", "u32", "i32", "f32", "f64"],
+          "description": "Element type of the raw bytes at [offset, offset+length). Names match JS TypedArray element types (u32 -> Uint32Array, i8 -> Int8Array, f32 -> Float32Array, ...)."
+        },
+        "shape": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 1 },
+          "minItems": 1,
+          "description": "Logical shape of the decoded array, row-major, first dimension always T (== manifest.count), e.g. [300,14,126] for retina or [300,96] for cfc."
+        },
+        "unit": {
+          "type": "string",
+          "description": "Physical unit of a single-channel block (e.g. 'dimensionless'), or, for a multi-channel block whose last dimension packs named scalars, the comma-separated channel names in order (e.g. 'throttle,steer,brake' or 'x_m,z_m,forward_x,forward_z'). The exact channel list per block name is documented in contract/EVENTS.md and contract/DEVIATIONS.md."
+        },
+        "scale": {
+          "type": "number",
+          "description": "Multiplicative scale applied to a raw decoded value to obtain the physical quantity named by 'unit'. 1.0 (identity) for every block in schema_version 1, all of which already store physical values in their native dtype without quantization; reserved for a future quantized block."
+        },
+        "offset": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Byte offset of this block's data from the start of neural.trace."
+        },
+        "length": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Byte length of this block's data on disk (post-compression). Equals product(shape) * sizeof(dtype) when compression is 'none'."
+        },
+        "compression": {
+          "type": "string",
+          "enum": ["none"],
+          "description": "Compression applied to the block's bytes. Only 'none' exists in schema_version 1; the field is reserved so a future codec does not need a new schema version."
+        },
+        "stage": {
+          "type": ["string", "null"],
+          "description": "Position of this block in the recorder's brain_flow pipeline (e.g. 'sensory_cfc_pre_l1', 'raw_intent', 'after_head', 'after_modulation', 'final_command'), or null for a block that is not a brain stage (retina, wave, pose, body)."
+        }
+      }
+    }
+  }
+}
