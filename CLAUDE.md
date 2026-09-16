@@ -46,3 +46,11 @@ No server, no dependency, no port: `sqlite3` is in the standard library. The HTT
 - `paired()` excludes unfinished runs by default — `v_last5` means the last five
   generations that EXIST, and comparing a run stopped at generation 6 with one that
   reached 30 is the effective-generations confound that invalidated prediction 180.
+
+Slice S7 (lab-ui PRD §8) added four tables: `add_annotation()`/`annotations()` for
+scientific notes (never `localStorage`); `register_trace()`/`traces()` indexing
+trace-v1 directories (the format itself is S0's job); `mirror_queue(db, spool=...)`,
+a read-only, replace-the-table snapshot of the `_nmd` spool; `audit(db, who, action,
+payload, note='')`, which stores a payload's sha256, never the payload. `ingest` also
+takes `--battery` for run dirs with no battery in their name/manifest, e.g.
+`python src/lab_db.py ingest Universe/artifacts --battery b1eval`.

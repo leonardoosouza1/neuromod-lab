@@ -159,9 +159,68 @@ CREATE TABLE IF NOT EXISTS prediction (
     PRIMARY KEY (doc, code)
 );
 
+-- A scientific note on a run, generation or tick. This is the record the PRD (lab-ui
+-- §6) means by "annotations go to lab.db, never to localStorage": layout is per-browser
+-- preference, an observation is data and outlives the browser that made it.
+CREATE TABLE IF NOT EXISTS annotation (
+    id       INTEGER PRIMARY KEY AUTOINCREMENT,
+    run_name TEXT NOT NULL REFERENCES run(name) ON DELETE CASCADE,
+    gen      INTEGER,
+    tick     INTEGER,
+    author   TEXT NOT NULL DEFAULT '',   -- a session user or an agent name
+    text     TEXT NOT NULL,
+    created  TEXT NOT NULL
+);
+
+-- An index into trace-v1 directories (the neural trace contract, lab-ui PRD §5). The
+-- manifest format and the bytes on disk are slice S0's job; this table only lets an
+-- agent or the API ask "does a trace already exist for (run, gen, being, profile)"
+-- without walking the filesystem, and carries the hash that says whether it is stale.
+CREATE TABLE IF NOT EXISTS trace (
+    run_name        TEXT NOT NULL REFERENCES run(name) ON DELETE CASCADE,
+    gen             INTEGER NOT NULL,
+    being           INTEGER NOT NULL,
+    profile         TEXT NOT NULL,       -- summary | champion | event | full
+    schema_version  INTEGER,
+    path            TEXT NOT NULL,
+    manifest_sha256 TEXT,
+    bytes           INTEGER,
+    produced        TEXT NOT NULL,
+    PRIMARY KEY (run_name, gen, being, profile)
+);
+
+-- A snapshot of the nmd spool (`neuromod-lab/scripts/nmd.py`) for the Queue panel. This
+-- is a MIRROR, not history: `mirror_queue()` deletes and reinserts every row on each
+-- call, because the ground truth is the files in `pedidos/`, `feitos/`, `recusados/` and
+-- `estado/`, and nobody should have to diff two panel loads to know what changed on disk.
+CREATE TABLE IF NOT EXISTS queue_mirror (
+    id        TEXT PRIMARY KEY,          -- the request's own "id" field
+    state     TEXT NOT NULL,             -- pending | running | done | refused
+    script    TEXT,
+    out       TEXT,
+    args_json TEXT,
+    file_path TEXT NOT NULL,
+    seen      TEXT NOT NULL
+);
+
+-- One line per write the API performs (PRD §7: "one audit line in lab.db" per
+-- launch/cancel/edit under --lan). The payload itself is never stored, only its hash:
+-- the audit trail proves WHAT was sent without becoming a second, forever-growing copy
+-- of every experiment schema or annotation text that passed through the API.
+CREATE TABLE IF NOT EXISTS audit (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    "when"         TEXT NOT NULL,
+    who            TEXT NOT NULL,
+    action         TEXT NOT NULL,        -- launch | cancel | edit | verdict | annotation
+    payload_sha256 TEXT NOT NULL,
+    note           TEXT
+);
+
 CREATE INDEX IF NOT EXISTS idx_run_battery ON run(battery, arm, seed);
 CREATE INDEX IF NOT EXISTS idx_gen_run     ON generation(run_name);
 CREATE INDEX IF NOT EXISTS idx_being_run   ON being_gen(run_name, gen);
+CREATE INDEX IF NOT EXISTS idx_annotation_run ON annotation(run_name, gen);
+CREATE INDEX IF NOT EXISTS idx_queue_mirror_state ON queue_mirror(state);
 
 -- The ruler most questions start from: the mean of the last five generations per run,
 -- as ratios of sums. Kept as a view so the definition lives in exactly one place.
@@ -247,9 +306,19 @@ def _driving_per_generation(path: str) -> dict[int, dict[str, float]]:
     return gens
 
 
-def ingest_run(db: sqlite3.Connection, out_dir: str, project: str = 'universe') -> str | None:
+def ingest_run(db: sqlite3.Connection, out_dir: str, project: str = 'universe',
+               battery: str | None = None) -> str | None:
     """Read one run directory into the database. Idempotent: re-ingesting replaces its
     rows and nothing else. Returns the run name, or None when the directory is not a run.
+
+    `battery` overrides the battery derived from the name/args below. It exists for run
+    directories that were never named `<battery>_<arm>_s<seed>` -- e.g.
+    `Universe/artifacts/b1-s77-heldout-8200`, evaluation runs Astra produced by calling
+    `gpu_evolve` directly, outside the runs root and its naming convention. Their
+    `manifest.json` has a `command` list (raw argv), not the `args` dict that
+    `universe_run.py` writes, so `args` is `{}` for them and `battery`/`arm`/`seed` fall
+    through to NULL exactly like any other run whose name does not match -- this never
+    crashes, it just leaves the caller to pass `--battery` if it wants them grouped.
     """
     manifest_path = os.path.join(out_dir, 'manifest.json')
     if not os.path.exists(manifest_path):
@@ -259,7 +328,7 @@ def ingest_run(db: sqlite3.Connection, out_dir: str, project: str = 'universe') 
     name = manifest.get('id') or os.path.basename(out_dir.rstrip('/'))
     args = manifest.get('args', {}) or {}
     match = RUN_NAME.match(name)
-    battery = match.group('battery') if match else None
+    battery = battery or (match.group('battery') if match else None)
     arm = match.group('arm') if match else None
     seed = int(match.group('seed')) if match else args.get('seed')
 
@@ -344,15 +413,18 @@ def ingest_run(db: sqlite3.Connection, out_dir: str, project: str = 'universe') 
     return name
 
 
-def ingest_tree(db: sqlite3.Connection, root: str, project: str = 'universe') -> list[str]:
+def ingest_tree(db: sqlite3.Connection, root: str, project: str = 'universe',
+                battery: str | None = None) -> list[str]:
     """Ingest every run directory directly under `root`. Symlinks are skipped: two names
-    for the same run would double-count it in any paired comparison."""
+    for the same run would double-count it in any paired comparison. `battery` is passed
+    through to `ingest_run` for trees whose directory names carry no battery of their
+    own (see its docstring) -- e.g. `Universe/artifacts`."""
     done = []
     for entry in sorted(os.listdir(root)):
         path = os.path.join(root, entry)
         if not os.path.isdir(path) or os.path.islink(path) or entry.startswith('_'):
             continue
-        name = ingest_run(db, path, project)
+        name = ingest_run(db, path, project, battery=battery)
         if name:
             done.append(name)
     return done
@@ -518,6 +590,156 @@ def drop_battery(db: sqlite3.Connection, battery: str) -> dict[str, Any]:
             'bytes': sum(f['bytes'] or 0 for f in files)}
 
 
+# ── annotations (lab-ui PRD §6: "scientific annotations go to lab.db, never to
+# localStorage") ─────────────────────────────────────────────────────────────────────
+
+def add_annotation(db: sqlite3.Connection, run: str, text: str, gen: int | None = None,
+                    tick: int | None = None, author: str = '') -> int:
+    """Record one note on a run, optionally scoped to a generation and/or a tick. Raises
+    sqlite3.IntegrityError if `run` is not in the `run` table -- an annotation always
+    points at something real."""
+    cur = db.execute(
+        'INSERT INTO annotation (run_name, gen, tick, author, text, created)'
+        " VALUES (?,?,?,?,?, datetime('now'))",
+        (run, gen, tick, author, text))
+    db.commit()
+    return cur.lastrowid
+
+
+def annotations(db: sqlite3.Connection, run: str | None = None,
+                 gen: int | None = None) -> list[sqlite3.Row]:
+    sql = 'SELECT * FROM annotation WHERE 1=1'
+    params: list[Any] = []
+    for column, value in (('run_name', run), ('gen', gen)):
+        if value is not None:
+            sql += f' AND {column} = ?'
+            params.append(value)
+    return db.execute(sql + ' ORDER BY created', params).fetchall()
+
+
+# ── trace index (lab-ui PRD §5: the trace-v1 contract itself is S0's job; this table
+# only indexes the directories S2's producer writes) ─────────────────────────────────
+
+def register_trace(db: sqlite3.Connection, run: str, gen: int, being: int, profile: str,
+                    path: str, schema_version: int | None, manifest_sha256: str | None,
+                    size_bytes: int | None) -> None:
+    """Index one trace-v1 directory. Idempotent on (run, gen, being, profile): producing
+    the same trace again (same manifest hash or not) replaces the row -- the row is a
+    pointer, the manifest's own hashes are what say whether the bytes on disk are stale."""
+    db.execute(
+        'INSERT OR REPLACE INTO trace (run_name, gen, being, profile, schema_version, path,'
+        " manifest_sha256, bytes, produced) VALUES (?,?,?,?,?,?,?,?, datetime('now'))",
+        (run, gen, being, profile, schema_version, path, manifest_sha256, size_bytes))
+    db.commit()
+
+
+def traces(db: sqlite3.Connection, run: str | None = None) -> list[sqlite3.Row]:
+    sql = 'SELECT * FROM trace WHERE 1=1'
+    params: list[Any] = []
+    if run is not None:
+        sql += ' AND run_name = ?'
+        params.append(run)
+    return db.execute(sql + ' ORDER BY run_name, gen, being, profile', params).fetchall()
+
+
+# ── queue mirror (lab-ui PRD §6 Queue panel: "mirrors `_nmd`") ───────────────────────
+
+DEFAULT_SPOOL = '/media/llm-data/universe-runs/neuromod-lab-taxi/_nmd'
+
+
+def mirror_queue(db: sqlite3.Connection, spool: str = DEFAULT_SPOOL) -> int:
+    """Snapshot the nmd spool (`neuromod-lab/scripts/nmd.py`) into `queue_mirror`. READ
+    ONLY: this never writes into `spool`, only into the database. REPLACES the table on
+    every call -- it mirrors what is on disk right now, it is not a history of what once
+    passed through the queue.
+
+    A request file lives in `pedidos/` from the moment it is written until nmd.py moves
+    it to `feitos/` (done, success or failure) or `recusados/` (refused before it ever
+    ran). While it is in `pedidos/`, `estado/<id>.json` says whether it is actually
+    running (`fase: "rodando"`) or still waiting its turn -- that is the only distinction
+    this function has to compute; the rest is which folder the file is in.
+    """
+    running_ids: set[str] = set()
+    estado_dir = os.path.join(spool, 'estado')
+    if os.path.isdir(estado_dir):
+        for filename in os.listdir(estado_dir):
+            if not filename.endswith('.json'):
+                continue
+            try:
+                with open(os.path.join(estado_dir, filename)) as f:
+                    estado = json.load(f)
+            except (OSError, ValueError):
+                continue
+            if isinstance(estado, dict) and estado.get('fase') == 'rodando':
+                running_ids.add(str(estado.get('id') or filename[:-len('.json')]))
+
+    rows = []
+    for folder, default_state in (('pedidos', 'pending'), ('feitos', 'done'),
+                                   ('recusados', 'refused')):
+        directory = os.path.join(spool, folder)
+        if not os.path.isdir(directory):
+            continue
+        for filename in sorted(os.listdir(directory)):
+            if not filename.endswith('.json'):
+                continue
+            path = os.path.join(directory, filename)
+            request_id = filename[:-len('.json')]
+            script = out = args_json = None
+            try:
+                with open(path) as f:
+                    payload = json.load(f)
+                if isinstance(payload, dict):
+                    request_id = str(payload.get('id') or request_id)
+                    script = payload.get('script')
+                    out = payload.get('out')
+                    args_json = json.dumps(payload.get('args', {}))
+            except (OSError, ValueError):
+                pass  # a mirror shows less, it never refuses to reflect a broken file
+            state = 'running' if folder == 'pedidos' and request_id in running_ids \
+                else default_state
+            rows.append((request_id, state, script, out, args_json, path))
+
+    db.execute('DELETE FROM queue_mirror')
+    db.executemany(
+        'INSERT OR REPLACE INTO queue_mirror (id, state, script, out, args_json,'
+        " file_path, seen) VALUES (?,?,?,?,?,?, datetime('now'))", rows)
+    db.commit()
+    return len(rows)
+
+
+# ── audit (lab-ui PRD §7: "one audit line in lab.db" per write route) ────────────────
+
+AUDIT_ACTIONS = ('launch', 'cancel', 'edit', 'verdict', 'annotation')
+
+
+def audit(db: sqlite3.Connection, who: str, action: str, payload: Any,
+          note: str = '') -> int:
+    """Append one audit line. Stores the sha256 of `payload`, never the payload -- the
+    trail proves WHAT was sent without becoming a second, growing copy of every
+    experiment schema or annotation text that passes through the write routes."""
+    if action not in AUDIT_ACTIONS:
+        raise ValueError(f'action must be one of {AUDIT_ACTIONS}, got {action!r}')
+    digest = hashlib.sha256(
+        json.dumps(payload, sort_keys=True, default=str).encode()).hexdigest()
+    cur = db.execute(
+        'INSERT INTO audit ("when", who, action, payload_sha256, note)'
+        " VALUES (datetime('now'), ?, ?, ?, ?)",
+        (who, action, digest, note))
+    db.commit()
+    return cur.lastrowid
+
+
+def audits(db: sqlite3.Connection, who: str | None = None,
+           action: str | None = None) -> list[sqlite3.Row]:
+    sql = 'SELECT * FROM audit WHERE 1=1'
+    params: list[Any] = []
+    for column, value in (('who', who), ('action', action)):
+        if value is not None:
+            sql += f' AND {column} = ?'
+            params.append(value)
+    return db.execute(sql + ' ORDER BY id', params).fetchall()
+
+
 # ── command line ─────────────────────────────────────────────────────────────────────
 
 def _print_table(rows: Iterable[sqlite3.Row]) -> None:
@@ -549,6 +771,8 @@ def main() -> None:
     p = sub.add_parser('ingest', help='read run directories into the database')
     p.add_argument('root')
     p.add_argument('--project', default='universe')
+    p.add_argument('--battery', help='override battery for runs whose name/args carry'
+                   ' none, e.g. Universe/artifacts/* -> --battery b1eval')
 
     p = sub.add_parser('list', help='list batteries, or the runs of one')
     p.add_argument('--battery')
@@ -580,7 +804,7 @@ def main() -> None:
     db = connect(a.db)
 
     if a.command == 'ingest':
-        names = ingest_tree(db, a.root, a.project)
+        names = ingest_tree(db, a.root, a.project, battery=a.battery)
         print(f'ingested {len(names)} run(s) into {a.db}')
         for n in names:
             print('   ', n)
