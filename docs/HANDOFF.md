@@ -53,7 +53,18 @@ com exit 1 em 0 s. Censo com defeitos: `/media/llm-data/scratch/track_census_810
 - Falta: S6 (live `/ws/live`), painel contrafactual ligado à GPU, merge de `ui/s2-pack` no
   Universe (esperar checkout limpo). Defeito menor: razões técnicas em inglês no painel.
 
+## Subir o painel (loopback)
+
+```bash
+cd ~/projects/LLM/neuromod-lab/src && setsid nohup ~/projects/LLM/.venv-rocm/bin/python -m lab_api --port 8130 \
+  >> /media/llm-data/scratch/lab-ui-serve/api.log 2>&1 < /dev/null &
+cd ~/projects/LLM/lab-ui && setsid nohup node_modules/.bin/vite --host 127.0.0.1 --port 5173 --strictPort \
+  >> /media/llm-data/scratch/lab-ui-serve/ui.log 2>&1 < /dev/null &
+```
+Macro http://127.0.0.1:5173/ · micro http://127.0.0.1:5173/run/champ_nocost_s77_dense_t8005.
+`node_modules` e o trace denso em `public/fixtures/trace-v1/` são symlinks para `/media/llm-data`.
+Dados reais por padrão; `VITE_API_MOCK=1` força mock. Ao vivo só lista corrida com `--panel`.
+
 ## Perguntar ao Leonardo (não decidir sozinho)
 
-- Limpar `~/.npm` (5,7 GB no disco do sistema)?
 - Criar remote no GitHub para `lab-ui` (hoje só local)?
