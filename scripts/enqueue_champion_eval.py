@@ -30,7 +30,7 @@ EVAL_SUFFIX = re.compile(r'_eval_t\d+')
 
 # Flags that describe HOW the champion was trained and must follow it into evaluation.
 INHERITED = ('bin', 'width', 'wall-cost', 'impact-cost', 'throttle-arbitration', 'wall-probes',
-             'slow-kinematics', 'legacy-reverse-controller', 'cost-gate-progress')
+             'slow-kinematics', 'legacy-reverse-controller', 'cost-gate-progress', 'retina-range')
 
 
 def training_request(run: str) -> dict:

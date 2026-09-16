@@ -1,0 +1,20 @@
+{
+ "battery": "b7",
+ "ledger": "Universe/docs/PREDICOES-CEREBRO.md#B7",
+ "stages": [
+  {"name": "train", "kind": "requests", "prefix": "3",
+   "seeds": [31, 77, 113, 137],
+   "base_args": {"bin": "/media/llm-data/snapshots/gpu_evolve-f5d203b", "gens": 25, "ticks": 12000,
+                 "beings": 32, "width": 28, "same-start": true, "driving-diagnostics": true,
+                 "replay-every": 24, "wall-cost": 0, "impact-cost": 0, "tracks": [8005, 8100, 8150]},
+   "arms": {"range60": {"retina-range": 60},
+            "range100": {"retina-range": 100},
+            "rand100": {"retina-range": 100, "tracks": [8005], "largada-aleatoria": true}}},
+  {"name": "eval", "kind": "champion_eval", "prefix": "2", "ticks": 20000, "beings": 8,
+   "groups": [{"runs_from": ["train"], "tracks": [8005, 8200, 8250, 8218]}]},
+  {"name": "ingest", "kind": "command",
+   "commands": [["{python}", "src/lab_db.py", "ingest", "/media/llm-data/universe-runs/neuromod-lab-taxi"]]},
+  {"name": "analyze", "kind": "command",
+   "commands": [["{python}", "src/analyze_b7.py"]]}
+ ]
+}
