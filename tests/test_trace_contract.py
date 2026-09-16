@@ -33,8 +33,11 @@ from lab_api.trace import reference_decoder as rd  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 # .worktrees/neuromod-lab-s0-contract/tests -> .worktrees/neuromod-lab-s0-contract -> .worktrees -> LLM
-LLM_ROOT = Path(os.environ.get("LLM_ROOT", REPO_ROOT.parents[1]))
-LAB_UI_REPO = Path(os.environ.get("LAB_UI_REPO", LLM_ROOT / "lab-ui"))
+
+
+from conftest import find_lab_ui  # noqa: E402
+
+LAB_UI_REPO = find_lab_ui()
 FIXTURE_DIR = LAB_UI_REPO / "fixtures" / "trace-v1" / "universe-b2-gen0"
 CONTRACT_DIR = LAB_UI_REPO / "contract"
 VENDORED_SCHEMA = REPO_ROOT / "src" / "lab_api" / "trace" / "trace-v1.schema.json"
@@ -47,9 +50,10 @@ SCRATCH_DIR = Path("/media/llm-data/scratch/s0-contract/test-corrupt-fixture")
 
 def _require_fixture():
     if not FIXTURE_DIR.exists():
-        pytest.skip(
+        pytest.fail(
             f"fixture not found at {FIXTURE_DIR} -- set LAB_UI_REPO to the lab-ui "
-            "checkout if it is not a sibling of this repo's parent directory"
+            "checkout. This is a failure, not a skip: a contract suite that disappears "
+            "without failing hides exactly the drift it exists to catch"
         )
 
 
@@ -252,6 +256,8 @@ def test_clean_fixture_hashes_are_internally_consistent():
 
 
 def test_vendored_schema_is_byte_identical_to_lab_ui_contract():
+    """The contract lives in lab-ui; neuromod-lab vendors a copy. Any drift is a failure.
+    Re-enabled 16/09 when lab-ui adopted the S2 schema additions."""
     _require_fixture()
     schema_in_lab_ui = CONTRACT_DIR / "trace-v1.schema.json"
     assert schema_in_lab_ui.exists(), schema_in_lab_ui

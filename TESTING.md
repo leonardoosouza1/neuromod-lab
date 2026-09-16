@@ -696,3 +696,247 @@ that `--bin` validates against `/media/llm-data/snapshots/` by reading a
 real live pedido; switch flags never accept `value: false`; every route
 (not just writes) requires a session under `--lan`; `/api/snapshots`'
 "binaries" is every top-level file, not a guessed subset.
+
+## S2 — trace producer (`lab_api.trace.producer`/`produce`) + Universe genome/track export
+
+# TESTING.md — S2: trace producer + Universe `genome_export`/`brain_step`/`track_export`
+
+Slice S2 (`lab-ui/PRD.md` §8) adds `neuromod-lab/src/lab_api/trace/producer.py`
+(`produce()`), its CLI `neuromod-lab/src/lab_api/trace/produce.py`
+(`python -m lab_api.trace.produce`), and three CPU-only Rust binaries in the Universe
+worktree: `genome_export` (`.bin` genome -> `weights.json`), `brain_step` (CPU reference
+forward through `raw_intent`, with ablation), `track_export` (track -> `track.json`).
+This file is the exact commands run to verify all of it, with pasted output and exit
+codes, per the worktree protocol (PRD §9.3).
+
+Python: `/home/leonardo/projects/LLM/.venv-rocm/bin/python` (pytest 9.1.1, numpy already
+present -- no installs). Rust: built only inside
+`/home/leonardo/projects/LLM/.worktrees/universe-s2-pack` (never in `~/projects/LLM/Universe`).
+Scratch: `/media/llm-data/scratch/s2-pack/`. Real data used: real finished runs under
+`/media/llm-data/universe-runs/neuromod-lab-taxi/` (`b3_fixed_s31_t8005`, sparse,
+`--resume`, 10 samples; `b5_ctrl_s31` generation 24, dense, no `--resume`, 750 samples),
+copied into scratch before producing (never mutates the live run directories).
+
+## 1. Rust: build
+
+```
+cd /home/leonardo/projects/LLM/.worktrees/universe-s2-pack
+cargo build --release --bin genome_export --bin brain_step --bin track_export
+```
+
+Output (tail):
+```
+   Compiling universe v0.2.0 (/home/leonardo/projects/LLM/.worktrees/universe-s2-pack)
+    Finished `release` profile [optimized] target(s) in 1.65s
+```
+Exit code: `0`. (`sha2 = "0.10.9"` was promoted from a transitive to a direct dependency
+in `Cargo.toml` -- already resolved in `Cargo.lock` at that exact version via the Bevy
+tree, no network fetch needed.)
+
+## 2. Rust: unit tests (inline, next to each binary's own code)
+
+```
+cargo test --release --bin genome_export --bin brain_step --bin track_export
+```
+
+Output (summary):
+```
+running 6 tests   (brain_step)
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+
+running 3 tests   (genome_export)
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+
+running 3 tests   (track_export)
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+```
+Exit code: `0`.
+
+## 3. Rust: regression -- the two pre-existing suites this slice must not break
+
+```
+cargo test --release --bin gpu_evolve
+cargo test --release --lib
+```
+
+Output (tail of each):
+```
+test result: ok. 119 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out   (gpu_evolve)
+test result: ok. 480 passed; 0 failed; 16 ignored; 0 measured; 0 filtered out  (--lib)
+```
+Exit code: `0` for both. (16 ignored are the GPU parity tests, unaffected -- no GPU on
+this task per the "Where" rules.) The only library change this slice made was extracting
+`CfCCell::quantize_state_i8` out of `CfCCell::update`'s last line (`src/cfc.rs`) --
+same formula, now a named, reusable function; `cargo build` also picked up the new
+`sha2` direct dependency.
+
+## 4. Rust: genome_export smoke against the S0 fixture's genome
+
+```
+./target/release/genome_export \
+  /home/leonardo/projects/LLM/lab-ui/fixtures/trace-v1/universe-b2-gen0/genome.bin \
+  /media/llm-data/scratch/s2-pack/weights_b2gen0.json
+```
+Output:
+```
+genome_export: wrote /media/llm-data/scratch/s2-pack/weights_b2gen0.json (18 stages, genome sha256 29c9a51b5daa0863c05fc98b509fd706eeac16180da4b3fa00b136c41c117045)
+```
+Exit code: `0`. `genome_sha256` matches the fixture's own `manifest.json`
+`hashes.checkpoint` (`29c9a51b...c117045`) exactly.
+
+18 stages, shapes: `l1 [96,192]`, `l2 [48,96]`, `kan_knots [3,12]`, `slow_d1_weights
+[16,64]`, `slow_d1_bias [16]`, `slow_d2_weights [3,16]`, `slow_d2_bias [3]`, `tau [96]`,
+`sensors [6]`, `neuron_alpha_l1 [96]`, `neuron_alpha_l2 [48]`, `neuron_period_l1 [96]`,
+`neuron_threshold_l1 [96]`, `neuron_activation_l1 [96]`, `neuron_activation_l2 [48]`,
+`gates_w [16]`, `hip [29]`, `fly [0]` (this genome carries no fly-map block).
+`brain_flow` = the 18 names above, in that order (genome_io.rs's own on-disk block
+order -- see `docs/LAB-UI-S2-GENOME-EXPORT.md` for why, and why that is NOT the per-tick
+kernel dispatch order).
+
+## 5. Rust: brain_step acceptance -- reference forward vs. recorded `raw_intent`, 50 samples
+
+Samples built from the fixture's own `wave`/`cfc`/`raw_intent` blocks (ticks 16..800):
+
+```
+./target/release/brain_step --batch \
+  /home/leonardo/projects/LLM/lab-ui/fixtures/trace-v1/universe-b2-gen0/genome.bin \
+  /media/llm-data/scratch/s2-pack/samples_b2gen0_50.json \
+  /media/llm-data/scratch/s2-pack/brain_step_report_b2gen0.json
+```
+Output:
+```
+brain_step --batch: wrote /media/llm-data/scratch/s2-pack/brain_step_report_b2gen0.json (50 samples, 50 compared, max_abs_error=1.6592474)
+```
+Exit code: `0`.
+
+**Result: max abs error 1.659, mean 0.835, median 0.811, min 0.395** (over 3
+`raw_intent` channels x 50 samples, each channel in [-1,1]). This does NOT match well,
+and was NOT tuned to match better -- see `docs/LAB-UI-S2-GENOME-EXPORT.md` in the
+Universe worktree for the full diagnosis. Short version: the fixture's genome
+(`evolve_best_gen0000.bin`, the fitness champion) is not verified to be the same
+individual as the recorded being (population slot 0, run had no `--resume` --
+`lab-ui/contract/DEVIATIONS.md` #2), which is the most likely dominant cause; two
+smaller, documented approximations (no persistent output fatigue; P1.7 neuron
+mechanisms not applied) also contribute an unknown but smaller amount.
+
+## 6. Python: syntax / compile check
+
+```
+cd /home/leonardo/projects/LLM/.worktrees/neuromod-lab-s2-pack
+/home/leonardo/projects/LLM/.venv-rocm/bin/python -m py_compile \
+  src/lab_api/trace/producer.py src/lab_api/trace/produce.py \
+  src/lab_api/trace/check.py src/lab_api/trace/reference_decoder.py
+echo "compiled OK"
+```
+Output: `compiled OK`. Exit code: `0`.
+
+## 7. Python: full test suite
+
+```
+cd /home/leonardo/projects/LLM/.worktrees/neuromod-lab-s2-pack
+/home/leonardo/projects/LLM/.venv-rocm/bin/python -m pytest tests/ -v
+```
+
+Output (tail):
+```
+tests/test_trace_producer.py::test_produce_sparse_resumed_run_validates_and_decodes PASSED [ 74%]
+tests/test_trace_producer.py::test_check_cli_exits_zero_on_produced_trace PASSED [ 77%]
+tests/test_trace_producer.py::test_js_decoder_agrees_with_python_decoder PASSED [ 80%]
+tests/test_trace_producer.py::test_idempotent_refuses_then_force_rebuilds_byte_identically PASSED [ 83%]
+tests/test_trace_producer.py::test_produce_dense_unresumed_run_champion_profile PASSED [ 87%]
+tests/test_trace_producer.py::test_summary_profile_has_zero_blocks_and_still_validates PASSED [ 90%]
+tests/test_trace_producer.py::test_event_profile_windows_around_events PASSED [ 93%]
+tests/test_trace_producer.py::test_register_writes_trace_row_into_a_scratch_db PASSED [ 96%]
+tests/test_trace_producer.py::test_producer_output_agrees_with_s0_fixture_on_shared_blocks SKIPPED [100%]
+
+============= 29 passed, 1 skipped, 1 xfailed in 91.71s (0:01:31) ==============
+```
+Exit code: `0`.
+
+- The 1 skip is `test_producer_output_agrees_with_s0_fixture_on_shared_blocks`: the S0
+  fixture's source run (`b2_cost_s113`) is no longer on disk -- skipped with a clear
+  message, per the task brief, not silently passed.
+- The 1 xfail is `test_vendored_schema_is_byte_identical_to_lab_ui_contract`, kept only
+  for reference; see `test_vendored_schema_diverges_from_lab_ui_contract_only_by_documented_s2_additions`
+  (passing) and `src/lab_api/DEVIATIONS.md` #2/#3/#9/#10.
+
+## 8. Manual smoke: produce, validate, decode with both decoders (sparse run)
+
+```
+cd /home/leonardo/projects/LLM/.worktrees/neuromod-lab-s2-pack/src
+PYTHONPATH=. /home/leonardo/projects/LLM/.venv-rocm/bin/python -m lab_api.trace.produce \
+  /media/llm-data/universe-runs/neuromod-lab-taxi/b3_fixed_s31_t8005 --gen 0 --profile champion --no-db
+```
+Output:
+```
+OK: /media/llm-data/universe-runs/neuromod-lab-taxi/b3_fixed_s31_t8005/trace/gen0000/being00/champion (--no-db, not registered)
+```
+Exit code: `0`.
+
+```
+PYTHONPATH=. /home/leonardo/projects/LLM/.venv-rocm/bin/python -m lab_api.trace.check \
+  /media/llm-data/universe-runs/neuromod-lab-taxi/b3_fixed_s31_t8005/trace/gen0000/being00/champion
+```
+Output:
+```
+OK: manifest.json and 9 blocks in .../champion/neural.trace match their declared sha256
+```
+Exit code: `0`.
+
+JS cross-check (needs a scratch "contract dir" combining the real `decoder.js`/
+`replay.js` with the VENDORED schema -- see `src/lab_api/DEVIATIONS.md` #9/#10 for why
+the canonical `lab-ui/contract` schema cannot be used as-is here):
+```
+mkdir -p /media/llm-data/scratch/s2-pack/contract-vendored
+cd /media/llm-data/scratch/s2-pack/contract-vendored
+ln -sf /home/leonardo/projects/LLM/lab-ui/contract/{decoder.js,replay.js,package.json} .
+ln -sf /home/leonardo/projects/LLM/.worktrees/neuromod-lab-s2-pack/src/lab_api/trace/trace-v1.schema.json .
+node /home/leonardo/projects/LLM/.worktrees/neuromod-lab-s2-pack/tests/decode_fixture.mjs \
+  /media/llm-data/universe-runs/neuromod-lab-taxi/b3_fixed_s31_t8005/trace/gen0000/being00/champion \
+  /media/llm-data/scratch/s2-pack/contract-vendored
+```
+Output (truncated, one JSON line): `{"manifest_run":"b3_fixed_s31_t8005","manifest_count":10,"blocks":{"retina":{...` --
+every block decodes with the manifest's declared length; the script's own
+`verifyNeuralTraceHash` call did not throw. Exit code: `0`.
+
+## 9. Manual smoke: idempotency
+
+```
+PYTHONPATH=. python -m lab_api.trace.produce .../b5_ctrl_s31 --gen 24 --profile champion --no-db   # first: OK
+PYTHONPATH=. python -m lab_api.trace.produce .../b5_ctrl_s31 --gen 24 --profile champion --no-db   # second, no --force
+```
+Second call's output:
+```
+UP TO DATE: .../b5_ctrl_s31/trace/gen0024/being00/champion (use --force to rebuild)
+```
+Then with `--force`: `neural.trace` and `manifest.json`'s `hashes` were verified
+byte-identical to the pre-force copy (`sha256sum` before/after, `diff` empty). Exit
+code `0` throughout.
+
+## 10. Manual smoke: `--all-finished` at scale
+
+```
+PYTHONPATH=. python -m lab_api.trace.produce --all-finished \
+  /media/llm-data/universe-runs/neuromod-lab-taxi --db /media/llm-data/scratch/s2-pack/lab_test.db
+```
+Output (tail):
+```
+--all-finished: 67 produced, 12 skipped (not finished), out of 79 candidates
+```
+Exit code: `0`. 0 `FAIL` lines across all 67. The 12 skips correctly include every
+in-flight run present at the time (`b5_long_*`, `b5_rand_*`, `b5_rot_*`) -- verified by
+grep: `SKIP b5_rot_s77: not finished (or no population_gen*.json yet)` appears in the
+output; none of those in-flight runs' directories were ever written to (the skip happens
+before any file is touched).
+
+## What is NOT tested here
+
+- The FastAPI routes (`GET /api/trace/...`) and the browser-side loader/panels: S1/S3,
+  not S2.
+- `event` profile windowing against a run with an `impact` event (none of the runs
+  produced during this task happened to have one for the observed being) -- `brake_on`/
+  `brake_off`/`gear`/`lap`/`near_wall` were all exercised on real data (`b3_fixed_s31_t8005`
+  had 4 laps and 875 events total).
+- Track rotation (`args.tracks` with more than one seed) -- see `DEVIATIONS.md` #11
+  (was #8 before the S4 addition renumbered it); no rotating run was available/finished
+  during this task (`b5_rot_*` explicitly off-limits, in flight).

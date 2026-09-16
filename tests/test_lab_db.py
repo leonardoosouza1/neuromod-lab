@@ -302,3 +302,94 @@ def test_paired_excludes_unfinished_runs_by_default(tmp_path):
 
 if __name__ == '__main__':
     raise SystemExit(pytest.main([__file__, '-v']))
+
+
+def test_run_name_parses_training_and_evaluation_runs():
+    import lab_db
+    cases = {
+        'b1_legacy_nocost_s113': ('b1', 'legacy_nocost', '113', None),
+        'b3_fixed_s31_t8005': ('b3', 'fixed', '31', '8005'),
+        'b5_ctrl_s31_eval_t8200': ('b5', 'ctrl', '31', '8200'),
+        'b1dup_nocost_s137': ('b1dup', 'nocost', '137', None),
+    }
+    for name, expected in cases.items():
+        m = lab_db.RUN_NAME.match(name)
+        assert m is not None, name
+        assert (m.group('battery'), m.group('arm'), m.group('seed'), m.group('track')) == expected, name
+
+
+def test_paired_never_crosses_tracks_or_training_with_evaluation(tmp_path):
+    """Found 16/09: once `_t<track>` names parse, the same arm and seed exist on two tracks
+    and in training; pairing must keep them apart."""
+    import lab_db
+    db = lab_db.connect(str(tmp_path / 'lab.db'))
+    def add(name, arm, seed, track, near_wall):
+        db.execute("INSERT INTO run (name, project, battery, arm, seed, out_dir, status, ingested, eval_track)"
+                   " VALUES (?, 'universe', 'bx', ?, ?, '/x', 'finished', datetime('now'), ?)",
+                   (name, arm, seed, track))
+        db.execute("INSERT INTO driving (run_name, gen, alive_ticks, brake_ticks, overlap_ticks, impact_ticks,"
+                   " near_wall_ticks, stationary_ticks, reverse_ticks, contact_ticks, distance_m,"
+                   " collision_energy_j, throttle_sum, brake_sum, speed_sum, beings, min_last_tick)"
+                   " VALUES (?, 0, 100, 0, 0, 0, ?, 0, 0, 0, 1000, 0, 0, 0, 0, 1, 100)", (name, near_wall))
+    add('bx_a_s1', 'a', 1, None, 10)
+    add('bx_b_s1', 'b', 1, None, 30)
+    add('bx_a_s1_t8200', 'a', 1, 8200, 50)
+    add('bx_b_s1_t8200', 'b', 1, 8200, 90)
+    add('bx_b_s1_t8005', 'b', 1, 8005, 0)
+    db.commit()
+    training = lab_db.paired(db, 'bx', 'a', 'b', 'near_wall_pct_alive')
+    assert training['n'] == 1 and abs(training['mean'] - (10 - 30)) < 1e-9
+    evaluation = lab_db.paired(db, 'bx', 'a', 'b', 'near_wall_pct_alive', eval_track=8200)
+    assert evaluation['n'] == 1 and abs(evaluation['mean'] - (50 - 90)) < 1e-9
+    assert lab_db.paired(db, 'bx', 'a', 'b', 'near_wall_pct_alive', eval_track=8005)['n'] == 0
+    rows = db.execute("SELECT a.run_name, b.run_name FROM v_last5 a JOIN v_last5 b"
+                      " ON a.seed = b.seed AND a.battery = b.battery AND a.eval_track IS b.eval_track"
+                      " WHERE a.arm = 'a' AND b.arm = 'b' AND a.eval_track = 8200").fetchall()
+    assert [tuple(r) for r in rows] == [('bx_a_s1_t8200', 'bx_b_s1_t8200')]
+
+
+def test_connect_adds_eval_track_to_an_existing_database(tmp_path):
+    import sqlite3
+    import lab_db
+    path = str(tmp_path / 'old.db')
+    old = sqlite3.connect(path)
+    old.executescript(lab_db.SCHEMA.replace(
+        """    ingested       TEXT NOT NULL,
+    eval_track     INTEGER                 -- set for frozen-champion evaluations (`_t<track>`)""",
+        "    ingested       TEXT NOT NULL").replace(', r.eval_track', '').replace('seed, eval_track,', 'seed,'))
+    old.execute("INSERT INTO run (name, project, out_dir, status, ingested) VALUES ('k', 'p', '/x', 'finished', 'now')")
+    old.commit(); old.close()
+    db = lab_db.connect(path)
+    assert 'eval_track' in {r[1] for r in db.execute('PRAGMA table_info(run)')}
+    assert db.execute("SELECT name FROM run").fetchone()[0] == 'k'
+    db.execute("SELECT eval_track FROM v_last5").fetchall()
+
+
+def test_drop_battery_reports_only_files_that_still_exist(tmp_path):
+    import lab_db
+    db = lab_db.connect(str(tmp_path / 'lab.db'))
+    kept = tmp_path / 'kept.replay'; kept.write_bytes(b'x' * 10)
+    db.execute("INSERT INTO run (name, project, battery, out_dir, status, ingested)"
+               " VALUES ('bz_a_s1', 'u', 'bz', ?, 'finished', 'now')", (str(tmp_path),))
+    db.execute("INSERT INTO artifact VALUES ('bz_a_s1', 'replay', 0, ?, 10, '')", (str(kept),))
+    db.execute("INSERT INTO artifact VALUES ('bz_a_s1', 'replay', 1, ?, 999, '')", (str(tmp_path / 'gone.replay'),))
+    db.commit()
+    report = lab_db.drop_battery(db, 'bz')
+    assert report['runs_removed'] == 1
+    assert [f['path'] for f in report['files']] == [str(kept)]
+    assert report['missing_files'] == 1 and report['bytes'] == 10
+
+
+def test_connect_on_an_up_to_date_database_writes_nothing(tmp_path):
+    """A reader must not write: the file's bytes and mtime stay put across a second connect."""
+    import os, time
+    import lab_db
+    path = str(tmp_path / 'lab.db')
+    lab_db.connect(path).close()
+    before = (os.path.getsize(path), open(path, 'rb').read(), os.path.getmtime(path))
+    time.sleep(0.05)
+    db = lab_db.connect(path)
+    db.execute('SELECT count(*) FROM v_last5').fetchall()
+    db.close()
+    after = (os.path.getsize(path), open(path, 'rb').read(), os.path.getmtime(path))
+    assert before == after
