@@ -58,11 +58,29 @@ def medians(run: str) -> list[float]:
     return out
 
 
-def discovery(meds: list[float]) -> int | None:
+def discovery(meds: list[float], only_gens: set[int] | None = None) -> int | None:
     for gen, value in enumerate(meds):
+        if only_gens is not None and gen not in only_gens:
+            continue
         if value >= DISCOVERY_M:
             return gen
     return None
+
+
+def tracks_per_generation(run: str) -> dict[int, int]:
+    """Which track each generation ran on, from the log line `[pista] gen N usa seed=S`.
+    Needed because in the rotation arm the discovery ruler is confounded by track difficulty
+    (ledger B5d, declared before the result)."""
+    path = os.path.join(LOGS, f'{run}.log')
+    out: dict[int, int] = {}
+    if not os.path.exists(path):
+        return out
+    with open(path, errors='replace') as f:
+        for line in f:
+            m = re.search(r'\[pista\] gen +(\d+) usa seed=(\d+)', line)
+            if m:
+                out[int(m.group(1))] = int(m.group(2))
+    return out
 
 
 def same_champion(run_a: str, run_b: str) -> bool:
@@ -103,19 +121,24 @@ def main() -> None:
             run = f'b5_{arm}_s{seed}'
             meds = medians(run)
             last5 = db.execute('SELECT impacts_per_km FROM v_last5 WHERE run_name = ?', (run,)).fetchone()
+            tracks = tracks_per_generation(run)
+            on_8005 = {g for g, t in tracks.items() if t == 8005} if tracks else None
             rows[(arm, seed)] = {
                 'gens': len(meds), 'discovery': discovery(meds),
+                # B5d: the comparable ruler holds the track fixed at 8005
+                'discovery_8005': discovery(meds, on_8005),
+                'tracks_seen': sorted(set(tracks.values())),
                 'median_last': meds[-1] if meds else None,
                 'laps_8200': eval_laps(run, 8200), 'laps_8005': eval_laps(run, 8005),
                 'impacts_per_km': float(last5[0]) if last5 and last5[0] is not None else None,
                 'medians': meds,
             }
 
-    print(f"{'run':16s}{'gens':>5s}{'disc':>6s}{'med@last':>9s}{'laps8005':>9s}{'laps8200':>9s}{'imp/km':>8s}")
+    print(f"{'run':16s}{'gens':>5s}{'disc':>6s}{'d8005':>6s}{'med@last':>9s}{'laps8005':>9s}{'laps8200':>9s}{'imp/km':>8s}")
     for arm in ARMS:
         for seed in SEEDS:
             r = rows[(arm, seed)]
-            print(f"{arm + '_s' + str(seed):16s}{r['gens']:5d}{fmt_gen(r['discovery'])}"
+            print(f"{arm + '_s' + str(seed):16s}{r['gens']:5d}{fmt_gen(r['discovery'])}{fmt_gen(r['discovery_8005'])}"
                   f"{(r['median_last'] or 0):9.0f}"
                   f"{(r['laps_8005'] if r['laps_8005'] is not None else float('nan')):9.2f}"
                   f"{(r['laps_8200'] if r['laps_8200'] is not None else float('nan')):9.2f}"
@@ -126,6 +149,12 @@ def main() -> None:
 
     def gen_or_cens(g):
         return GENS if g is None else g
+
+    if complete['rot'] and complete['ctrl']:
+        literal = sum(1 for s in SEEDS if gen_or_cens(rows[('rot', s)]['discovery']) < gen_or_cens(rows[('ctrl', s)]['discovery']))
+        fixed = sum(1 for s in SEEDS if gen_or_cens(rows[('rot', s)]['discovery_8005']) < gen_or_cens(rows[('ctrl', s)]['discovery_8005']))
+        print(f"[B5d] rot discovers earlier than ctrl: literal ruler {literal}/4 (CONFOUNDED by track), "
+              f"8005-only ruler {fixed}/4 (comparable; 9 generations of resolution)")
 
     print('\n=== bets (pre-registered) ===')
     # (a)
