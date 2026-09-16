@@ -429,3 +429,268 @@ tests -- run manually here only to show the raw CLI/Node output.)
   -- see its module docstring.
 - Compression: every block's `compression` is `"none"` in schema_version 1;
   hashing/verification is defined only for that case.
+## S1 — API
+
+# TESTING.md — S1: FastAPI backend (`src/lab_api/`)
+
+Slice S1 (`lab-ui/PRD.md` §8) replaces `src/lab_api.py` (stdlib server) at
+feature parity plus everything else PRD §7 lists, as a FastAPI app in
+`src/lab_api/`: `app.py`/`settings.py`/`auth.py`/`flags.py`/`deps.py` and
+`routes/{db,queue,trace,counterfactual,auth_routes}.py`. `src/lab_api.py`
+itself is untouched (parity first; removal is a later merge decision) and
+`src/lab_api/trace/` (S0) is untouched.
+
+All commands use the project's one Python:
+`/home/leonardo/projects/LLM/.venv-rocm/bin/python`. `/media/llm-data/lab.db`
+is never written by anything below -- every test and manual command uses a
+copy under `/media/llm-data/scratch/s1-api/` or a pytest `tmp_path`. The
+live nmd spool (`/media/llm-data/universe-runs/neuromod-lab-taxi/_nmd/`) is
+never written to either -- a battery may be actively using it; queue writes
+below go to a scratch/temp spool.
+
+## 0. New dependencies
+
+`requirements-api.txt` lists the exact pins; installed one at a time with
+`pip install --no-deps <pkg>==<version>` (never a bare `pip install fastapi`,
+which would let pip resolve its own dependency tree and risk clobbering the
+ROCm `torch` in this venv). Verified with `pip show` first which packages
+were already present.
+
+```
+$ /home/leonardo/projects/LLM/.venv-rocm/bin/pip show fastapi starlette pydantic pydantic-core uvicorn h11 anyio sniffio idna click typing_extensions annotated-types 2>&1 | grep -E "^(Name|Version|WARNING)"
+```
+
+Installed (6 new, `--no-deps` each): `fastapi==0.115.6`, `starlette==0.41.3`,
+`pydantic==2.10.3`, `pydantic-core==2.27.1`, `uvicorn==0.32.1`,
+`sniffio==1.3.1`, `annotated-types==0.7.0`. Already present, untouched:
+`h11==0.16.0`, `anyio==4.14.1`, `idna==3.18`, `click==8.4.2`,
+`typing_extensions==4.15.0`, `pytest==9.1.1`, `httpx==0.28.1` (used by
+`fastapi.testclient.TestClient`).
+
+Verified the ROCm torch survived:
+
+```
+$ /home/leonardo/projects/LLM/.venv-rocm/bin/python -c "
+import fastapi, starlette, pydantic, uvicorn, torch
+print('fastapi', fastapi.__version__, '| starlette', starlette.__version__,
+      '| pydantic', pydantic.VERSION, '| uvicorn', uvicorn.__version__, '| torch', torch.__version__)"
+```
+
+Output:
+```
+fastapi 0.115.6 | starlette 0.41.3 | pydantic 2.10.3 | uvicorn 0.32.1 | torch 2.9.1+rocm6.4
+```
+Exit code: `0`.
+
+## 1. Syntax / compile check
+
+```
+cd /home/leonardo/projects/LLM/.worktrees/neuromod-lab-s1-api/src
+/home/leonardo/projects/LLM/.venv-rocm/bin/python -m py_compile \
+  lab_api/settings.py lab_api/auth.py lab_api/flags.py lab_api/deps.py lab_api/app.py \
+  lab_api/__main__.py lab_api/routes/db.py lab_api/routes/queue.py lab_api/routes/trace.py \
+  lab_api/routes/counterfactual.py lab_api/routes/auth_routes.py && echo "compiled OK"
+```
+
+Output:
+```
+compiled OK
+```
+Exit code: `0`.
+
+## 2. Unit + integration tests (pytest, `fastapi.testclient`)
+
+```
+cd /home/leonardo/projects/LLM/.worktrees/neuromod-lab-s1-api
+/home/leonardo/projects/LLM/.venv-rocm/bin/python -m pytest tests/test_lab_api.py -v
+```
+
+Output (run 2026-09-16, from this worktree, both `Universe/target/release/
+pista_check` and the `lab-ui` fixture present so none of the 59 tests were
+skipped -- the two `@REQUIRES_UNIVERSE`/`@REQUIRES_FIXTURE` skip guards exist
+so this file still runs, with a reduced set, on a checkout missing either):
+
+```
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0 -- .venv-rocm/bin/python
+rootdir: /home/leonardo/projects/LLM/.worktrees/neuromod-lab-s1-api
+plugins: anyio-4.14.1
+collected 59 items
+
+tests/test_lab_api.py::TestAuth::test_loopback_reads_and_writes_need_no_session PASSED
+tests/test_lab_api.py::TestAuth::test_lan_read_without_session_is_401 PASSED
+tests/test_lab_api.py::TestAuth::test_lan_login_wrong_password_is_401 PASSED
+tests/test_lab_api.py::TestAuth::test_login_refused_in_loopback_mode PASSED
+tests/test_lab_api.py::TestAuth::test_lan_login_then_read_succeeds PASSED
+tests/test_lab_api.py::TestAuth::test_lan_write_without_csrf_header_is_403 PASSED
+tests/test_lab_api.py::TestAuth::test_lan_write_with_csrf_header_succeeds_and_audits PASSED
+tests/test_lab_api.py::TestAuth::test_sql_route_absent_under_lan PASSED
+tests/test_lab_api.py::TestAuth::test_sql_route_present_in_loopback PASSED
+tests/test_lab_api.py::TestAuth::test_sql_rejects_non_select PASSED
+tests/test_lab_api.py::TestDbRoutes::test_batteries PASSED
+tests/test_lab_api.py::TestDbRoutes::test_runs_filtered_by_battery_and_replays_count PASSED
+tests/test_lab_api.py::TestDbRoutes::test_run_detail PASSED
+tests/test_lab_api.py::TestDbRoutes::test_run_detail_404 PASSED
+tests/test_lab_api.py::TestDbRoutes::test_predictions PASSED
+tests/test_lab_api.py::TestDbRoutes::test_annotations_round_trip PASSED
+tests/test_lab_api.py::TestDbRoutes::test_annotation_unknown_run_is_404 PASSED
+tests/test_lab_api.py::TestDbRoutes::test_verdict_writes_and_audits PASSED
+tests/test_lab_api.py::TestDbRoutes::test_verdict_bad_status_is_422 PASSED
+tests/test_lab_api.py::TestDbRoutes::test_compare PASSED
+tests/test_lab_api.py::TestQueueRoutes::test_post_writes_atomically_and_no_tmp_file_left PASSED
+tests/test_lab_api.py::TestQueueRoutes::test_post_audits_launch PASSED
+tests/test_lab_api.py::TestQueueRoutes::test_post_rejects_duplicate_id PASSED
+tests/test_lab_api.py::TestQueueRoutes::test_post_rejects_bin_outside_snapshots PASSED
+tests/test_lab_api.py::TestQueueRoutes::test_post_rejects_bin_in_champions_subdir PASSED
+tests/test_lab_api.py::TestQueueRoutes::test_post_rejects_unknown_arm_flag PASSED
+tests/test_lab_api.py::TestQueueRoutes::test_post_accepts_real_arm_flag_and_value_flag PASSED
+tests/test_lab_api.py::TestQueueRoutes::test_post_rejects_switch_flag_with_false_value PASSED
+tests/test_lab_api.py::TestQueueRoutes::test_post_rejects_value_flag_without_value PASSED
+tests/test_lab_api.py::TestQueueRoutes::test_post_rejects_reserved_flag_name PASSED
+tests/test_lab_api.py::TestQueueRoutes::test_post_rejects_invalid_track PASSED
+tests/test_lab_api.py::TestQueueRoutes::test_get_queue_mirrors_pending_request PASSED
+tests/test_lab_api.py::TestQueueRoutes::test_put_edits_pending_request_in_place PASSED
+tests/test_lab_api.py::TestQueueRoutes::test_put_refuses_running_request PASSED
+tests/test_lab_api.py::TestQueueRoutes::test_put_unknown_id_is_404 PASSED
+tests/test_lab_api.py::TestQueueRoutes::test_delete_removes_pending_request PASSED
+tests/test_lab_api.py::TestQueueRoutes::test_delete_refuses_running_request PASSED
+tests/test_lab_api.py::TestQueueRoutes::test_delete_unknown_id_is_404 PASSED
+tests/test_lab_api.py::TestTracksAndSnapshots::test_tracks_validate_real_seed PASSED
+tests/test_lab_api.py::TestTracksAndSnapshots::test_snapshots_lists_binaries_and_champions PASSED
+tests/test_lab_api.py::TestParsePistaCheck::test_no_defects_is_valid PASSED
+tests/test_lab_api.py::TestParsePistaCheck::test_axis_off_track_is_invalid PASSED
+tests/test_lab_api.py::TestParsePistaCheck::test_bottleneck_is_invalid PASSED
+tests/test_lab_api.py::TestParsePistaCheck::test_null_variance_is_invalid PASSED
+tests/test_lab_api.py::TestFlagRegistry::test_loads_real_registry_and_excludes_reserved PASSED
+tests/test_lab_api.py::TestFlagRegistry::test_missing_file_raises PASSED
+tests/test_lab_api.py::TestTraceRoutes::test_manifest_200 PASSED
+tests/test_lab_api.py::TestTraceRoutes::test_manifest_404_when_not_produced PASSED
+tests/test_lab_api.py::TestTraceRoutes::test_block_range_exact_byte_length PASSED
+tests/test_lab_api.py::TestTraceRoutes::test_block_full_range_matches_manifest_length PASSED
+tests/test_lab_api.py::TestTraceRoutes::test_block_hash_is_verified_and_cached PASSED
+tests/test_lab_api.py::TestTraceRoutes::test_unknown_block_is_404 PASSED
+tests/test_lab_api.py::TestTraceRoutes::test_absent_block_names_reason PASSED
+tests/test_lab_api.py::TestTraceRoutes::test_replay_served_as_octet_stream PASSED
+tests/test_lab_api.py::TestTraceRoutes::test_genome_served PASSED
+tests/test_lab_api.py::TestTraceRoutes::test_events_served_as_json PASSED
+tests/test_lab_api.py::TestTraceRoutes::test_weights_absent_with_reason PASSED
+tests/test_lab_api.py::TestTraceRoutes::test_track_absent_with_reason PASSED
+tests/test_lab_api.py::TestCounterfactual::test_returns_501 PASSED
+
+============================== 59 passed in 3.83s ===============================
+```
+Exit code: `0`.
+
+Full worktree regression (S0 + S7 + S1 together, nothing broke each other):
+
+```
+$ /home/leonardo/projects/LLM/.venv-rocm/bin/python -m pytest tests/ -v
+```
+```
+============================== 80 passed in 4.59s ===============================
+```
+Exit code: `0`.
+
+What each test class covers:
+
+| class | covers |
+|---|---|
+| `TestAuth` | loopback = fully open (reads and writes, no cookie); `--lan` = every route (reads included) needs a session (401 without one); wrong password is 401; `/api/login` itself refuses (400) in loopback mode (nothing to log into); a write without the CSRF header is 403 even with a valid session; a write with the CSRF header succeeds AND writes one `lab_db.audit` row; `/api/sql` is a 404 (route absent) under `--lan`, present and working in loopback, rejects non-SELECT |
+| `TestDbRoutes` | every `/api/db/*` route (batteries/runs/run/predictions/annotations/verdict/annotation) plus `/api/compare`, against a small hermetic two-run dataset; `run/{name}` 404 for an unknown run; `annotation` 404 for an unknown run (FK enforced); verdict writes the DB, audits, and 422s on a bad status |
+| `TestQueueRoutes` | POST writes exactly one file (no `.tmp` left over) with the correct pedido shape (`script: universe_run`, `args.bin`/`tracks` etc.); one `launch` audit row; 409 on a duplicate id; 422 for a `bin` outside `snapshots_root` (including one INSIDE `b1-champions/`, a real genome file, not an executable); 422 for an unknown arm flag; 201 for a REAL flag (`--no-neuron-memory`, a switch) and a real value flag (`sigma`) together, read back from the written pedido; 422 for a switch flag given `value: false` (daemon has no way to express "off" other than omitting the flag -- see `DEVIATIONS.md` #3); 422 for a value flag missing its value; 422 for a reserved flag name (`seed`, already a dedicated field); 422 for an invalid track (monkeypatches `validate_track` -- see `DEVIATIONS.md` #1 for why no real seed sampled in this session failed); GET mirrors a pending request via `lab_db.mirror_queue`; PUT edits a pending request IN PLACE (same filename) and 409s on a request marked `rodando` in `estado/`; DELETE removes a pending request and 409s the same way on a running one; both PUT and DELETE 404 on an unknown id |
+| `TestTracksAndSnapshots` | `/api/tracks/validate?seed=8005` against the REAL `pista_check` binary (no GPU) returns `valid: true, issues: []`; `/api/snapshots` lists a fake binary and a fake champion genome from a scratch snapshots tree |
+| `TestParsePistaCheck` | the output-classification function directly, against synthetic text for each defect marker (`AXIS OFF THE TRACK`, `BOTTLENECK`, `NULL VARIANCE`) and the clean case -- see `DEVIATIONS.md` #1 for why `AVISO` (the PRD's own wording) never appears in the real binary's current output |
+| `TestFlagRegistry` | `flags.arm_flag_allow_list()` against the REAL `cli_flags.rs`: a real switch (`no-neuron-memory`, `takes_value=False`) and a real value flag (`sigma`, `True`) are present; `seed`/`out` (reserved, dedicated fields) are excluded; a missing file raises `FlagRegistryError` |
+| `TestTraceRoutes` | manifest 200 on the S0 fixture (symlinked into a scratch `runs_root` at the PRD S5 path); manifest 404 `{"error":"not produced"}` for a run with no trace; a block range's byte length matches `(t1-t0) * row_bytes` exactly, and the full range matches the manifest's own `length`; the block-hash-verification cache (`trace._verified_blocks`) gets exactly one entry after two different tick-range requests to the same block (verified once, not per request); an unknown block name is 404; an absent block (`l1`) 404s naming its manifest `reason`; `replay`/`genome` are served as raw `application/octet-stream` bytes (the replay's magic bytes and the genome's exact byte count checked); `events` is served as JSON; `weights`/`track` (both legitimately absent from this fixture -- "produced by S2") 404 naming that reason |
+| `TestCounterfactual` | the route is present and always answers `501` naming `S2` |
+
+## 3. Manual smoke: a real `uvicorn` instance on a scratch port + curl
+
+Never touches port 8130 (where a real instance might run) or the live spool.
+
+```
+cd /home/leonardo/projects/LLM/.worktrees/neuromod-lab-s1-api/src
+mkdir -p /media/llm-data/scratch/s1-api/spool/{pedidos,estado,feitos,recusados}
+mkdir -p /media/llm-data/scratch/s1-api/runs_root/b2_cost_s113/trace/gen0000/being00
+ln -sfn /home/leonardo/projects/LLM/lab-ui/fixtures/trace-v1/universe-b2-gen0 \
+  /media/llm-data/scratch/s1-api/runs_root/b2_cost_s113/trace/gen0000/being00/champion
+cp /media/llm-data/lab.db /media/llm-data/scratch/s1-api/lab.db
+
+PYTHONPATH=. /home/leonardo/projects/LLM/.venv-rocm/bin/python -m lab_api --port 8131 \
+  --db /media/llm-data/scratch/s1-api/lab.db \
+  --spool /media/llm-data/scratch/s1-api/spool \
+  --runs-root /media/llm-data/scratch/s1-api/runs_root \
+  --snapshots-root /media/llm-data/snapshots &
+sleep 2
+
+curl -s http://127.0.0.1:8131/api/health
+curl -s http://127.0.0.1:8131/api/db/batteries | head -c 300
+curl -s "http://127.0.0.1:8131/api/sql?q=select+1+as+one"
+curl -s "http://127.0.0.1:8131/api/trace/b2_cost_s113/0/0/champion" | head -c 200
+curl -s -o /dev/null -w "block bytes: %{size_download}\n" \
+  "http://127.0.0.1:8131/api/trace/b2_cost_s113/0/0/champion/block/cfc?t0=0&t1=10"
+curl -s "http://127.0.0.1:8131/api/tracks/validate?seed=8005"
+curl -s "http://127.0.0.1:8131/api/snapshots" | head -c 300
+curl -s -X POST "http://127.0.0.1:8131/api/counterfactual" \
+  -H 'Content-Type: application/json' -d '{"trace":"x","tick":1,"remove":[]}' -w "\nHTTP %{http_code}\n"
+curl -s -X POST http://127.0.0.1:8131/api/queue -H 'Content-Type: application/json' -d '{
+  "id":"curlsmoke","bin":"/media/llm-data/snapshots/gpu_evolve-f5d203b",
+  "gens":2,"ticks":100,"beings":4,"seed":1,"tracks":[8005]
+}' -w "\nHTTP %{http_code}\n"
+ls /media/llm-data/scratch/s1-api/spool/pedidos/
+curl -s http://127.0.0.1:8131/api/queue
+curl -s -X DELETE http://127.0.0.1:8131/api/queue/curlsmoke -w "\nHTTP %{http_code}\n"
+ls /media/llm-data/scratch/s1-api/spool/pedidos/    # empty again
+```
+
+Actual output (run 2026-09-16):
+
+```
+{"ok":true,"lan":false}
+[{"battery":"b5","runs":16,"finished":8,"arms":4,"seeds":4,"first_written":"2026-09-16T00:57:49+00:00","last_written":"2026-09-16T11:57:45+00:00"},{"battery":"b2","runs":8,"finished":0,"arms":2,"seeds":6,"first_written":"2026-09-16T00:38:28+00:00","last_written":"2026-09-16T00:39:23+00:00"},{"battery":"b1","runs":24,"finished":24,"arms":4,"seeds":6,"first_wr
+[{"one":1}]
+{"magic":"trace-v1","schema_version":1,"endian":"little","run":"b2_cost_s113","generation":0,"being":0,"being_selection":"fixed_population_slot_0 (--vision-be
+block bytes: 3840
+{"seed":8005,"width":28.0,"ate":600.0,"valid":true,"issues":[]}
+{"binaries":[{"name":"gpu_evolve-f5d203b","path":"/media/llm-data/snapshots/gpu_evolve-f5d203b","bytes":11381640,"mtime":"2026-09-16T00:26:32","executable":true},{"name":"universe_pos_E1_20260813_1517.tar.gz","path":"/media/llm-data/snapshots/universe_pos_E1_20260813_1517.tar.gz","bytes":733964,"mtime":"2026-08-13T18:17:45","executable":false}],"champions":[{"name":"b1_fixed_s113.bin","path":"/med
+{"detail":{"error":"needs the brain_step reference forward from S2"}}
+HTTP 501
+{"id":"curlsmoke","path":"/media/llm-data/scratch/s1-api/spool/pedidos/lab-ui_curlsmoke.json","pedido":{"id":"curlsmoke","script":"universe_run","out":"curlsmoke","env":{},"args":{"bin":"/media/llm-data/snapshots/gpu_evolve-f5d203b","gens":2,"ticks":100,"beings":4,"width":28.0,"seed":1,"tracks":[8005]}}}
+HTTP 201
+lab-ui_curlsmoke.json
+[{"id":"curlsmoke","state":"pending","script":"universe_run","out":"curlsmoke","args_json":"{\"bin\": \"/media/llm-data/snapshots/gpu_evolve-f5d203b\", \"gens\": 2, \"ticks\": 100, \"beings\": 4, \"width\": 28.0, \"seed\": 1, \"tracks\": [8005]}","file_path":"/media/llm-data/scratch/s1-api/spool/pedidos/lab-ui_curlsmoke.json","seen":"2026-09-16 12:04:34"}]
+{"removed":true,"id":"curlsmoke"}
+HTTP 200
+(pedidos/ empty)
+```
+
+Server stopped afterward (`kill` on its pid) and scratch spool/runs_root
+removed; only `/media/llm-data/scratch/s1-api/lab.db` (a copy) was kept.
+`/media/llm-data/lab.db`'s mtime was never touched by anything above --
+every command here used `--db /media/llm-data/scratch/s1-api/lab.db`
+explicitly. Note: `/api/db/batteries` shows a `b5` battery in this run --
+that is real data ingested by something else in the system between the
+scratch DB copy and this command, not written by this slice; S1 never
+calls `lab_db.ingest_*`.
+
+## What is NOT tested here
+
+- `/ws/live` -- not this slice's route (S6).
+- `POST /api/counterfactual`'s actual computation -- needs S2's `brain_step`
+  reference forward; this slice only proves the route exists, is
+  auth-gated, and answers 501 with the right message.
+- The trace PRODUCER (`observation.jsonl` -> `neural.trace`) -- S2. This
+  slice only serves a trace-v1 directory that already exists.
+- `pista_check` classifying a REAL seed as invalid end-to-end -- every seed
+  sampled while writing this slice came back clean; see `DEVIATIONS.md` #1
+  for the seeds tried and how the "invalid track" path is covered instead
+  (parser unit tests + a monkeypatched integration test).
+
+## Deviations
+
+See `src/lab_api/DEVIATIONS.md` -- five items: `pista_check`'s real defect
+markers vs. the PRD's stale "AVISO" wording; confirming (not deviating)
+that `--bin` validates against `/media/llm-data/snapshots/` by reading a
+real live pedido; switch flags never accept `value: false`; every route
+(not just writes) requires a session under `--lan`; `/api/snapshots`'
+"binaries" is every top-level file, not a guessed subset.

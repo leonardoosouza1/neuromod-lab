@@ -1,0 +1,24 @@
+# S1 additions to the project's one Python (/home/leonardo/projects/LLM/.venv-rocm/bin/python).
+#
+# Installed with `pip install --no-deps <pkg>==<version>` for EACH line below,
+# one at a time -- never a bare `pip install fastapi`, which would let pip
+# pull in its own dependency versions and risk clobbering the ROCm torch
+# install in this venv (see LLM/CLAUDE.md's Python convention). Verified with
+# `pip show <pkg>` before installing that none of these were already present
+# except the six marked "(already present)" below, which needed no action.
+#
+# fastapi's own (unenforced, since we used --no-deps) requirements at 0.115.6
+# are starlette>=0.40.0,<0.42.0 and pydantic>=1.7.4,!=1.8,!=1.8.1,!=2.0.0,
+# !=2.0.1,!=2.1.0,<3.0.0 -- both satisfied by the pins below.
+fastapi==0.115.6
+starlette==0.41.3
+pydantic==2.10.3
+pydantic-core==2.27.1
+uvicorn==0.32.1
+sniffio==1.3.1
+annotated-types==0.7.0
+
+# Already present in .venv-rocm before this slice (verified with `pip show`,
+# NOT reinstalled): h11==0.16.0, anyio==4.14.1, idna==3.18, click==8.4.2,
+# typing_extensions==4.15.0, pytest==9.1.1, httpx==0.28.1 (used by
+# fastapi.testclient.TestClient).
