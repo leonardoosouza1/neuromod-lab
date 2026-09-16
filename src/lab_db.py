@@ -44,8 +44,17 @@ from typing import Any, Iterable
 
 DEFAULT_PATH = '/media/llm-data/lab.db'
 
-# `b1_legacy_nocost_s113` -> battery b1, arm legacy_nocost, seed 113.
-RUN_NAME = re.compile(r'^(?P<battery>[a-z][a-z0-9]*)_(?P<arm>.+)_s(?P<seed>\d+)$')
+# `b1_legacy_nocost_s113`   -> battery b1, arm legacy_nocost, seed 113.
+# `b3_fixed_s31_t8005`      -> battery b3, arm fixed, seed 31, eval_track 8005.
+# `b5_ctrl_s31_eval_t8200`  -> battery b5, arm ctrl, seed 31, eval_track 8200.
+# The track suffix marks a frozen-champion evaluation on that track. Without it in the
+# pattern those runs parsed to battery/arm NULL (found by lab-ui S3, 16/09), and once parsed
+# they must never be paired against a training run or against another track of the same seed.
+RUN_NAME = re.compile(
+    r'^(?P<battery>[a-z][a-z0-9]*)_(?P<arm>.+?)_s(?P<seed>\d+)(?P<eval>_eval)?(?:_t(?P<track>\d+))?$')
+
+# Columns added after the first release of the schema; `connect()` adds them in place.
+RUN_COLUMNS_ADDED = (('eval_track', 'INTEGER'),)
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS run (
@@ -70,7 +79,8 @@ CREATE TABLE IF NOT EXISTS run (
     command_json   TEXT,
     args_json      TEXT,
     config_json    TEXT,                   -- driving.meta.json: which code paths were live
-    ingested       TEXT NOT NULL
+    ingested       TEXT NOT NULL,
+    eval_track     INTEGER                 -- set for frozen-champion evaluations (`_t<track>`)
 );
 
 -- One row per generation: the population summary the panel and most queries need.
@@ -226,11 +236,11 @@ CREATE INDEX IF NOT EXISTS idx_queue_mirror_state ON queue_mirror(state);
 -- as ratios of sums. Kept as a view so the definition lives in exactly one place.
 CREATE VIEW IF NOT EXISTS v_last5 AS
 WITH ranked AS (
-    SELECT d.*, r.battery, r.arm, r.seed,
+    SELECT d.*, r.battery, r.arm, r.seed, r.eval_track,
            ROW_NUMBER() OVER (PARTITION BY d.run_name ORDER BY d.gen DESC) AS from_end
       FROM driving d JOIN run r ON r.name = d.run_name
 )
-SELECT run_name, battery, arm, seed,
+SELECT run_name, battery, arm, seed, eval_track,
        COUNT(*)                                             AS gens_used,
        100.0 * SUM(brake_ticks)    / NULLIF(SUM(alive_ticks), 0) AS brake_pct_alive,
        100.0 * SUM(overlap_ticks)  / NULLIF(SUM(alive_ticks), 0) AS overlap_pct_alive,
@@ -260,6 +270,14 @@ def connect(path: str = DEFAULT_PATH) -> sqlite3.Connection:
     db.row_factory = sqlite3.Row
     db.execute('PRAGMA foreign_keys = ON')
     db.execute('PRAGMA journal_mode = WAL')
+    # An existing database keeps its old table and view: `CREATE ... IF NOT EXISTS` adds no
+    # column and replaces no view. Add missing columns, then rebuild the view from SCHEMA.
+    existing = {row[1] for row in db.execute('PRAGMA table_info(run)')}
+    if existing:
+        for column, kind in RUN_COLUMNS_ADDED:
+            if column not in existing:
+                db.execute(f'ALTER TABLE run ADD COLUMN {column} {kind}')
+        db.execute('DROP VIEW IF EXISTS v_last5')
     db.executescript(SCHEMA)
     return db
 
@@ -331,6 +349,7 @@ def ingest_run(db: sqlite3.Connection, out_dir: str, project: str = 'universe',
     battery = battery or (match.group('battery') if match else None)
     arm = match.group('arm') if match else None
     seed = int(match.group('seed')) if match else args.get('seed')
+    eval_track = int(match.group('track')) if match and match.group('track') else None
 
     config = None
     meta_path = os.path.join(out_dir, 'driving.meta.json')
@@ -359,14 +378,16 @@ def ingest_run(db: sqlite3.Connection, out_dir: str, project: str = 'universe',
     db.execute(
         'INSERT INTO run (name, project, battery, arm, seed, out_dir, status, written,'
         ' lab_commit, script_sha256, gens_requested, gens_complete, ticks, beings, width,'
-        ' tracks, wall_cost, impact_cost, command_json, args_json, config_json, ingested)'
-        " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?, datetime('now'))",
+        ' tracks, wall_cost, impact_cost, command_json, args_json, config_json, ingested,'
+        ' eval_track)'
+        " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?, datetime('now'), ?)",
         (name, project, battery, arm, seed, out_dir, status, manifest.get('written'),
          manifest.get('lab_commit'), manifest.get('script_sha256'),
          args.get('gens'), gens_complete, args.get('ticks'), args.get('beings'),
          args.get('width'), json.dumps(args.get('tracks')),
          args.get('wall-cost'), args.get('impact-cost'),
-         json.dumps(manifest.get('command')), json.dumps(args), json.dumps(config)))
+         json.dumps(manifest.get('command')), json.dumps(args), json.dumps(config),
+         eval_track))
 
     for filename in population:
         gen = int(re.search(r'(\d+)', filename).group(1))
@@ -557,7 +578,8 @@ def curve(db: sqlite3.Connection, run_name: str, metric: str = 'median_progress_
 
 
 def paired(db: sqlite3.Connection, battery: str, left: str, right: str,
-           metric: str = 'brake_pct_alive', include_running: bool = False) -> dict[str, Any]:
+           metric: str = 'brake_pct_alive', include_running: bool = False,
+           eval_track: int | None = None) -> dict[str, Any]:
     """The project's standard comparison: same seed both sides, effect size and how many
     seeds agree in DIRECTION -- never sigma on its own (memory `replicacao_vs_sigma`).
 
@@ -566,14 +588,23 @@ def paired(db: sqlite3.Connection, battery: str, left: str, right: str,
     that reached 30 -- the effective-generations confound that invalidated prediction 180
     in the taxi laboratory. `include_running=True` asks for an interim look and makes it
     the caller's responsibility to label the result as one.
+
+    `eval_track=None` (default) compares TRAINING runs only. `eval_track=8200` compares the
+    frozen-champion evaluations of both arms on that track. The two are never mixed: a
+    training run and an evaluation of its champion share arm and seed, and before 16/09 a
+    name like `b3_fixed_s31_t8005` did not even parse.
     """
     condition = '' if include_running else " AND ra.status = 'finished' AND rb.status = 'finished'"
     rows = db.execute(
         f'SELECT a.seed, a.{metric} AS l, b.{metric} AS r'
         ' FROM v_last5 a JOIN v_last5 b ON a.seed = b.seed AND a.battery = b.battery'
+        # a training run pairs with a training run; an evaluation only with an evaluation
+        # of the same seed ON THE SAME TRACK -- never 8005 against 8200
+        ' AND a.eval_track IS b.eval_track'
         ' JOIN run ra ON ra.name = a.run_name JOIN run rb ON rb.name = b.run_name'
-        f' WHERE a.battery = ? AND a.arm = ? AND b.arm = ?{condition} ORDER BY a.seed',
-        (battery, left, right)).fetchall()
+        f' WHERE a.battery = ? AND a.arm = ? AND b.arm = ? AND a.eval_track IS ?{condition}'
+        ' ORDER BY a.seed',
+        (battery, left, right, eval_track)).fetchall()
     diffs = [(row['seed'], row['l'] - row['r']) for row in rows]
     if not diffs:
         return {'metric': metric, 'n': 0, 'mean': None, 'per_seed': [], 'agree': 0}
@@ -791,6 +822,8 @@ def main() -> None:
     p.add_argument('right')
     p.add_argument('--metric', default='brake_pct_alive')
     p.add_argument('--include-running', action='store_true')
+    p.add_argument('--eval-track', type=int, default=None,
+                   help='compare champion evaluations on this track instead of training runs')
 
     p = sub.add_parser('predictions', help='index a markdown prediction ledger')
     p.add_argument('doc', nargs='+')
@@ -819,7 +852,7 @@ def main() -> None:
     elif a.command == 'list':
         _print_table(runs(db, battery=a.battery) if a.battery else batteries(db))
     elif a.command == 'compare':
-        result = paired(db, a.battery, a.left, a.right, a.metric, a.include_running)
+        result = paired(db, a.battery, a.left, a.right, a.metric, a.include_running, a.eval_track)
         if not result['n']:
             print('no paired seeds for those arms')
             return

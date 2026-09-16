@@ -33,8 +33,23 @@ from lab_api.trace import reference_decoder as rd  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 # .worktrees/neuromod-lab-s0-contract/tests -> .worktrees/neuromod-lab-s0-contract -> .worktrees -> LLM
-LLM_ROOT = Path(os.environ.get("LLM_ROOT", REPO_ROOT.parents[1]))
-LAB_UI_REPO = Path(os.environ.get("LAB_UI_REPO", LLM_ROOT / "lab-ui"))
+
+
+def _find_lab_ui() -> Path:
+    """The lab-ui checkout is a sibling of this repository in the main layout
+    (`LLM/neuromod-lab` next to `LLM/lab-ui`) and two levels up from a slice worktree
+    (`LLM/.worktrees/<slice>`). The first version looked only two levels up, so on the main
+    checkout it resolved to `~/projects/lab-ui`, found nothing and SKIPPED the whole
+    contract suite silently (found 16/09). Both layouts are tried; `LAB_UI_REPO` wins."""
+    if "LAB_UI_REPO" in os.environ:
+        return Path(os.environ["LAB_UI_REPO"])
+    for candidate in (REPO_ROOT.parent / "lab-ui", REPO_ROOT.parents[1] / "lab-ui"):
+        if (candidate / "contract").is_dir():
+            return candidate
+    return REPO_ROOT.parent / "lab-ui"
+
+
+LAB_UI_REPO = _find_lab_ui()
 FIXTURE_DIR = LAB_UI_REPO / "fixtures" / "trace-v1" / "universe-b2-gen0"
 CONTRACT_DIR = LAB_UI_REPO / "contract"
 VENDORED_SCHEMA = REPO_ROOT / "src" / "lab_api" / "trace" / "trace-v1.schema.json"
@@ -47,9 +62,10 @@ SCRATCH_DIR = Path("/media/llm-data/scratch/s0-contract/test-corrupt-fixture")
 
 def _require_fixture():
     if not FIXTURE_DIR.exists():
-        pytest.skip(
+        pytest.fail(
             f"fixture not found at {FIXTURE_DIR} -- set LAB_UI_REPO to the lab-ui "
-            "checkout if it is not a sibling of this repo's parent directory"
+            "checkout. This is a failure, not a skip: a contract suite that disappears "
+            "without failing hides exactly the drift it exists to catch"
         )
 
 
