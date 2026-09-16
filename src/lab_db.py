@@ -345,7 +345,15 @@ def ingest_run(db: sqlite3.Connection, out_dir: str, project: str = 'universe',
 
     population = sorted(f for f in os.listdir(out_dir) if f.startswith('population_gen'))
     gens_complete = len(population)
-    status = 'finished' if gens_complete >= int(args.get('gens', 0) or 0) > 0 else 'running'
+    requested = int(args.get('gens', 0) or 0)
+    if requested > 0:
+        status = 'finished' if gens_complete >= requested else 'running'
+    elif manifest.get('simulation_exit') is not None:
+        # A run launched outside the nmd wrapper (Astra's `Universe/artifacts/*`) carries a raw
+        # argv and no `args`; the wrapper that wrote it records the exit code instead.
+        status = 'finished' if int(manifest['simulation_exit']) == 0 else 'failed'
+    else:
+        status = 'running'
 
     db.execute('DELETE FROM run WHERE name = ?', (name,))
     db.execute(
