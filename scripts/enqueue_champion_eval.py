@@ -20,11 +20,13 @@ import fnmatch
 import glob
 import json
 import os
+import re
 import shutil
 
 BASE = '/media/llm-data/universe-runs/neuromod-lab-taxi'
 SPOOL = os.path.join(BASE, '_nmd')
 SNAPSHOTS = '/media/llm-data/snapshots'
+EVAL_SUFFIX = re.compile(r'_eval_t\d+')
 
 # Flags that describe HOW the champion was trained and must follow it into evaluation.
 INHERITED = ('bin', 'width', 'wall-cost', 'impact-cost', 'throttle-arbitration', 'wall-probes',
@@ -58,8 +60,14 @@ def main() -> None:
 
     runs = list(a.runs)
     if a.glob:
+        # An evaluation directory (`<run>_eval_t<track>`) also matches a pattern like
+        # `b5_rot_s*`; on 16/09 that queued 16 evaluations of evaluations. Only training runs
+        # are champions.
         runs += sorted(d for d in os.listdir(BASE) if fnmatch.fnmatch(d, a.glob)
-                       and os.path.isdir(os.path.join(BASE, d)))
+                       and os.path.isdir(os.path.join(BASE, d)) and EVAL_SUFFIX.search(d) is None)
+    for run in runs:
+        if EVAL_SUFFIX.search(run):
+            raise SystemExit(f'{run} is itself an evaluation, not a training run')
     queued = 0
     for run in runs:
         req = training_request(run)
