@@ -131,10 +131,13 @@ def validate_bin(settings: Settings, bin_path: str) -> Path:
 _track_cache: dict[tuple[str, int, float, float], dict] = {}
 
 # Substrings `pista_check`'s current (English) output uses to mark a defect at one
-# examined point. "AVISO" is the PRD's own (stale, pre-English-rename) wording for
-# this -- kept as a harmless extra match in case an older/renamed build still emits
-# it; see DEVIATIONS.md #1 for why the PRD text does not win here.
+# examined point. "AVISO" is kept as a harmless extra match on stdout in case some
+# build ever prints it there too -- see DEVIATIONS.md #1 for where it ACTUALLY
+# comes from (stderr, via `world.rs::procedural_waypoints`'s fallback, not
+# `pista_check.rs` itself) and why it needs its own stderr check below.
 _DEFECT_MARKERS = ("AXIS OFF THE TRACK", "BOTTLENECK", "NULL VARIANCE", "AVISO")
+
+_LAP_RE = re.compile(r"lap\s+(\d+(?:\.\d+)?)\s*m")
 
 
 def _parse_pista_check(output: str) -> tuple[bool, list[str]]:
@@ -144,31 +147,70 @@ def _parse_pista_check(output: str) -> tuple[bool, list[str]]:
     return valid, issues
 
 
-def validate_track(settings: Settings, seed: int, width: float = 28.0, ate: float = 600.0) -> dict:
-    """Runs `pista_check --seed <seed> --width <width> --ate <ate>` (CPU-only, no
-    GPU, no `gpu_evolve`) and classifies the track as drivable or not. Cached by
-    `(seed, width, ate)` for the life of the process.
-    """
-    key = (settings.universe_root, seed, width, ate)
-    if key in _track_cache:
-        return _track_cache[key]
-
+def _pista_check_binary(settings: Settings) -> Path:
     binary = Path(settings.universe_root) / "target" / "release" / "pista_check"
     if not binary.is_file():
         raise FileNotFoundError(f"pista_check binary not found at {binary} (cargo build --release)")
+    return binary
+
+
+def _lap_distance(binary: Path, seed: int, width: float) -> float:
+    """Cheap probe (`--ate 1`, walks almost nothing) that still prints the FULL lap
+    length in `pista_check`'s header line ("... lap N m ..."). Used so track
+    validation always covers the whole lap, not just the first 600 m the binary's
+    own `--ate` default stops at -- the cold tester's finding: seed 8215's only
+    defects sit at 1152 m, past that default window, and `gpu_evolve` itself
+    refuses a track like that at launch no matter where the defect sits.
+    """
     try:
         result = subprocess.run(
-            [str(binary), "--seed", str(seed), "--width", str(width), "--ate", str(ate)],
+            [str(binary), "--seed", str(seed), "--width", str(width), "--ate", "1"],
+            capture_output=True, text=True, timeout=20,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise TimeoutError(f"pista_check --seed {seed} (lap probe) timed out after 20s") from exc
+    m = _LAP_RE.search(result.stdout)
+    if not m:
+        raise ValueError(f"pista_check --seed {seed}: could not read lap distance from --ate 1 probe output")
+    return float(m.group(1))
+
+
+def validate_track(settings: Settings, seed: int, width: float = 28.0, ate: float | None = None) -> dict:
+    """Runs `pista_check --seed <seed> --width <width> --ate <ate>` (CPU-only, no
+    GPU, no `gpu_evolve`) and classifies the track as drivable or not. `ate=None`
+    (the default, used by `validate_experiment`) resolves to the FULL lap via
+    `_lap_distance()` first -- an explicit `ate` is still honoured as-is for
+    callers that want a cheap partial peek. Refuses (valid=False) on any of:
+    `pista_check` exiting non-zero, a defect line in stdout (`_parse_pista_check`),
+    or `[AVISO]` on stderr -- `world.rs::procedural_waypoints` prints that when its
+    generator fell back to an UNVALIDATED reserve candidate after 96 failed
+    attempts (seed 8300: exit 0, "No defects" in the examined stretch, AVISO on
+    stderr regardless) -- see DEVIATIONS.md #1. Cached by `(seed, width, resolved
+    ate)` for the life of the process.
+    """
+    binary = _pista_check_binary(settings)
+    resolved_ate = ate if ate is not None else _lap_distance(binary, seed, width)
+
+    key = (settings.universe_root, seed, width, resolved_ate)
+    if key in _track_cache:
+        return _track_cache[key]
+
+    try:
+        result = subprocess.run(
+            [str(binary), "--seed", str(seed), "--width", str(width), "--ate", str(resolved_ate)],
             capture_output=True, text=True, timeout=20,
         )
     except subprocess.TimeoutExpired as exc:
         raise TimeoutError(f"pista_check --seed {seed} timed out after 20s") from exc
 
     valid, issues = _parse_pista_check(result.stdout)
+    if "[AVISO]" in result.stderr:
+        valid = False
+        issues = issues + [f"pista_check stderr: {result.stderr.strip()[:300]}"]
     if result.returncode != 0:
         valid = False
         issues = issues + [f"pista_check exited {result.returncode}: {result.stderr.strip()[:300]}"]
-    report = {"seed": seed, "width": width, "ate": ate, "valid": valid, "issues": issues}
+    report = {"seed": seed, "width": width, "ate": resolved_ate, "valid": valid, "issues": issues}
     _track_cache[key] = report
     return report
 
@@ -393,7 +435,7 @@ def delete_queue(
 
 @router.get("/api/tracks/validate")
 def get_tracks_validate(
-    seed: int, width: float = 28.0, ate: float = 600.0,
+    seed: int, width: float = 28.0, ate: float | None = None,
     settings: Settings = Depends(get_settings),
 ) -> dict:
     try:

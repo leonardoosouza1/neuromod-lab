@@ -375,12 +375,13 @@ class TestQueueRoutes:
         assert r.status_code == 422
 
     def test_post_rejects_invalid_track(self, client: TestClient, snapshots_root: Path, monkeypatch):
-        # See DEVIATIONS.md #1: no naturally-failing seed was found while writing this
-        # slice, so the "refuses an invalid track" path is proven by making the
-        # validator itself report invalid, and checking the route actually consults it.
+        # Unit-level: proves the route actually consults validate_track's verdict
+        # and refuses before writing anything to the spool. The real-binary
+        # equivalents (seed 8215, 8300) live in TestTracksAndSnapshots below --
+        # see DEVIATIONS.md #1, no longer "no naturally-failing seed found".
         import lab_api.routes.queue as queue_mod
 
-        def fake_invalid(settings, seed, width=28.0, ate=600.0):
+        def fake_invalid(settings, seed, width=28.0, ate=None):
             return {"seed": seed, "width": width, "ate": ate, "valid": False,
                     "issues": ["  270    Road    3.0m    2.0m    99999m  ← BOTTLENECK"]}
 
@@ -464,6 +465,57 @@ class TestTracksAndSnapshots:
         assert body["seed"] == 8005
         assert body["valid"] is True
         assert body["issues"] == []
+
+    # Cold tester's finding: `pista_check` exits 0 for seed 8300 but prints
+    # "[AVISO] ... falling back to unvalidated reserve candidate" on STDERR, which
+    # validate_track used to read only when returncode != 0 -- so POST /api/queue
+    # returned 201 instead of 422. Also, without a full-lap `--ate`, seed 8215's 4
+    # defects (at 1152 m) sit past the binary's own 600 m default and were never
+    # seen. `validate_track`'s default `ate=None` now walks the FULL lap and always
+    # checks stderr for `[AVISO]`, regardless of exit code.
+    @REQUIRES_UNIVERSE
+    def test_tracks_validate_refuses_aviso_fallback_seed(self, client: TestClient):
+        r = client.get("/api/tracks/validate", params={"seed": 8300})
+        assert r.status_code == 200
+        body = r.json()
+        assert body["valid"] is False
+        assert any("AVISO" in i for i in body["issues"])
+
+    @REQUIRES_UNIVERSE
+    def test_tracks_validate_refuses_defect_past_600m(self, client: TestClient):
+        r = client.get("/api/tracks/validate", params={"seed": 8215})
+        assert r.status_code == 200
+        body = r.json()
+        assert body["valid"] is False
+        assert body["ate"] > 600.0
+        assert any("AXIS OFF THE TRACK" in i for i in body["issues"])
+
+    @REQUIRES_UNIVERSE
+    def test_tracks_validate_accepts_clean_seed_8200(self, client: TestClient):
+        r = client.get("/api/tracks/validate", params={"seed": 8200})
+        assert r.status_code == 200
+        body = r.json()
+        assert body["valid"] is True
+        assert body["issues"] == []
+
+    @REQUIRES_UNIVERSE
+    def test_post_queue_refuses_aviso_fallback_track(self, client: TestClient, snapshots_root: Path):
+        body = _valid_experiment_body(snapshots_root / "gpu_evolve-testbin", id="t-8300", tracks=[8300])
+        r = client.post("/api/queue", json=body)
+        assert r.status_code == 422
+        assert "AVISO" in r.json()["detail"]["error"]
+
+    @REQUIRES_UNIVERSE
+    def test_post_queue_refuses_out_of_window_defect_track(self, client: TestClient, snapshots_root: Path):
+        body = _valid_experiment_body(snapshots_root / "gpu_evolve-testbin", id="t-8215", tracks=[8215])
+        r = client.post("/api/queue", json=body)
+        assert r.status_code == 422
+
+    @REQUIRES_UNIVERSE
+    def test_post_queue_accepts_clean_track_8200(self, client: TestClient, snapshots_root: Path):
+        body = _valid_experiment_body(snapshots_root / "gpu_evolve-testbin", id="t-8200", tracks=[8200])
+        r = client.post("/api/queue", json=body)
+        assert r.status_code == 201, r.text
 
     def test_snapshots_lists_binaries_and_champions(self, client: TestClient):
         r = client.get("/api/snapshots")

@@ -3,48 +3,61 @@
 Per the task rule: when the PRD and the code disagree, the code wins, and the
 disagreement is written down here rather than silently "fixed" in the PRD.
 
-## 1. `pista_check` never prints "AVISO"
+## 1. `pista_check` DOES print "[AVISO]" -- from `world.rs`, on stderr, not from `pista_check.rs` itself (CORRECTED, see below)
 
-PRD S1 task brief: "tracks must pass `GET /api/tracks/validate` = run
-`pista_check --seed N` and treat any line containing `AVISO` as invalid."
+**This item originally said "AVISO" never appears and no naturally-failing
+seed existed. Both claims were wrong; the cold tester found the gap this
+caused (`POST /api/queue` returned 201 for seed 8300 instead of 422) and it
+is fixed as of this commit.** Kept below (struck out) for the record, then
+the correction.
 
-Read `Universe/src/bin/pista_check.rs` in full (228 lines) and ran it against
-several seeds (`8005`, `9001`, `1`, `2`, `3`, `42`, `100`, `7000`, `8200`,
-widths `28` and `60`): the string `"AVISO"` does not appear anywhere in the
-binary's source, and none of these runs printed it. This is consistent with
-the project's 12/09 "English-only code" rule (`CLAUDE.md` memory
-`feedback_english_only_code`) -- `pista_check.rs` was rewritten in English at
-some point after the PRD prose was drafted, and the PRD's "AVISO" line is
-stale.
+~~Read `Universe/src/bin/pista_check.rs` in full (228 lines) [...] the string
+`"AVISO"` does not appear anywhere in the binary's source [...] no naturally-
+failing seed was found.~~ The miss: `"AVISO"` was grepped only in
+`pista_check.rs` itself. It actually lives in `Universe/src/world.rs`
+(`procedural_waypoints()`'s fallback path, `eprintln!`, not `println!`) --
+printed when the track generator's 96 candidate attempts all fail
+`validate_track` and it falls back to an UNVALIDATED reserve candidate. That
+code path runs from `VoxelWorld::new()`, which `pista_check` calls too, so
+`pista_check --seed 8300` prints `"[AVISO] procedural_waypoints(seed=8300):
+96 tentativas de geração falharam ... caindo no candidato de reserva SEM
+validação geométrica"` **to stderr**, exits `0`, and its own point-by-point
+walk (within whatever `--ate` window was examined) may still report "No
+defects" -- the fallback candidate's defect, if any, need not fall inside
+that window.
 
-What the binary actually prints per examined point, on a defect: `"  ←
+What the binary prints on **stdout** per examined point, on a defect: `"  ←
 AXIS OFF THE TRACK"` (axis lands off `VoxelType::Road`) or `"  ← BOTTLENECK"`
-(free width `< width * 0.5`), plus a separate diagnostic block that prints
-`"→ NULL VARIANCE: ..."` when the frontal-vision sensor is constant. The
-closing summary line is either `"No defects: ..."` (drivable) or `"<N> points
-with defects in the examined stretch."` (not drivable). The binary's own exit
-code is always `0` either way -- it never signals failure through the process
-exit status, only through stdout text.
+(free width `< width * 0.5`), plus a diagnostic block that prints `"→ NULL
+VARIANCE: ..."` when the frontal-vision sensor is constant, closing with
+either `"No defects: ..."` (drivable) or `"<N> points with defects in the
+examined stretch."`. The process exit code is always `0` regardless of
+stdout content -- only the `[AVISO]` line (stderr) and the stdout defect
+markers carry a refusal signal; there is no non-zero exit to lean on.
 
-`routes/queue.py`'s `_parse_pista_check()` therefore classifies a track as
-valid when the output contains `"No defects:"` AND none of
-`("AXIS OFF THE TRACK", "BOTTLENECK", "NULL VARIANCE", "AVISO")` appear on any
-line. `"AVISO"` is kept in that tuple as a harmless, currently-dead extra
-match -- if some future or alternate build of `pista_check` reintroduces
-Portuguese wording, this code keeps working without a change; it is not load-
-bearing for any seed exercised in this slice's tests.
+Two real, independent gaps this closed, both now covered by
+`tests/test_lab_api.py::TestTracksAndSnapshots` against the REAL binary:
 
-**Consequence for testing:** every seed this session sampled (see above,
-including the fixture's own `8005`) came back "No defects" -- track
-generation in the current `VoxelWorld` appears robust for these seeds/widths,
-so no naturally-failing seed was found to exercise the "queue POST refuses an
-invalid track" path end-to-end against the real binary. `tests/test_lab_api.py`
-covers this two ways instead: (a) a pure unit test of `_parse_pista_check()`
-against synthetic output text containing each defect marker, and (b) an
-integration test of `POST /api/queue` that monkeypatches
-`routes.queue.validate_track` to return `{"valid": False, ...}`, proving the
-route actually consults the validator's verdict and refuses the request
-before writing anything to the spool.
+1. **stderr was only read when `returncode != 0`** (`validate_track` in
+   `routes/queue.py`), and `pista_check` always exits `0` -- so the `[AVISO]`
+   line was invisible no matter what it said. Fixed: stderr is now checked
+   for `"[AVISO]"` unconditionally. Seed `8300` (exit 0, "No defects" in the
+   examined stretch, `[AVISO]` on stderr) is the naturally-failing seed that
+   was missing before.
+2. **`--ate` defaulted to `pista_check`'s own 600 m**, examining only the
+   first 600 m of a lap that can run past 2 km. Seed `8215`'s only defects (4
+   × `AXIS OFF THE TRACK`) sit at ~1152 m -- past that window, so the old
+   default silently missed them. Fixed: `validate_track(ate=None)` (the
+   default `validate_experiment` uses) now probes the full lap length first
+   (`--ate 1`, whose header line prints `"lap N m"` regardless of the window
+   requested) and validates that whole distance. An explicit `ate` is still
+   honoured as a deliberate partial check.
+
+Seeds sampled at full-lap resolution for this fix: `8300` (AVISO fallback,
+refused), `8215` (4 defects @ ~1152 m, refused), `8230` (1 defect @ 224 m,
+refused -- was already inside the old 600 m window), `8107` and `8200`
+(clean, accepted), `8005` (the existing fixture seed, still clean at its
+full ~1639 m lap).
 
 ## 2. `--bin` validated against `/media/llm-data/snapshots/`, matching real usage exactly
 

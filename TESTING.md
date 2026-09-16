@@ -597,7 +597,7 @@ What each test class covers:
 |---|---|
 | `TestAuth` | loopback = fully open (reads and writes, no cookie); `--lan` = every route (reads included) needs a session (401 without one); wrong password is 401; `/api/login` itself refuses (400) in loopback mode (nothing to log into); a write without the CSRF header is 403 even with a valid session; a write with the CSRF header succeeds AND writes one `lab_db.audit` row; `/api/sql` is a 404 (route absent) under `--lan`, present and working in loopback, rejects non-SELECT |
 | `TestDbRoutes` | every `/api/db/*` route (batteries/runs/run/predictions/annotations/verdict/annotation) plus `/api/compare`, against a small hermetic two-run dataset; `run/{name}` 404 for an unknown run; `annotation` 404 for an unknown run (FK enforced); verdict writes the DB, audits, and 422s on a bad status |
-| `TestQueueRoutes` | POST writes exactly one file (no `.tmp` left over) with the correct pedido shape (`script: universe_run`, `args.bin`/`tracks` etc.); one `launch` audit row; 409 on a duplicate id; 422 for a `bin` outside `snapshots_root` (including one INSIDE `b1-champions/`, a real genome file, not an executable); 422 for an unknown arm flag; 201 for a REAL flag (`--no-neuron-memory`, a switch) and a real value flag (`sigma`) together, read back from the written pedido; 422 for a switch flag given `value: false` (daemon has no way to express "off" other than omitting the flag -- see `DEVIATIONS.md` #3); 422 for a value flag missing its value; 422 for a reserved flag name (`seed`, already a dedicated field); 422 for an invalid track (monkeypatches `validate_track` -- see `DEVIATIONS.md` #1 for why no real seed sampled in this session failed); GET mirrors a pending request via `lab_db.mirror_queue`; PUT edits a pending request IN PLACE (same filename) and 409s on a request marked `rodando` in `estado/`; DELETE removes a pending request and 409s the same way on a running one; both PUT and DELETE 404 on an unknown id |
+| `TestQueueRoutes` | POST writes exactly one file (no `.tmp` left over) with the correct pedido shape (`script: universe_run`, `args.bin`/`tracks` etc.); one `launch` audit row; 409 on a duplicate id; 422 for a `bin` outside `snapshots_root` (including one INSIDE `b1-champions/`, a real genome file, not an executable); 422 for an unknown arm flag; 201 for a REAL flag (`--no-neuron-memory`, a switch) and a real value flag (`sigma`) together, read back from the written pedido; 422 for a switch flag given `value: false` (daemon has no way to express "off" other than omitting the flag -- see `DEVIATIONS.md` #3); 422 for a value flag missing its value; 422 for a reserved flag name (`seed`, already a dedicated field); 422 for an invalid track (unit-level: monkeypatches `validate_track`; end-to-end against the real binary in `TestTracksAndSnapshots`: seed `8300` refused for stderr `[AVISO]`, seed `8215` refused for a defect past the old 600 m window -- see `DEVIATIONS.md` #1); GET mirrors a pending request via `lab_db.mirror_queue`; PUT edits a pending request IN PLACE (same filename) and 409s on a request marked `rodando` in `estado/`; DELETE removes a pending request and 409s the same way on a running one; both PUT and DELETE 404 on an unknown id |
 | `TestTracksAndSnapshots` | `/api/tracks/validate?seed=8005` against the REAL `pista_check` binary (no GPU) returns `valid: true, issues: []`; `/api/snapshots` lists a fake binary and a fake champion genome from a scratch snapshots tree |
 | `TestParsePistaCheck` | the output-classification function directly, against synthetic text for each defect marker (`AXIS OFF THE TRACK`, `BOTTLENECK`, `NULL VARIANCE`) and the clean case -- see `DEVIATIONS.md` #1 for why `AVISO` (the PRD's own wording) never appears in the real binary's current output |
 | `TestFlagRegistry` | `flags.arm_flag_allow_list()` against the REAL `cli_flags.rs`: a real switch (`no-neuron-memory`, `takes_value=False`) and a real value flag (`sigma`, `True`) are present; `seed`/`out` (reserved, dedicated fields) are excluded; a missing file raises `FlagRegistryError` |
@@ -681,15 +681,17 @@ calls `lab_db.ingest_*`.
   auth-gated, and answers 501 with the right message.
 - The trace PRODUCER (`observation.jsonl` -> `neural.trace`) -- S2. This
   slice only serves a trace-v1 directory that already exists.
-- `pista_check` classifying a REAL seed as invalid end-to-end -- every seed
-  sampled while writing this slice came back clean; see `DEVIATIONS.md` #1
-  for the seeds tried and how the "invalid track" path is covered instead
-  (parser unit tests + a monkeypatched integration test).
+- (Fixed by the cold-tester follow-up: `pista_check` DOES classify real
+  seeds as invalid end-to-end now that stderr `[AVISO]` is checked
+  unconditionally and validation runs over the full lap, not the first
+  600 m -- seeds `8300` and `8215` refused, `8200` accepted, exercised
+  against the real binary in `TestTracksAndSnapshots`. See `DEVIATIONS.md`
+  #1.)
 
 ## Deviations
 
 See `src/lab_api/DEVIATIONS.md` -- five items: `pista_check`'s real defect
-markers vs. the PRD's stale "AVISO" wording; confirming (not deviating)
+markers (stdout AND stderr) vs. the PRD's stale "AVISO"-on-stdout wording; confirming (not deviating)
 that `--bin` validates against `/media/llm-data/snapshots/` by reading a
 real live pedido; switch flags never accept `value: false`; every route
 (not just writes) requires a session under `--lan`; `/api/snapshots`'
