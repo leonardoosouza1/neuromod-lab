@@ -1,36 +1,47 @@
-"""Validate a run's `observation.jsonl` against its own `driving.meta.json`.
+"""Validate either a raw run directory or a trace-v1 directory.
 
-PRD S5, "Validation is mandatory at three points": point (1) is "The
-producer checks every sample of `observation.jsonl` against the recorder's
-own declaration in `driving.meta.json` (dtype, shape, encoding, stage names)
-and refuses the run on the first mismatch, naming the block and the two
-values." This module is that check, standalone so it can run as a
-guard before the S2 producer builds a trace, and so `lab-ui up` can run it
-before opening a run (PRD S5, validation point 3).
+PRD S5, "Validation is mandatory at three points":
+
+  (1) "The producer checks every sample of `observation.jsonl` against the
+      recorder's own declaration in `driving.meta.json` (dtype, shape,
+      encoding, stage names) and refuses the run on the first mismatch,
+      naming the block and the two values." -- `check_run` / `check_sample`.
+  (2) "The loader in lab-ui checks every block's bytes against the
+      manifest's block table ... before drawing anything." -- `check_trace_dir`:
+      validates manifest.json against trace-v1.schema.json, then the whole
+      neural.trace file's sha256 (`hashes.neural_trace`), then every
+      block's own sha256.
+
+This module implements both, and the CLI picks one automatically: a
+directory whose `manifest.json` has `"magic": "trace-v1"` is checked as a
+trace-v1 directory (2); anything else is checked as a raw run directory (1).
 
 CLI:
 
-    python -m lab_api.trace.check <run_dir>
+    python -m lab_api.trace.check <target_dir>
 
 Exits 0 and prints a one-line summary on success. Exits 1 and prints the
-exact mismatch (block name, expected value, actual value, sample index and
-tick) on the first failure -- never a warning that scrolls by.
+exact mismatch (block name, expected value, actual value) on the first
+failure -- never a warning that scrolls by.
 
-Reads `observation.jsonl` one line at a time and stops as soon as the file
-is exhausted or `--max-samples` is reached; it never loads the whole file,
-so it is safe to run against a run directory that a battery is still
-writing to.
+In run-directory mode, reads `observation.jsonl` one line at a time and
+stops as soon as the file is exhausted or `--max-samples` is reached; it
+never loads the whole file, so it is safe to run against a run directory
+that a battery is still writing to.
 """
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import sys
 from pathlib import Path
 
+from . import reference_decoder as rd
+
 
 class CheckError(ValueError):
-    """A sample does not match the run's own driving.meta.json declaration."""
+    """A sample, a block, or a whole file does not match its own declaration."""
 
 
 def _expect(condition: bool, message: str) -> None:
@@ -152,22 +163,107 @@ def check_run(run_dir: Path, max_samples: int | None = None) -> int:
     return checked
 
 
+def is_trace_v1_dir(target_dir: Path) -> bool:
+    """True if `target_dir/manifest.json` exists and declares `"magic": "trace-v1"`.
+
+    A raw run directory also has a `manifest.json` (written by
+    `universe_run.py`, with keys like `id`/`written`/`script`), which does
+    NOT have a `magic` key -- this is what tells the two apart.
+    """
+    manifest_path = target_dir / "manifest.json"
+    if not manifest_path.exists():
+        return False
+    try:
+        with open(manifest_path) as f:
+            data = json.load(f)
+    except json.JSONDecodeError:
+        return False
+    return isinstance(data, dict) and data.get("magic") == "trace-v1"
+
+
+def check_trace_dir(trace_dir: Path) -> dict:
+    """Validates a trace-v1 directory: schema, then neural.trace integrity.
+
+    Steps, in order (PRD S5 validation point 2):
+      1. `manifest.json` validates against `trace-v1.schema.json`
+         (`reference_decoder.load_manifest`, which also checks
+         samples_tick length and per-block shape[0]/length consistency).
+      2. Every block's own byte range `[offset, offset+length)` hashes to
+         its declared `sha256` -- checked block-by-block, in manifest
+         order, so a corruption inside a block's range is reported with
+         that block's name (not just "the file changed somewhere").
+      3. The whole `neural.trace` file's sha256 matches
+         `manifest['hashes']['neural_trace']` -- a backstop for corruption
+         that lands outside every block's declared range (e.g. in trailing
+         padding); only reached if every individual block already matched.
+
+    Returns the manifest. Raises CheckError naming the block/file and both
+    hashes on the first mismatch.
+    """
+    try:
+        manifest = rd.load_manifest(trace_dir)
+    except rd.ManifestValidationError as exc:
+        raise CheckError(f"manifest.json failed schema validation: {exc}") from exc
+
+    trace_path = trace_dir / "neural.trace"
+    if not trace_path.exists():
+        raise CheckError(f"{trace_path} does not exist")
+    trace_bytes = trace_path.read_bytes()
+
+    for block in manifest["blocks"]:
+        start, length = block["offset"], block["length"]
+        chunk = trace_bytes[start:start + length]
+        _expect(
+            len(chunk) == length,
+            f"block {block['name']!r}: expected {length} bytes at offset {start}, neural.trace has {len(chunk)}",
+        )
+        actual = hashlib.sha256(chunk).hexdigest()
+        _expect(
+            actual == block["sha256"],
+            f"block {block['name']!r}: manifest sha256={block['sha256']}, actual sha256={actual}",
+        )
+
+    expected_whole = manifest["hashes"]["neural_trace"]
+    actual_whole = hashlib.sha256(trace_bytes).hexdigest()
+    _expect(
+        actual_whole == expected_whole,
+        f"neural.trace (whole file, every individual block matched -- corruption is outside any "
+        f"declared block range): manifest hashes.neural_trace={expected_whole}, actual sha256={actual_whole}",
+    )
+
+    return manifest
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="python -m lab_api.trace.check",
-        description="Validate <run_dir>/observation.jsonl against <run_dir>/driving.meta.json.",
+        description=(
+            "Validate either a run directory (observation.jsonl vs driving.meta.json) "
+            "or a trace-v1 directory (manifest.json + neural.trace integrity), "
+            "auto-detected by manifest.json's 'magic' field."
+        ),
     )
-    parser.add_argument("run_dir", type=Path, help="run directory (contains observation.jsonl and driving.meta.json)")
-    parser.add_argument("--max-samples", type=int, default=None, help="stop after this many samples (default: all)")
+    parser.add_argument(
+        "target_dir", type=Path,
+        help="run directory OR trace-v1 directory",
+    )
+    parser.add_argument("--max-samples", type=int, default=None, help="run-directory mode only: stop after this many samples (default: all)")
     args = parser.parse_args(argv)
 
     try:
-        checked = check_run(args.run_dir, max_samples=args.max_samples)
+        if is_trace_v1_dir(args.target_dir):
+            manifest = check_trace_dir(args.target_dir)
+            print(
+                f"OK: manifest.json and {len(manifest['blocks'])} blocks in "
+                f"{args.target_dir}/neural.trace match their declared sha256"
+            )
+        else:
+            checked = check_run(args.target_dir, max_samples=args.max_samples)
+            print(f"OK: {checked} samples in {args.target_dir}/observation.jsonl match {args.target_dir}/driving.meta.json")
     except CheckError as exc:
         print(f"FAIL: {exc}", file=sys.stderr)
         return 1
 
-    print(f"OK: {checked} samples in {args.run_dir}/observation.jsonl match {args.run_dir}/driving.meta.json")
     return 0
 
 

@@ -107,8 +107,8 @@
     "hashes": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["checkpoint", "replay", "config"],
-      "description": "sha256 of the three source artifacts this trace was produced from. The producer refuses to overwrite a trace whose source hashes still match (PRD S5, 'Rules'); a reader can use these to know whether the trace is stale.",
+      "required": ["checkpoint", "replay", "config", "neural_trace"],
+      "description": "sha256 of the source artifacts this trace was produced from, plus of neural.trace itself. The producer refuses to overwrite a trace whose source hashes still match (PRD S5, 'Rules'); a reader can use these to know whether the trace is stale, and 'neural_trace' lets a loader detect a corrupted or truncated neural.trace file before decoding any block from it (PRD S5, validation point 2).",
       "properties": {
         "checkpoint": {
           "type": "string",
@@ -124,6 +124,11 @@
           "type": "string",
           "pattern": "^[0-9a-f]{64}$",
           "description": "sha256 (lowercase hex) of the run's launch configuration (the universe_run.py manifest.json for this run directory)."
+        },
+        "neural_trace": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "sha256 (lowercase hex) of the entire neural.trace file, whole-file (not per-block). A loader checks this once before trusting any block's offset/length/sha256 in the block table below; a mismatch means the file was corrupted or truncated after the manifest was written."
         }
       }
     },
@@ -160,7 +165,7 @@
     "block": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["name", "dtype", "shape", "unit", "scale", "offset", "length", "compression", "stage"],
+      "required": ["name", "dtype", "shape", "unit", "scale", "offset", "length", "compression", "stage", "sha256"],
       "properties": {
         "name": {
           "type": "string",
@@ -204,6 +209,11 @@
         "stage": {
           "type": ["string", "null"],
           "description": "Position of this block in the recorder's brain_flow pipeline (e.g. 'sensory_cfc_pre_l1', 'raw_intent', 'after_head', 'after_modulation', 'final_command'), or null for a block that is not a brain stage (retina, wave, pose, body)."
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "sha256 (lowercase hex) of exactly the bytes at [offset, offset+length) in neural.trace, i.e. this block's own on-disk bytes, independent of every other block. A decoder verifies this by default before returning a block's data (PRD S5, validation point 2: 'the loader ... checks every block's bytes against the manifest's block table ... before drawing anything')."
         }
       }
     }

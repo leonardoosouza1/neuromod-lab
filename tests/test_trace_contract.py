@@ -11,7 +11,12 @@ Covers, per the S0 task brief:
       and first/last frame of the observed being
   (d) the vendored schema copy in this repo is byte-identical to
       lab-ui/contract/trace-v1.schema.json
+  (e) an absent block raises the dedicated AbsentBlockError, not a bare KeyError
+  (f) a neural.trace corrupted with `dd` (4 bytes flipped mid-file, inside a
+      block's range) is refused, naming that block, by: read_block (Python),
+      check_trace_dir/the check CLI (Python), and readBlock (JS, via Node)
 """
+import hashlib
 import json
 import os
 import shutil
@@ -23,6 +28,7 @@ import numpy as np
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+from lab_api.trace import check as check_module  # noqa: E402
 from lab_api.trace import reference_decoder as rd  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -32,6 +38,11 @@ LAB_UI_REPO = Path(os.environ.get("LAB_UI_REPO", LLM_ROOT / "lab-ui"))
 FIXTURE_DIR = LAB_UI_REPO / "fixtures" / "trace-v1" / "universe-b2-gen0"
 CONTRACT_DIR = LAB_UI_REPO / "contract"
 VENDORED_SCHEMA = REPO_ROOT / "src" / "lab_api" / "trace" / "trace-v1.schema.json"
+
+# Storage policy (LLM/CLAUDE.md): nothing but source/docs/small logs on the
+# system disk -- scratch artifacts, including test-generated ones, go under
+# /media/llm-data/scratch/.
+SCRATCH_DIR = Path("/media/llm-data/scratch/s0-contract/test-corrupt-fixture")
 
 
 def _require_fixture():
@@ -71,8 +82,29 @@ def test_every_block_decodes_with_declared_shape_and_dtype():
 
     # absent stages are absent, never zero-filled
     for name in ("l1", "l2", "intent"):
-        with pytest.raises(KeyError, match="not recorded by this binary"):
+        with pytest.raises(rd.AbsentBlockError, match="not recorded by this binary"):
             rd.read_block(FIXTURE_DIR, name, manifest=manifest)
+
+
+def test_absent_block_raises_dedicated_error_not_bare_keyerror():
+    _require_fixture()
+    manifest = rd.load_manifest(FIXTURE_DIR)
+    assert not issubclass(rd.AbsentBlockError, KeyError), (
+        "AbsentBlockError must NOT be a KeyError -- a caller that catches only "
+        "KeyError (e.g. generic dict-like access) must not silently swallow this"
+    )
+    assert issubclass(rd.AbsentBlockError, LookupError)
+
+    with pytest.raises(rd.AbsentBlockError) as exc_info:
+        rd.read_block(FIXTURE_DIR, "l1", manifest=manifest)
+    assert exc_info.value.name == "l1"
+    assert exc_info.value.reason == "not recorded by this binary"
+
+    # a name that is neither a recorded block nor listed as absent is a
+    # genuine manifest inconsistency -- still a plain KeyError, deliberately
+    # distinct from AbsentBlockError.
+    with pytest.raises(KeyError):
+        rd.read_block(FIXTURE_DIR, "does_not_exist", manifest=manifest)
 
 
 def test_replay_decodes_and_matches_its_own_header_invariants():
@@ -136,6 +168,87 @@ def test_js_decoder_agrees_byte_for_byte_with_python():
     np.testing.assert_allclose(js["replay_first_frame"]["pos"], py_first["pos"], atol=1e-4)
     assert js["replay_last_frame"]["tick"] == py_last["tick"]
     np.testing.assert_allclose(js["replay_last_frame"]["pos"], py_last["pos"], atol=1e-4)
+
+
+@pytest.fixture
+def corrupted_fixture_dir():
+    """A copy of the fixture with 4 bytes flipped mid-file inside the 'cfc'
+    block's byte range (offset 2174400..2289600), via `dd`, matching PRD S5
+    validation point 2's exact scenario. Cleans up after the test.
+    """
+    _require_fixture()
+    SCRATCH_DIR.parent.mkdir(parents=True, exist_ok=True)
+    if SCRATCH_DIR.exists():
+        shutil.rmtree(SCRATCH_DIR)
+    shutil.copytree(FIXTURE_DIR, SCRATCH_DIR)
+
+    trace_path = SCRATCH_DIR / "neural.trace"
+    corrupt_offset = 2_200_000  # inside the 'cfc' block's [2174400, 2289600) range
+    with open(trace_path, "r+b") as f:
+        f.seek(corrupt_offset)
+        original = f.read(4)
+        flipped = bytes(b ^ 0xFF for b in original)
+        f.seek(corrupt_offset)
+        f.write(flipped)
+    assert flipped != original  # dd-equivalent byte flip actually changed something
+
+    try:
+        yield SCRATCH_DIR
+    finally:
+        shutil.rmtree(SCRATCH_DIR, ignore_errors=True)
+
+
+def test_corrupted_neural_trace_is_rejected_by_python_read_block(corrupted_fixture_dir):
+    with pytest.raises(rd.BlockIntegrityError, match="cfc"):
+        rd.read_block(corrupted_fixture_dir, "cfc")
+
+    # verify=False is documented to skip the check -- must NOT raise.
+    arr = rd.read_block(corrupted_fixture_dir, "cfc", verify=False)
+    assert arr.shape == (300, 96)
+
+    # an unrelated, uncorrupted block still verifies fine.
+    rd.read_block(corrupted_fixture_dir, "wave")
+
+
+def test_corrupted_neural_trace_is_rejected_by_check_cli(corrupted_fixture_dir):
+    with pytest.raises(check_module.CheckError, match="cfc"):
+        check_module.check_trace_dir(corrupted_fixture_dir)
+
+    result = subprocess.run(
+        [sys.executable, "-m", "lab_api.trace.check", str(corrupted_fixture_dir)],
+        capture_output=True, text=True, cwd=str(REPO_ROOT / "src"),
+        env={**os.environ, "PYTHONPATH": "."},
+    )
+    assert result.returncode == 1, result.stdout + result.stderr
+    assert "cfc" in result.stderr, result.stderr
+    assert result.stderr.startswith("FAIL:")
+
+
+def test_corrupted_neural_trace_is_rejected_by_js_decoder(corrupted_fixture_dir):
+    node = shutil.which("node")
+    if node is None:
+        pytest.skip("node not found on PATH")
+    script = Path(__file__).with_name("decode_fixture.mjs")
+    result = subprocess.run(
+        [node, str(script), str(corrupted_fixture_dir), str(CONTRACT_DIR)],
+        capture_output=True, text=True, timeout=60,
+    )
+    assert result.returncode != 0, "JS decoder must refuse a corrupted neural.trace"
+    assert "cfc" in result.stderr, result.stderr
+
+
+def test_clean_fixture_hashes_are_internally_consistent():
+    """Sanity check independent of read_block/check_trace_dir: recompute every
+    hash in manifest.json directly from neural.trace bytes with plain
+    hashlib, to prove the fixture's own hashes are not just self-referential
+    (i.e. the test isn't just checking a module against itself)."""
+    _require_fixture()
+    manifest = rd.load_manifest(FIXTURE_DIR)
+    trace_bytes = (FIXTURE_DIR / "neural.trace").read_bytes()
+    assert hashlib.sha256(trace_bytes).hexdigest() == manifest["hashes"]["neural_trace"]
+    for block in manifest["blocks"]:
+        chunk = trace_bytes[block["offset"]: block["offset"] + block["length"]]
+        assert hashlib.sha256(chunk).hexdigest() == block["sha256"], block["name"]
 
 
 def test_vendored_schema_is_byte_identical_to_lab_ui_contract():

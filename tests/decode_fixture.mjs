@@ -17,7 +17,7 @@ if (!fixtureDir || !contractDir) {
   process.exit(2);
 }
 
-const { loadManifest, readBlock } = await import(pathToFileURL(path.join(contractDir, "decoder.js")));
+const { loadManifest, readBlock, verifyNeuralTraceHash } = await import(pathToFileURL(path.join(contractDir, "decoder.js")));
 const { readReplay } = await import(pathToFileURL(path.join(contractDir, "replay.js")));
 
 const manifestText = fs.readFileSync(path.join(fixtureDir, "manifest.json"), "utf8");
@@ -27,7 +27,9 @@ const manifest = loadManifest(manifestText, schemaText);
 const traceBuf = fs.readFileSync(path.join(fixtureDir, "neural.trace"));
 const blocks = {};
 for (const b of manifest.blocks) {
-  const arr = readBlock(traceBuf, manifest, b.name);
+  // verify:true by default (PRD S5 point 2) -- checked block-by-block so a
+  // corruption inside one block's range is reported with that block's name.
+  const arr = await readBlock(traceBuf, manifest, b.name);
   blocks[b.name] = {
     dtype: b.dtype,
     length: arr.length,
@@ -35,6 +37,9 @@ for (const b of manifest.blocks) {
     last8: Array.from(arr.slice(-8)),
   };
 }
+// Whole-file backstop, only reached once every individual block matched --
+// catches corruption outside any block's declared range.
+await verifyNeuralTraceHash(traceBuf, manifest);
 
 const replayBuf = fs.readFileSync(path.join(fixtureDir, "physical.replay"));
 const { header, frames } = readReplay(replayBuf, manifest.being);

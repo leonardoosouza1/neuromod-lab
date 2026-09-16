@@ -15,6 +15,7 @@ draft 2020-12 that `trace-v1.schema.json` actually uses: `type`, `const`,
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import struct
@@ -33,6 +34,29 @@ DTYPE_MAP = {
 
 class ManifestValidationError(ValueError):
     """Raised when a manifest fails validation against trace-v1.schema.json."""
+
+
+class AbsentBlockError(LookupError):
+    """Raised by read_block() for a block manifest['absent'] lists as not recorded.
+
+    Deliberately NOT a KeyError: "this block was never written, see 'reason'"
+    is a different condition from "this key does not exist in a mapping",
+    and callers that only catch KeyError (e.g. a generic dict-like access
+    pattern) should not accidentally swallow it.
+    """
+
+    def __init__(self, name: str, reason: str):
+        self.name = name
+        self.reason = reason
+        super().__init__(f"block {name!r} is absent: {reason}")
+
+
+class BlockIntegrityError(ValueError):
+    """Raised when a block's (or the whole file's) sha256 does not match the manifest.
+
+    PRD S5, validation point 2: "the loader in lab-ui checks every block's
+    bytes against the manifest's block table ... before drawing anything."
+    """
 
 
 def _validate_type(value: Any, type_spec, path: str) -> None:
@@ -155,6 +179,7 @@ def read_block(
     t0: int | None = None,
     t1: int | None = None,
     manifest: dict | None = None,
+    verify: bool = True,
 ) -> np.ndarray:
     """Reads block `name` from `<trace_dir>/neural.trace`, sliced to samples [t0, t1).
 
@@ -164,15 +189,26 @@ def read_block(
     block's declared dtype (scaled by `block['scale']` when it is not 1.0,
     which promotes the result to float64).
 
-    Raises `KeyError` if the block is not in `manifest['blocks']` -- check
-    `manifest['absent']` for why.
+    `verify` (default `True`, PRD S5 validation point 2): reads the block's
+    ENTIRE byte range from disk and checks its sha256 against
+    `block['sha256']` before slicing out [t0, t1) -- this costs a full read
+    of the block even for a small tick range, but a corrupted byte anywhere
+    in the block must not be silently returned just because it falls
+    outside the requested slice. Raises `BlockIntegrityError` on mismatch,
+    naming the block and both hashes. Pass `verify=False` for a fast,
+    unchecked partial read (e.g. a range loader that has already verified
+    the file once via `lab_api.trace.check`).
+
+    Raises `AbsentBlockError` if the block is not in `manifest['blocks']`
+    but IS listed in `manifest['absent']`; raises `KeyError` if it is in
+    neither (a manifest inconsistency, not a normal "not recorded" case).
     """
     trace_dir, manifest = _resolve(trace_dir, manifest)
     block = next((b for b in manifest["blocks"] if b["name"] == name), None)
     if block is None:
         absent = {a["name"]: a["reason"] for a in manifest["absent"]}
         if name in absent:
-            raise KeyError(f"block {name!r} is absent: {absent[name]}")
+            raise AbsentBlockError(name, absent[name])
         raise KeyError(f"block {name!r} not found in manifest and not listed as absent")
     if block["compression"] != "none":
         raise NotImplementedError(f"compression {block['compression']!r} not supported by this reference decoder")
@@ -189,18 +225,57 @@ def read_block(
     if not (0 <= t0 <= t1 <= count):
         raise ValueError(f"invalid sample range [{t0},{t1}) for block {name!r} with count {count}")
 
-    n_elements = (t1 - t0) * row_elements
-    with open(trace_dir / "neural.trace", "rb") as f:
-        f.seek(block["offset"] + t0 * row_elements * dtype.itemsize)
-        raw = f.read(n_elements * dtype.itemsize)
-    if len(raw) != n_elements * dtype.itemsize:
-        raise ValueError(
-            f"block {name!r}: expected {n_elements * dtype.itemsize} bytes for range [{t0},{t1}), got {len(raw)}"
-        )
+    if verify:
+        with open(trace_dir / "neural.trace", "rb") as f:
+            f.seek(block["offset"])
+            whole_block_raw = f.read(block["length"])
+        if len(whole_block_raw) != block["length"]:
+            raise BlockIntegrityError(
+                f"block {name!r}: expected {block['length']} bytes at offset {block['offset']}, "
+                f"got {len(whole_block_raw)} (file truncated?)"
+            )
+        actual_sha256 = hashlib.sha256(whole_block_raw).hexdigest()
+        if actual_sha256 != block["sha256"]:
+            raise BlockIntegrityError(
+                f"block {name!r}: sha256 mismatch -- manifest says {block['sha256']}, "
+                f"actual bytes hash to {actual_sha256}"
+            )
+        row_bytes = row_elements * dtype.itemsize
+        raw = whole_block_raw[t0 * row_bytes: t1 * row_bytes]
+    else:
+        n_elements = (t1 - t0) * row_elements
+        with open(trace_dir / "neural.trace", "rb") as f:
+            f.seek(block["offset"] + t0 * row_elements * dtype.itemsize)
+            raw = f.read(n_elements * dtype.itemsize)
+        if len(raw) != n_elements * dtype.itemsize:
+            raise ValueError(
+                f"block {name!r}: expected {n_elements * dtype.itemsize} bytes for range [{t0},{t1}), got {len(raw)}"
+            )
+
     arr = np.frombuffer(raw, dtype=dtype).reshape((t1 - t0,) + shape[1:])
     if block["scale"] != 1.0:
         arr = arr.astype("<f8") * block["scale"]
     return arr
+
+
+def verify_neural_trace_hash(trace_dir: str | Path, manifest: dict | None = None) -> None:
+    """Checks manifest['hashes']['neural_trace'] against the whole neural.trace file.
+
+    Raises BlockIntegrityError on mismatch. This is the cheap, whole-file
+    check to run before trusting any per-block offset/length/sha256 in the
+    block table (PRD S5 validation point 2) -- read_block() re-hashes only
+    the block it is asked for, so a corruption outside every requested
+    block's range would otherwise go unnoticed until (if ever) that part of
+    the file is read.
+    """
+    trace_dir, manifest = _resolve(trace_dir, manifest)
+    trace_path = trace_dir / "neural.trace"
+    actual = hashlib.sha256(trace_path.read_bytes()).hexdigest()
+    expected = manifest["hashes"]["neural_trace"]
+    if actual != expected:
+        raise BlockIntegrityError(
+            f"{trace_path}: sha256 mismatch -- manifest says {expected}, actual file hashes to {actual}"
+        )
 
 
 # ---------------------------------------------------------------------------
