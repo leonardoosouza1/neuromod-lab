@@ -1,6 +1,6 @@
 # HANDOFF — estado para uma sessão nova (reescrever, não acrescentar)
 
-Última reescrita: 16/09/2026 17:15. Leia só isto + o que um item apontar. Não reabra
+Última reescrita: 16/09/2026 17:58. Leia só isto + o que um item apontar. Não reabra
 transcripts antigos.
 
 ## Modo autônomo econômico (medido 16/09: 84 % do custo é reler contexto)
@@ -13,7 +13,9 @@ transcripts antigos.
    Fallback: ScheduleWakeup ≥ 3600 s. Nunca loop curto de checagem.
 3. **Olhar o estado em 2 linhas:** `python scripts/battery_runner.py status`.
 4. **Subagente:** Sonnet, 1 tarefa, ≤ 50–80 chamadas, saída cortada (`tail`, `-q`), commit
-   por etapa, relatório ≤ 150 palavras, ≤ 3 ao mesmo tempo. Agente grande que morreu
+   por etapa, relatório ≤ 150 palavras, ≤ 3 ao mesmo tempo. O limite de chamadas no prompt
+   NÃO é respeitado (16/09: pedidos de 25–45 viraram 40–76) — o que controla custo é tarefa
+   pequena e bem especificada, com critério verificável. Agente grande que morreu
    (rate limit) NÃO é retomado: agente novo lê o último commit + nota.
 5. **Sessão principal:** `/compact` ou sessão nova passando de ~200k de contexto.
 6. Python só `/home/leonardo/projects/LLM/.venv-rocm/bin/python`; dados só em
@@ -38,15 +40,18 @@ com exit 1 em 0 s. Censo com defeitos: `/media/llm-data/scratch/track_census_810
 
 ## lab-ui (PRD `LLM/lab-ui/PRD.md`)
 
-- main: S0 contrato, S3 shell, S2 schema adotado. `ui/integrate-micro` (S4+S5 integrados,
-  rodada 3): agente finalizando commit + screenshots v3 em
-  `/media/llm-data/scratch/integrate/screens/v3/`. Depois: testador frio → merge na main.
-- S1 API (`ui/s1-api`, neuromod-lab): testador frio terminando itens LAN/CSRF/audit.
-  PASS → merge na main do neuromod-lab.
-- Falta: S6 (live `/ws/live`), contrafactual real na UI (máscara na GPU já existe:
-  `Universe/docs/KERNELS-COUNTERFACTUAL-MASK.md`), observação L1/L2 (Astra implementou,
-  checkout do Universe ainda sem commit).
-- Universe `ui/s2-pack` publicado, NÃO mesclado em race-world-v3 (esperar checkout limpo).
+- **main 6c13756**: S0 contrato, S3 shell, S4+S5 micro integrados e testados a frio (112
+  testes). Tela micro abre o trace denso do campeão; clique no pedal dispara o fluxo de
+  contribuição e explica quando nada o alimenta. Repo só local (sem remote).
+- **neuromod-lab main**: S1 API mesclada (102 testes); valida pista na volta inteira e
+  recusa `[AVISO]`. `--lan` lê `/media/llm-data/lab-ui.env` (600, criado 16/09).
+- Maior lacuna visual: cérebro 3D com 0 sinapses porque o binário congelado não grava
+  L1/L2. A observação L1/L2 + máscara contrafactual do Astra está implementada e validada
+  (`Universe/docs/KERNELS-OBSERVATION-L1L2.md`, `KERNELS-COUNTERFACTUAL-MASK.md`) mas SEM
+  commit no checkout do Universe → pedir commit, congelar binário novo, gravar trace denso
+  com L1/L2, adaptar o empacotador S2 (schema de observação 2).
+- Falta: S6 (live `/ws/live`), painel contrafactual ligado à GPU, merge de `ui/s2-pack` no
+  Universe (esperar checkout limpo). Defeito menor: razões técnicas em inglês no painel.
 
 ## Perguntar ao Leonardo (não decidir sozinho)
 
