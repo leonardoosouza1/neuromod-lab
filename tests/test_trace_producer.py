@@ -29,8 +29,9 @@ from lab_api.trace import reference_decoder as rd  # noqa: E402
 RUNS_ROOT = Path("/media/llm-data/universe-runs/neuromod-lab-taxi")
 SCRATCH_ROOT = Path("/media/llm-data/scratch/s2-pack/test_producer")
 REPO_ROOT = Path(__file__).resolve().parents[1]
-LLM_ROOT = Path(os.environ.get("LLM_ROOT", REPO_ROOT.parents[1]))
-LAB_UI_REPO = Path(os.environ.get("LAB_UI_REPO", LLM_ROOT / "lab-ui"))
+from conftest import find_lab_ui  # noqa: E402  (tests/ is on sys.path under pytest)
+
+LAB_UI_REPO = find_lab_ui()
 B2_FIXTURE_DIR = LAB_UI_REPO / "fixtures" / "trace-v1" / "universe-b2-gen0"
 CONTRACT_DIR = LAB_UI_REPO / "contract"
 
@@ -209,7 +210,7 @@ def test_js_decoder_agrees_with_python_decoder(b3_scratch_copy):
     # symlinks the real decoder.js/replay.js but the VENDORED (ahead) schema, so this
     # cross-check exercises the same schema the Python side just validated against.
     if not CONTRACT_DIR.exists():
-        pytest.skip(f"{CONTRACT_DIR} not present (no lab-ui checkout) -- cannot load decoder.js/replay.js")
+        pytest.fail(f"{CONTRACT_DIR} not present -- set LAB_UI_REPO; a contract check that skips hides drift")
     vendored_contract = SCRATCH_ROOT / "contract-vendored"
     vendored_contract.mkdir(parents=True, exist_ok=True)
     for name in ("decoder.js", "replay.js", "package.json"):
@@ -363,7 +364,7 @@ def test_producer_output_agrees_with_s0_fixture_on_shared_blocks():
     _require_universe_bin("genome_export")
     _require_universe_bin("track_export")
     if not B2_FIXTURE_DIR.exists():
-        pytest.skip(f"{B2_FIXTURE_DIR} not present (no lab-ui checkout)")
+        pytest.fail(f"{B2_FIXTURE_DIR} not present -- set LAB_UI_REPO")
     src = RUNS_ROOT / B2_SOURCE_RUN
     if not src.exists():
         pytest.skip(f"{src} (the fixture's source run) is gone from this machine -- cannot cross-check")
