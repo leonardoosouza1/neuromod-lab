@@ -10,7 +10,7 @@ from __future__ import annotations
 from fastapi import FastAPI
 
 from .auth import SessionStore
-from .routes import auth_routes, counterfactual, db, queue, trace
+from .routes import auth_routes, counterfactual, db, live, queue, trace
 from .settings import Settings
 
 
@@ -26,6 +26,8 @@ def create_app(settings: Settings) -> FastAPI:
     app.include_router(trace.router)
     app.include_router(counterfactual.router)
     app.include_router(auth_routes.router)
+    app.include_router(live.router)
+    app.include_router(live.ws_router)
 
     @app.get("/api/health")
     def health() -> dict:

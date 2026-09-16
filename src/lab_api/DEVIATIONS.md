@@ -340,3 +340,27 @@ missing the P1.7 per-neuron mechanisms, which require cross-tick state a single-
 forward does not have). Until that is fixed, a real `/api/counterfactual` route (PRD S5,
 not built in this task) should return 501 regardless of `counterfactual_valid`, and say
 so in its error message -- see the same Universe doc for the exact wording proposed.
+
+## S6 -- live relay
+
+`src/lab_api/routes/live.py`'s `WS /ws/live` cannot use the existing `current_who`
+dependency (`auth.py`) as-is: that function's signature takes `request: Request`, and a
+WebSocket connection is a different Starlette/ASGI object (`WebSocket`), not a
+`Request` -- FastAPI's dependency injection does not coerce one into the other. Rather
+than fork `current_who` into an HTTP and a WebSocket copy that could drift, `ws_live`
+calls `auth.SessionStore.get()` directly against `websocket.cookies.get(SESSION_COOKIE)`
+-- the exact same session table and the exact same cookie name `/api/login` sets, just
+read through `WebSocket.cookies` (Starlette's `HTTPConnection` base class gives both
+`Request` and `WebSocket` this property) instead of `Request`'s `Cookie(...)` dependency
+parameter. Same session semantics (TTL, expiry), no new session store, no behavior
+difference from the rest of the app under `--lan` -- only the plumbing to reach it
+differs because the ASGI connection type differs. `GET /api/live/runs`, being an
+ordinary HTTP route, uses `current_who` exactly like every other router in this package.
+
+Also: `/ws/live`'s port check (`3200-3299`) and the `--lan` session check both run
+BEFORE `websocket.accept()`, so a refused connection is a clean handshake-time close
+(code 1008, Policy Violation) rather than an accepted-then-torn-down connection --
+matches the task's own wording ("close with policy violation") and means a client can
+tell "you are not allowed to connect" apart from "you connected but the target panel is
+down" (the latter is a `{"type": "error", ...}` FRAME over an accepted connection, not a
+close).
