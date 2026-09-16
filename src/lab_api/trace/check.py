@@ -137,6 +137,7 @@ def check_run(run_dir: Path, max_samples: int | None = None) -> int:
 
     checked = 0
     prev_tick = None
+    prev_generation = None
     with open(obs_path) as f:
         for index, line in enumerate(f):
             if max_samples is not None and index >= max_samples:
@@ -153,12 +154,20 @@ def check_run(run_dir: Path, max_samples: int | None = None) -> int:
                 raise CheckError(f"sample {index}: invalid JSON ({exc})") from exc
             check_sample(sample, meta, index)
             tick = sample.get("tick")
-            if prev_tick is not None:
+            generation = sample.get("generation")
+            # Tick only increases WITHIN one generation: gen<N+1>'s first recorded tick
+            # is small again (`DrivingDiagnostics::reset` sets `first_tick = 1` at the
+            # start of every generation, `driving_diagnostics.rs`), so a real
+            # multi-generation observation.jsonl legitimately has the tick counter drop
+            # at every generation boundary -- that is not a corruption to flag.
+            if prev_tick is not None and generation == prev_generation:
                 _expect(
                     isinstance(tick, int) and tick > prev_tick,
-                    f"sample {index}: tick {tick} does not increase over the previous sample's tick {prev_tick}",
+                    f"sample {index}: tick {tick} does not increase over the previous sample's tick "
+                    f"{prev_tick} within generation {generation}",
                 )
             prev_tick = tick
+            prev_generation = generation
             checked += 1
     return checked
 
