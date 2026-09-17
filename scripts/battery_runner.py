@@ -218,7 +218,8 @@ class Runner:
                 argv = [PYTHON if a == '{python}' else a for a in argv]
                 log.write(f"$ {' '.join(argv)}\n")
                 log.flush()
-                rc = subprocess.run(argv, cwd=REPO, stdout=log, stderr=subprocess.STDOUT).returncode
+                cwd = os.path.join(REPO, stage['cwd']) if stage.get('cwd') else REPO
+                rc = subprocess.run(argv, cwd=cwd, stdout=log, stderr=subprocess.STDOUT).returncode
                 if rc != 0:
                     record.update(status='done', failed=[' '.join(argv)], exit_code=rc)
                     event('FAIL', self.name, f"stage {stage['name']} exit {rc}: see {log_path}")
