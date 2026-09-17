@@ -940,3 +940,99 @@ before any file is touched).
 - Track rotation (`args.tracks` with more than one seed) -- see `DEVIATIONS.md` #11
   (was #8 before the S4 addition renumbered it); no rotating run was available/finished
   during this task (`b5_rot_*` explicitly off-limits, in flight).
+
+## obs2 -- schema-2 stage blocks (coordinator follow-up, 2026-09-16)
+
+Slice S2 follow-up: pack the exact L1/L2 kernel stages the new frozen binary
+(`/media/llm-data/snapshots/gpu_evolve-bd5695f`) records into `observation.jsonl`'s
+`stages` object once `driving.meta.json` declares `observation_schema: 2`
+(`Universe/docs/KERNELS-OBSERVATION-L1L2.md`). Worktree:
+`/home/leonardo/projects/LLM/.worktrees/neuromod-lab-obs2` (branch `ui/s2-obs2`).
+Python: `/home/leonardo/projects/LLM/.venv-rocm/bin/python` only, per this task's own
+requirement -- no new dependency.
+
+### 1. Full test suite
+
+```
+cd /home/leonardo/projects/LLM/.worktrees/neuromod-lab-obs2
+/home/leonardo/projects/LLM/.venv-rocm/bin/python -m pytest tests/ -q
+```
+Output:
+```
+........................................................................ [ 56%]
+.....................................x...........s......                 [100%]
+126 passed, 1 skipped, 1 xfailed in 147.66s (0:02:27)
+```
+Exit code `0`. The 1 skip is the pre-existing `test_producer_output_agrees_with_s0_fixture_on_shared_blocks`
+(its source run is gone, unrelated to this task). The 1 xfail is
+`test_vendored_schema_is_byte_identical_to_lab_ui_contract`, re-marked `xfail(strict=True)`
+by this task (see `DEVIATIONS.md` #13 and
+`test_vendored_schema_diverges_from_lab_ui_contract_only_by_documented_obs2_additions`,
+passing, which pins the exact gap).
+
+Five new tests build a tiny (<300 KB) on-disk fixture from a REAL 3-sample slice of
+`champ_nocost_s77_obs2_t8005` (ticks 4/8/12): `test_schema2_stage_blocks_are_packed_and_present_in_manifest`,
+`test_schema2_decoder_round_trip_is_byte_exact`,
+`test_schema1_run_has_no_stage2_blocks_or_observed_genome_hash` (regression guard on
+the pre-existing `b3_fixed_s31_t8005` fixture), `test_mismatched_genome_file_across_samples_raises`,
+`test_genome_file_missing_on_disk_raises`.
+
+### 2. Real trace: the full 3000-sample run, `champion` profile
+
+```
+cd /home/leonardo/projects/LLM/.worktrees/neuromod-lab-obs2/src
+PYTHONPATH=. /home/leonardo/projects/LLM/.venv-rocm/bin/python -m lab_api.trace.produce \
+  /media/llm-data/universe-runs/neuromod-lab-taxi/champ_nocost_s77_obs2_t8005 --gen 0 --profile champion --no-db
+```
+Output:
+```
+OK: /media/llm-data/universe-runs/neuromod-lab-taxi/champ_nocost_s77_obs2_t8005/trace/gen0000/being00/champion (--no-db, not registered)
+```
+Exit code `0`.
+
+```
+PYTHONPATH=. /home/leonardo/projects/LLM/.venv-rocm/bin/python -m lab_api.trace.check \
+  /media/llm-data/universe-runs/neuromod-lab-taxi/champ_nocost_s77_obs2_t8005/trace/gen0000/being00/champion
+```
+Output:
+```
+OK: manifest.json and 18 blocks in .../champion/neural.trace match their declared sha256
+```
+Exit code `0`.
+
+18 blocks (`count=3000` each; `neural.trace` is 29,292,000 B total), `absent: []`,
+`brain_schema_version: 2`, `counterfactual_valid: true`:
+
+| block | dtype | shape | bytes |
+|---|---|---|---:|
+| retina | u32 | [3000,14,126] | 21,168,000 |
+| wave | i8 | [3000,192] | 576,000 |
+| cfc | f32 | [3000,96] | 1,152,000 |
+| l1_matmul | f32 | [3000,96] | 1,152,000 |
+| l1_effective | f32 | [3000,96] | 1,152,000 |
+| l1_to_l2 | i8 | [3000,96] | 288,000 |
+| l2_matmul | f32 | [3000,48] | 576,000 |
+| l2_effective | f32 | [3000,48] | 576,000 |
+| l2_std | f32 | [3000] | 12,000 |
+| l2_adapted | f32 | [3000,48] | 576,000 |
+| bypass_adapted | f32 | [3000,48] | 576,000 |
+| final_intent | f32 | [3000,96] | 1,152,000 |
+| raw_intent / after_head / after_modulation / final_command | f32 | [3000,3] each | 36,000 each |
+| pose | f32 | [3000,4] | 48,000 |
+| body | f32 | [3000,12] | 144,000 |
+
+`hashes.observed_genome_file` = `observed_genome_gen0000.bin`; `hashes.observed_genome`
+== `hashes.checkpoint` (`dae80222f23a...b21023f`) -- this run's two genome files are
+byte-identical (confirmed by direct sha256, not assumed by the producer, which always
+reads `genome_file` back out of the samples -- see `_stage_genome_info`). `weights.json`
+`genome_sha256` matches `hashes.observed_genome` exactly.
+
+### What is NOT tested here
+
+- `check.py`'s per-sample validation was NOT extended to validate `stages`' shapes
+  against `driving.meta.json`'s `brain_graph` node declarations -- out of this task's
+  scope; see `DEVIATIONS.md` #13's last bullet.
+- The lab-ui frontend/decoder.js side of these new blocks -- `lab-ui` is a separate
+  repo this worktree does not check out; `SCHEMA-CHANGE-observation_stage2_blocks.md`
+  is the patch for its `contract/trace-v1.schema.json`, and an identical copy is at
+  `/media/llm-data/scratch/obs2/trace-v1.schema.json`.

@@ -341,6 +341,73 @@ forward does not have). Until that is fixed, a real `/api/counterfactual` route 
 not built in this task) should return 501 regardless of `counterfactual_valid`, and say
 so in its error message -- see the same Universe doc for the exact wording proposed.
 
+## 13. Schema-2 observation stages: nine new blocks, `hashes.observed_genome[_file]`, and a genome-consistency refusal
+
+Coordinator task (2026-09-16), same "the code wins, the disagreement is written down"
+rule: pack the exact L1/L2 stages a new frozen `gpu_evolve` binary
+(`/media/llm-data/snapshots/gpu_evolve-bd5695f`) records once `driving.meta.json`
+declares `observation_schema: 2` (`Universe/docs/KERNELS-OBSERVATION-L1L2.md`).
+
+- **Nine new blocks** (`producer.py::_STAGE2_BLOCK_NAMES`/`_stage2_block_specs`):
+  `l1_matmul`, `l1_effective`, `l1_to_l2` (i8, the rest f32), `l2_matmul`,
+  `l2_effective`, `l2_std` (scalar per sample, shape `[count]`), `l2_adapted`,
+  `bypass_adapted`, `final_intent`. Spliced into the block table right after `cfc`
+  (`_all_block_specs`) -- the doc's own `brain_graph` node order. `cfc_state` (the
+  doc's tenth node) is deliberately NOT a new block: it duplicates the existing
+  `cfc`/`fast_state` block byte-for-byte (doc §2/§5).
+- **Schema-1 behaviour is bit-for-bit unchanged**: `_all_block_specs`/`build_neural_trace`
+  only consult the new code paths when `driving.meta.json` declares `observation_schema:
+  2` (`schema2`); every `b3_*`/`b5_*` run tested (none declare it) takes exactly the
+  pre-existing code path, verified by `tests/test_trace_producer.py`'s existing suite
+  staying green unmodified.
+- **A schema-2 trace does NOT ALSO emit the coarse `l1`/`l2`/`intent` absent entries**:
+  those three were never real block identifiers, only a placeholder for "not implemented
+  yet" (`_NEVER_RECORDED_STAGES`'s original purpose) -- schema-2 supersedes them with
+  nine real, finer-grained names, so keeping the coarse placeholders too would say "not
+  recorded" about data that plainly IS recorded, just under different names.
+- **`weights.json`'s genome source changes for a schema-2 trace with real stages**: the
+  doc's §11 says "every observation row names that file [the exact genome that produced
+  it]." `_stage_genome_info` reads each selected sample's own `genome_file`, requires
+  every one of them to agree (refuses -- `ProducerError`, naming every candidate file
+  AND its own sha256 -- if two samples in one trace's range name different files, which
+  would otherwise silently mix individuals), verifies the named file exists under
+  `run_dir`, and hands its PATH to `genome_export` instead of the generation's checkpoint
+  (`evolve_best_gen<NNNN>.bin`). For the real recording tested
+  (`champ_nocost_s77_obs2_t8005`) the two happen to be byte-identical (confirmed by
+  direct sha256), but the code does not assume this in general -- the whole point of
+  `genome_file` per §11 is that a later generation's recorded being need not be the
+  fitness champion.
+- **New, OPTIONAL `hashes.observed_genome`/`hashes.observed_genome_file`**: present only
+  when the trace carries real schema-2 stage blocks; absent from every schema-1
+  manifest's `hashes` object, which stays exactly what it always was. Same
+  `additionalProperties: false` situation as `recorder_config`/`counterfactual_valid`
+  (#10/#12): only the vendored schema copy could be edited here (this worktree has no
+  `lab-ui` checkout) -- see `SCHEMA-CHANGE-observation_stage2_blocks.md` for the exact
+  patch to apply to the canonical `lab-ui/contract/trace-v1.schema.json`, and
+  `tests/test_trace_contract.py::test_vendored_schema_diverges_from_lab_ui_contract_only_by_documented_obs2_additions`
+  for the test pinning the gap until that lands (the strict byte-identity test is
+  `xfail` again in the meantime, same pattern S2 used for #10/#12 before lab-ui caught
+  up).
+- **`$defs.block.properties.name` gained an explicit `enum`** listing all 18 names this
+  producer has ever written (the 9 schema-1 names + the 9 new ones) -- narrower than
+  before (previously any non-empty string validated), but does not invalidate any real
+  manifest (grep of every `_BlockSpec(` call site confirms only these 18 names are ever
+  produced); matches the user's own stated requirement that an unlisted block name must
+  fail schema validation loudly rather than pass silently, and DEVIATIONS.md #2's
+  precedent that a non-widening addition need not bump `schema_version`.
+- **`brain_schema_version` bumps to 2** (no schema.json change needed -- already a plain
+  versioned integer) exactly when the nine stage blocks were actually packed
+  (`has_stages`), matching the field's own pre-existing description ("l1/l2/intent when
+  the kernels land, per Universe/docs/KERNELS-OBSERVATION-L1L2.md").
+- **Not extended**: `check.py::check_sample`'s per-sample validation against
+  `driving.meta.json` was NOT taught to also validate `stages`' shapes against
+  `brain_graph`'s node declarations -- out of this task's explicit scope (schema-2
+  packing + tests, not a rewrite of the run-directory validator), and the producer
+  already fails loudly on a shape mismatch while building each block
+  (`build_neural_trace`'s existing `arr.shape != expected_shape` check, unchanged,
+  applies to the new specs identically). A future task extending `check.py` for schema-2
+  run-directory validation is a real, narrow gap, not a silent wrong answer.
+
 ## S6 -- live relay
 
 `src/lab_api/routes/live.py`'s `WS /ws/live` cannot use the existing `current_who`
