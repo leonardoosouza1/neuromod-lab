@@ -458,10 +458,17 @@ def get_snapshots(settings: Settings = Depends(get_settings)) -> dict:
                     "executable": os.access(entry, os.X_OK),
                 })
     champions: list[dict] = []
-    champ_dir = root / "b1-champions"
-    if champ_dir.is_dir():
-        for entry in sorted(champ_dir.iterdir()):
-            if entry.is_file():
-                st = entry.stat()
-                champions.append({"name": entry.name, "path": str(entry), "bytes": st.st_size})
+    # `champions/` is where every battery since B3 freezes its final champions
+    # (enqueue_champion_eval.py); `b1-champions/` predates it. Newest first, so a
+    # battery that just finished is at the top of the panel's list (17/09).
+    for champ_dir in (root / "champions", root / "b1-champions"):
+        if champ_dir.is_dir():
+            for entry in champ_dir.iterdir():
+                if entry.is_file():
+                    st = entry.stat()
+                    champions.append({
+                        "name": entry.name, "path": str(entry), "bytes": st.st_size,
+                        "mtime": time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime(st.st_mtime)),
+                    })
+    champions.sort(key=lambda c: c["mtime"], reverse=True)
     return {"binaries": binaries, "champions": champions}
