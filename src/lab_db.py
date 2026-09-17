@@ -742,6 +742,10 @@ def mirror_queue(db: sqlite3.Connection, spool: str = DEFAULT_SPOOL) -> int:
                 running_ids.add(str(estado.get('id') or filename[:-len('.json')]))
 
     rows = []
+    # A relaunched id can sit in `pedidos/` (live) AND in `feitos/` (a stale copy from
+    # a previous attempt, e.g. after a reboot): the first folder seen wins, so the live
+    # request is never reported as done (17/09: the 12 running b9 runs showed 'done').
+    seen_ids: set[str] = set()
     for folder, default_state in (('pedidos', 'pending'), ('feitos', 'done'),
                                    ('recusados', 'refused')):
         directory = os.path.join(spool, folder)
@@ -765,6 +769,9 @@ def mirror_queue(db: sqlite3.Connection, spool: str = DEFAULT_SPOOL) -> int:
                 pass  # a mirror shows less, it never refuses to reflect a broken file
             state = 'running' if folder == 'pedidos' and request_id in running_ids \
                 else default_state
+            if request_id in seen_ids:
+                continue
+            seen_ids.add(request_id)
             rows.append((request_id, state, script, out, args_json, path))
 
     db.execute('DELETE FROM queue_mirror')
