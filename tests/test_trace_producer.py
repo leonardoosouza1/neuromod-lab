@@ -436,3 +436,176 @@ def test_dense_integration_fixture_is_a_healthy_driving_trace_not_a_parked_one()
 
     events = json.loads((trace_dir / "events.json").read_text())
     assert any(e["kind"] == "lap" for e in events), "expected at least one completed lap"
+
+
+# ── obs2 -- schema-2 stage blocks (coordinator follow-up, 2026-09-16) ───────────────
+#
+# Universe/docs/KERNELS-OBSERVATION-L1L2.md: a new frozen binary
+# (/media/llm-data/snapshots/gpu_evolve-bd5695f) records the exact L1/L2 kernel stages
+# into observation.jsonl's `stages` object once driving.meta.json declares
+# `observation_schema: 2`. These tests build a TINY (<300 KB), on-disk fixture from a
+# real slice of that binary's own recording (champ_nocost_s77_obs2_t8005's first 3
+# samples, ticks 4/8/12) -- real recorded bytes, not synthesized, matching this repo's
+# existing fixture convention (see lab-ui/fixtures/trace-v1/universe-b2-gen0/SOURCE.md).
+
+OBS2_SOURCE_RUN = "champ_nocost_s77_obs2_t8005"
+OBS2_TINY_N_SAMPLES = 3
+
+_STAGE2_F32_BLOCKS = {
+    "l1_matmul": 96, "l1_effective": 96, "l2_matmul": 48, "l2_effective": 48,
+    "l2_adapted": 48, "bypass_adapted": 48, "final_intent": 96,
+}
+
+
+def _build_obs2_tiny_fixture(dst: Path) -> Path:
+    """Builds the tiny run directory described above at `dst` (overwritten if it
+    already exists). Only copies what `produce()` needs: `manifest.json`,
+    `driving.meta.json` (both copied whole -- a few KB each), the first
+    `OBS2_TINY_N_SAMPLES` lines of `observation.jsonl` (real bytes, ~33 KB/line, mostly
+    the 1764-element `retina` array), a `gen0000.replay` trimmed to exactly the same
+    tick groups (real bytes: header + the first `OBS2_TINY_N_SAMPLES * n_beings` replay
+    entries -- verified by direct inspection to be grouped by tick, all beings per
+    tick, in file order, so this prefix is a clean cut, not a truncation mid-group),
+    and `evolve_best_gen0000.bin` (real, 99,184 B, needed as the generation's
+    checkpoint). `observed_genome_gen0000.bin` (the file `stages`' samples name in
+    their own `genome_file` field) is a SYMLINK to the same file here: the real source
+    run's own two files are byte-identical (confirmed by sha256), and a symlink keeps
+    this fixture under the 300 KB budget instead of a second real 99 KB copy.
+    """
+    src = RUNS_ROOT / OBS2_SOURCE_RUN
+    if not src.exists():
+        pytest.skip(f"{src} not present on this machine")
+    if dst.exists():
+        shutil.rmtree(dst)
+    dst.mkdir(parents=True)
+
+    for name in ("manifest.json", "driving.meta.json"):
+        shutil.copy2(src / name, dst / name)
+
+    with open(src / "observation.jsonl") as f:
+        lines = [next(f) for _ in range(OBS2_TINY_N_SAMPLES)]
+    (dst / "observation.jsonl").write_text("".join(lines))
+
+    header = rd.read_replay_header(src / "gen0000.replay")
+    n_beings = header["n_beings"]
+    cut = rd.REPLAY_HEADER_SIZE + OBS2_TINY_N_SAMPLES * n_beings * rd.REPLAY_ENTRY_SIZE
+    replay_bytes = (src / "gen0000.replay").read_bytes()
+    (dst / "gen0000.replay").write_bytes(replay_bytes[:cut])
+
+    shutil.copy2(src / "evolve_best_gen0000.bin", dst / "evolve_best_gen0000.bin")
+    (dst / "observed_genome_gen0000.bin").symlink_to((dst / "evolve_best_gen0000.bin").resolve())
+
+    size = sum(f.stat().st_size for f in dst.iterdir() if f.is_file())
+    assert size < 300_000, f"obs2 tiny fixture is {size} B, over the 300 KB budget"
+    return dst
+
+
+def test_schema2_stage_blocks_are_packed_and_present_in_manifest(tmp_path):
+    _require_universe_bin("genome_export")
+    _require_universe_bin("track_export")
+    dst = _build_obs2_tiny_fixture(tmp_path / "obs2_tiny")
+
+    trace_dir = trace_producer.produce(dst, gen=0, profile="champion")
+    manifest = check_module.check_trace_dir(trace_dir)  # raises on any mismatch
+
+    assert manifest["count"] == OBS2_TINY_N_SAMPLES
+    assert manifest["brain_schema_version"] == 2
+
+    block_shapes = {b["name"]: (b["shape"], b["dtype"]) for b in manifest["blocks"]}
+    for name, width in _STAGE2_F32_BLOCKS.items():
+        assert block_shapes[name] == ([OBS2_TINY_N_SAMPLES, width], "f32"), name
+    assert block_shapes["l1_to_l2"] == ([OBS2_TINY_N_SAMPLES, 96], "i8")
+    assert block_shapes["l2_std"] == ([OBS2_TINY_N_SAMPLES], "f32")
+
+    # the coarse schema-1 placeholders must NOT also appear once real stage blocks exist
+    absent_names = {a["name"] for a in manifest["absent"]}
+    assert not ({"l1", "l2", "intent"} & absent_names)
+
+    assert manifest["hashes"]["observed_genome_file"] == "observed_genome_gen0000.bin"
+    assert manifest["hashes"]["observed_genome"] == manifest["hashes"]["checkpoint"], (
+        "this real slice's two genome files are byte-identical by construction (symlink)"
+    )
+
+    weights = json.loads((trace_dir / "weights.json").read_text())
+    assert weights["genome_sha256"] == manifest["hashes"]["observed_genome"]
+
+
+def test_schema2_decoder_round_trip_is_byte_exact(tmp_path):
+    _require_universe_bin("genome_export")
+    _require_universe_bin("track_export")
+    dst = _build_obs2_tiny_fixture(tmp_path / "obs2_roundtrip")
+
+    trace_dir = trace_producer.produce(dst, gen=0, profile="champion")
+    manifest = check_module.check_trace_dir(trace_dir)
+
+    import numpy as np
+
+    raw_rows = [json.loads(l) for l in (dst / "observation.jsonl").read_text().splitlines() if l.strip()]
+
+    for name, width in _STAGE2_F32_BLOCKS.items():
+        expected = np.asarray([r["stages"][name] for r in raw_rows], dtype="<f4")
+        actual = rd.read_block(trace_dir, name, manifest=manifest)
+        assert actual.shape == (OBS2_TINY_N_SAMPLES, width), name
+        assert np.array_equal(actual, expected), name
+
+    expected_l1_to_l2 = np.asarray([r["stages"]["l1_to_l2"] for r in raw_rows], dtype="<i1")
+    actual_l1_to_l2 = rd.read_block(trace_dir, "l1_to_l2", manifest=manifest)
+    assert np.array_equal(actual_l1_to_l2, expected_l1_to_l2)
+
+    expected_l2_std = np.asarray([r["stages"]["l2_std"] for r in raw_rows], dtype="<f4")
+    actual_l2_std = rd.read_block(trace_dir, "l2_std", manifest=manifest)
+    assert actual_l2_std.shape == (OBS2_TINY_N_SAMPLES,)
+    assert np.array_equal(actual_l2_std, expected_l2_std)
+
+
+def test_schema1_run_has_no_stage2_blocks_or_observed_genome_hash(b3_scratch_copy):
+    """Regression guard: a schema-1 run (no `observation_schema` in driving.meta.json,
+    e.g. every pre-existing `b3_*`/`b5_*` battery) must keep producing EXACTLY the
+    pre-obs2 output -- no stage2 blocks, the coarse l1/l2/intent placeholders still
+    absent, brain_schema_version still 1, no observed_genome hash."""
+    _require_universe_bin("genome_export")
+    _require_universe_bin("track_export")
+    trace_dir = trace_producer.produce(b3_scratch_copy, gen=0, profile="champion", force=True)
+    manifest = check_module.check_trace_dir(trace_dir)
+
+    block_names = {b["name"] for b in manifest["blocks"]}
+    assert not (set(_STAGE2_F32_BLOCKS) | {"l1_to_l2", "l2_std"}) & block_names
+
+    absent_names = {a["name"] for a in manifest["absent"]}
+    assert {"l1", "l2", "intent"} <= absent_names
+
+    assert manifest["brain_schema_version"] == 1
+    assert "observed_genome" not in manifest["hashes"]
+    assert "observed_genome_file" not in manifest["hashes"]
+
+
+def test_mismatched_genome_file_across_samples_raises(tmp_path):
+    """Universe/docs/KERNELS-OBSERVATION-L1L2.md §11: each sample names the exact
+    genome that produced its stages. If samples selected into ONE trace disagree on
+    that name, weights.json could only describe one of them -- the producer must
+    refuse loudly (naming every candidate file and its own sha256) rather than
+    silently pick one."""
+    _require_universe_bin("genome_export")
+    dst = _build_obs2_tiny_fixture(tmp_path / "obs2_mismatch")
+
+    rows = [json.loads(l) for l in (dst / "observation.jsonl").read_text().splitlines() if l.strip()]
+    alt_bytes = bytearray((dst / "evolve_best_gen0000.bin").read_bytes())
+    alt_bytes[0] ^= 0xFF  # a genuinely different genome (different sha256)
+    (dst / "evolve_best_gen9999.bin").write_bytes(bytes(alt_bytes))
+    rows[1]["genome_file"] = "evolve_best_gen9999.bin"
+    (dst / "observation.jsonl").write_text("\n".join(json.dumps(r) for r in rows) + "\n")
+
+    with pytest.raises(trace_producer.ProducerError, match="different genome_file values"):
+        trace_producer.produce(dst, gen=0, profile="champion")
+
+
+def test_genome_file_missing_on_disk_raises(tmp_path):
+    dst = _build_obs2_tiny_fixture(tmp_path / "obs2_missing_genome")
+
+    rows = [json.loads(l) for l in (dst / "observation.jsonl").read_text().splitlines() if l.strip()]
+    for r in rows:
+        r["genome_file"] = "does_not_exist_gen0000.bin"
+    (dst / "observation.jsonl").write_text("\n".join(json.dumps(r) for r in rows) + "\n")
+
+    with pytest.raises(trace_producer.ProducerError, match="does not exist"):
+        trace_producer.produce(dst, gen=0, profile="champion")

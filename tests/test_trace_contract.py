@@ -255,9 +255,20 @@ def test_clean_fixture_hashes_are_internally_consistent():
         assert hashlib.sha256(chunk).hexdigest() == block["sha256"], block["name"]
 
 
+@pytest.mark.xfail(
+    reason=(
+        "obs2 additions (hashes.observed_genome[_file], block.name enum) not yet applied "
+        "to the canonical lab-ui/contract/trace-v1.schema.json -- this worktree has no "
+        "lab-ui checkout to edit it directly. See SCHEMA-CHANGE-observation_stage2_blocks.md "
+        "and DEVIATIONS.md #13. Delete this marker (and the 'diverges' test below) once the "
+        "canonical copy is patched -- same pattern used for #10/#12 before lab-ui caught up."
+    ),
+    strict=True,
+)
 def test_vendored_schema_is_byte_identical_to_lab_ui_contract():
     """The contract lives in lab-ui; neuromod-lab vendors a copy. Any drift is a failure.
-    Re-enabled 16/09 when lab-ui adopted the S2 schema additions."""
+    Re-enabled 16/09 when lab-ui adopted the S2 schema additions; re-xfailed same day for
+    the obs2 follow-up (DEVIATIONS.md #13) -- see the marker above."""
     _require_fixture()
     schema_in_lab_ui = CONTRACT_DIR / "trace-v1.schema.json"
     assert schema_in_lab_ui.exists(), schema_in_lab_ui
@@ -265,4 +276,39 @@ def test_vendored_schema_is_byte_identical_to_lab_ui_contract():
     assert schema_in_lab_ui.read_bytes() == VENDORED_SCHEMA.read_bytes(), (
         f"{VENDORED_SCHEMA} is not byte-identical to {schema_in_lab_ui} -- "
         "re-copy it whenever the schema changes"
+    )
+
+
+def test_vendored_schema_diverges_from_lab_ui_contract_only_by_documented_obs2_additions():
+    """Pins the obs2 follow-up gap (2026-09-16, observation_schema=2 stage blocks) until
+    `SCHEMA-CHANGE-observation_stage2_blocks.md`'s patch lands in the canonical
+    `lab-ui/contract/trace-v1.schema.json` (see `DEVIATIONS.md` #13). Applies that EXACT
+    patch to a parsed copy of the canonical schema and asserts the result equals the
+    vendored copy -- if this ever fails because the canonical schema changed elsewhere,
+    or once the patch lands for real, delete this test and the xfail marker above,
+    restoring the plain byte-identity check as the only guard (same lifecycle
+    `test_vendored_schema_diverges_from_lab_ui_contract_only_by_documented_s2_additions`
+    had for #10/#12, before it was deleted when lab-ui caught up on 16/09)."""
+    _require_fixture()
+    schema_in_lab_ui = CONTRACT_DIR / "trace-v1.schema.json"
+    assert schema_in_lab_ui.exists(), schema_in_lab_ui
+    canonical = json.loads(schema_in_lab_ui.read_text())
+    vendored = json.loads(VENDORED_SCHEMA.read_text())
+
+    # Documented addition 1 (SCHEMA-CHANGE-observation_stage2_blocks.md §2): hashes.properties
+    # gains two OPTIONAL keys.
+    canonical["properties"]["hashes"]["properties"]["observed_genome"] = \
+        vendored["properties"]["hashes"]["properties"]["observed_genome"]
+    canonical["properties"]["hashes"]["properties"]["observed_genome_file"] = \
+        vendored["properties"]["hashes"]["properties"]["observed_genome_file"]
+
+    # Documented addition 2 (SCHEMA-CHANGE-observation_stage2_blocks.md §1): $defs.block's
+    # 'name' property gains an explicit enum.
+    canonical["$defs"]["block"]["properties"]["name"] = \
+        vendored["$defs"]["block"]["properties"]["name"]
+
+    assert canonical == vendored, (
+        "vendored schema diverges from lab-ui's canonical copy by MORE than the two "
+        "documented obs2 additions (hashes.observed_genome[_file], block.name enum) -- "
+        "see SCHEMA-CHANGE-observation_stage2_blocks.md and DEVIATIONS.md #13"
     )

@@ -72,13 +72,36 @@ DEFAULT_UNIVERSE_BIN_DIR = os.environ.get(
 )
 
 # Blocks in the recorder's brain_flow execution order (PRD S5): sensor -> wave -> brain
-# stage(s) -> motor chain -> pose/body. `l1`/`l2`/`intent` are never recorded by the
-# current binary (driving_diagnostics.rs) and are always listed in `absent`.
+# stage(s) -> motor chain -> pose/body. `l1`/`l2`/`intent` are the coarse SCHEMA-1
+# placeholder names driving_diagnostics.rs never recorded at all -- always listed in
+# `absent` for a schema-1 (or missing `observation_schema`) run. A schema-2 run
+# (Universe/docs/KERNELS-OBSERVATION-L1L2.md) replaces this coarse placeholder with nine
+# real, finer-grained stage blocks (`_STAGE2_BLOCK_NAMES` below); a schema-2 trace does
+# NOT also emit these three coarse absence entries -- they were never real block
+# identifiers, just a marker for "not implemented yet", and schema-2 supersedes them.
 _NEVER_RECORDED_STAGES = (
     ("l1", "not recorded by this binary"),
     ("l2", "not recorded by this binary"),
     ("intent", "not recorded by this binary"),
 )
+
+# The four motor_trace-derived blocks (PRD S5) -- absent together when no sample in
+# range carries `body.motor_trace` (see `_sample_has_motor_trace`).
+_MOTOR_BLOCK_NAMES = frozenset({"raw_intent", "after_head", "after_modulation", "final_command"})
+
+# Universe/docs/KERNELS-OBSERVATION-L1L2.md §3/§5 -- the nine exact stage arrays a
+# schema-2 recording adds to observation.jsonl's `stages` object. `cfc_state` is
+# deliberately NOT one of these: it duplicates the existing legacy `cfc`/`fast_state`
+# block byte-for-byte (the doc's §2: "a second field ... would duplicate data and hide
+# the stages before it"; §5: "Keep `fast_state` for schema-v1 readers and write
+# `stages.cfc_state` with the same values"). Absent together when no sample in range
+# carries `stages` (see `_sample_has_stages`) or when `driving.meta.json` does not
+# declare `observation_schema: 2`.
+_STAGE2_BLOCK_NAMES = frozenset({
+    "l1_matmul", "l1_effective", "l1_to_l2",
+    "l2_matmul", "l2_effective", "l2_std",
+    "l2_adapted", "bypass_adapted", "final_intent",
+})
 
 
 class ProducerError(ValueError):
@@ -229,6 +252,81 @@ def _disabled_flags(run_manifest: dict) -> list[str]:
     command = run_manifest.get("command") or []
     present = [flag for flag in DISABLED_FLAG_NAMES if flag in command]
     return present
+
+
+def _stage_genome_info(run_dir: Path, samples: list[dict], has_stages: bool) -> tuple[str | None, str | None]:
+    """Returns `(genome_file, sha256)` for the schema-2 stage blocks about to be packed.
+
+    Universe/docs/KERNELS-OBSERVATION-L1L2.md §11: "At each generation boundary the
+    recorder also saves the selected slot as `observed_genome_genNNNN.bin`; every
+    observation row names that file. Contributions can therefore be joined to the exact
+    weights that produced them even after evolution changes the population." This reads
+    exactly that name back out of the samples this trace actually packs, so `weights.json`
+    (built by the caller from the returned filename) is verifiably the SAME individual
+    that produced `l1_matmul`/`l1_to_l2`/etc., not merely "the generation's champion",
+    which may differ (see `_being_selection_text`, DEVIATIONS.md #7).
+
+    Returns `(None, None)` when `has_stages` is False (schema-1 run, or a schema-2 run
+    whose selected samples do not all carry `stages`) -- the caller keeps schema-1
+    behaviour: `weights.json` from the generation's own checkpoint, unchanged.
+
+    Raises `ProducerError`, naming both values, when:
+      - no sample names a `genome_file` at all (a schema-2 binary that regressed);
+      - samples in this trace's range name MORE THAN ONE distinct `genome_file` --
+        `weights.json` can only describe one genome, and the error names every
+        candidate file together with its own sha256, so "these two genomes disagree"
+        is never silently resolved by picking one;
+      - the named file does not exist under `run_dir`.
+    """
+    if not has_stages:
+        return None, None
+
+    genome_files = sorted({s["genome_file"] for s in samples if isinstance(s.get("genome_file"), str)})
+    if not genome_files:
+        raise ProducerError(
+            "observation_schema=2 and every selected sample carries 'stages', but none "
+            "names a 'genome_file' -- cannot verify which weights produced these stage values"
+        )
+    if len(genome_files) > 1:
+        per_file_sha256 = {
+            name: (_sha256_file(run_dir / name) if (run_dir / name).exists() else "MISSING")
+            for name in genome_files
+        }
+        raise ProducerError(
+            f"samples in this trace's range name {len(genome_files)} different genome_file "
+            f"values -- a trace-v1 directory's weights.json can only describe ONE genome, so "
+            f"producing it would silently mix individuals: {per_file_sha256}"
+        )
+
+    genome_file = genome_files[0]
+    genome_path = run_dir / genome_file
+    if not genome_path.exists():
+        raise ProducerError(
+            f"observation.jsonl names genome_file={genome_file!r} for its recorded stages, "
+            f"but {genome_path} does not exist"
+        )
+    return genome_file, _sha256_file(genome_path)
+
+
+def _hashes(
+    checkpoint_sha256: str, replay_sha256: str, config_sha256: str, neural_trace_sha256: str,
+    observed_genome_file: str | None, observed_genome_sha256: str | None,
+) -> dict:
+    """manifest['hashes'] -- `observed_genome`/`observed_genome_file` are NEW, OPTIONAL
+    keys (schema-2 only; see SCHEMA-CHANGE-observation_stage2_blocks.md and
+    DEVIATIONS.md #13), absent entirely for a schema-1 trace so its `hashes` object
+    stays byte-for-byte what it always was.
+    """
+    hashes = {
+        "checkpoint": checkpoint_sha256,
+        "replay": replay_sha256,
+        "config": config_sha256,
+        "neural_trace": neural_trace_sha256,
+    }
+    if observed_genome_sha256 is not None:
+        hashes["observed_genome"] = observed_genome_sha256
+        hashes["observed_genome_file"] = observed_genome_file
+    return hashes
 
 
 # The forward wall probe's cap is 50.0 m either way (Universe/src/bin/gpu_evolve/
@@ -415,18 +513,67 @@ def _sample_has_motor_trace(sample: dict) -> bool:
     return isinstance(sample.get("body", {}).get("motor_trace"), dict)
 
 
-def build_neural_trace(samples: list[dict], meta: dict, profile: str) -> tuple[bytes, list[dict], list[dict]]:
+def _sample_has_stages(sample: dict) -> bool:
+    return isinstance(sample.get("stages"), dict)
+
+
+def _stage2_block_specs() -> list[_BlockSpec]:
+    """The nine schema-2 stage blocks (Universe/docs/KERNELS-OBSERVATION-L1L2.md §3),
+    inserted into `_all_block_specs` right after `cfc` (the recurrent state they read)
+    and before `raw_intent` (the motor chain `final_intent[0:3]` feeds) -- the same
+    execution-order slot the doc's `brain_graph` gives them.
+    """
+    def stage(name):
+        return lambda s: s["stages"][name]
+
+    return [
+        _BlockSpec("l1_matmul", "<f4", "dimensionless", "l1_matmul", stage("l1_matmul"), (96,)),
+        _BlockSpec("l1_effective", "<f4", "dimensionless", "l1_effective", stage("l1_effective"), (96,)),
+        _BlockSpec("l1_to_l2", "<i1", "sensor_code", "l1_to_l2", stage("l1_to_l2"), (96,)),
+        _BlockSpec("l2_matmul", "<f4", "dimensionless", "l2_matmul", stage("l2_matmul"), (48,)),
+        _BlockSpec("l2_effective", "<f4", "dimensionless", "l2_effective", stage("l2_effective"), (48,)),
+        _BlockSpec("l2_std", "<f4", "dimensionless", "l2_std", stage("l2_std"), ()),
+        _BlockSpec("l2_adapted", "<f4", "dimensionless", "l2_adapted", stage("l2_adapted"), (48,)),
+        _BlockSpec("bypass_adapted", "<f4", "dimensionless", "bypass_adapted", stage("bypass_adapted"), (48,)),
+        _BlockSpec("final_intent", "<f4", "dimensionless", "final_intent", stage("final_intent"), (96,)),
+    ]
+
+
+def _all_block_specs(meta: dict, schema2: bool) -> list[_BlockSpec]:
+    """`_block_specs` (schema-1, unchanged) plus the nine schema-2 stage specs spliced
+    in right after `cfc`, only when `schema2` is True. Keeping schema-1's own list and
+    order byte-for-byte unchanged is the point -- see `producer.py`'s module doc and
+    `SCHEMA-CHANGE-observation_stage2_blocks.md`.
+    """
+    specs = _block_specs(meta)
+    if not schema2:
+        return specs
+    idx = next(i for i, s in enumerate(specs) if s.name == "cfc") + 1
+    return specs[:idx] + _stage2_block_specs() + specs[idx:]
+
+
+def build_neural_trace(
+    samples: list[dict], meta: dict, profile: str, schema2: bool, has_stages: bool,
+) -> tuple[bytes, list[dict], list[dict]]:
     """Returns (neural_trace_bytes, block_table[], absent[]).
 
-    `absent` entries here are ONLY for neural.trace blocks (l1/l2/intent, plus the four
-    motor_trace-derived blocks when no sample in range carries motor_trace, plus every
-    block when profile='summary'). weights.json/track.json absences are added by the
-    caller, not here.
+    `absent` entries here are ONLY for neural.trace blocks (the coarse l1/l2/intent
+    schema-1 placeholders, OR the nine schema-2 stage blocks when `has_stages` is
+    False; plus the four motor_trace-derived blocks when no sample in range carries
+    motor_trace; plus every block when profile='summary'). weights.json/track.json
+    absences are added by the caller, not here.
+
+    `schema2`/`has_stages` are computed ONCE by the caller (`produce`), which also
+    needs them to decide `weights.json`'s genome source and `brain_schema_version` --
+    passed in rather than recomputed here so the two never drift apart.
     """
-    absent = [{"name": name, "reason": reason} for name, reason in _NEVER_RECORDED_STAGES]
+    if schema2:
+        absent: list[dict] = []
+    else:
+        absent = [{"name": name, "reason": reason} for name, reason in _NEVER_RECORDED_STAGES]
 
     if profile == "summary":
-        for spec in _block_specs(meta):
+        for spec in _all_block_specs(meta, schema2):
             absent.append({"name": spec.name, "reason": "profile 'summary' carries no neural blocks by design"})
         return b"", [], absent
 
@@ -435,9 +582,15 @@ def build_neural_trace(samples: list[dict], meta: dict, profile: str) -> tuple[b
     blocks_out: list[dict] = []
     payload = bytearray()
     offset = 0
-    for spec in _block_specs(meta):
-        if spec.name in ("raw_intent", "after_head", "after_modulation", "final_command") and not has_motor_trace:
+    for spec in _all_block_specs(meta, schema2):
+        if spec.name in _MOTOR_BLOCK_NAMES and not has_motor_trace:
             absent.append({"name": spec.name, "reason": "body.motor_trace missing on at least one sample in range"})
+            continue
+        if spec.name in _STAGE2_BLOCK_NAMES and not has_stages:
+            absent.append({
+                "name": spec.name,
+                "reason": "stages missing on at least one sample in range (brain_skip tick, or observation_schema != 2)",
+            })
             continue
         rows = [spec.extractor(s) for s in samples]
         arr = np.asarray(rows, dtype=spec.dtype)
@@ -542,16 +695,34 @@ def produce(run_dir: str | Path, gen: int, being: int | None = None, profile: st
             f"(no events found to window around)"
         )
 
-    neural_bytes, blocks, trace_absent = build_neural_trace(samples, meta, profile)
+    # Universe/docs/KERNELS-OBSERVATION-L1L2.md §5: `driving.meta.json.observation_schema`
+    # is bumped to 2 when the recorder's binary packs the exact L1/L2 stage arrays into
+    # every observation.jsonl row's `stages` object. `has_stages` additionally requires
+    # every SELECTED sample (post profile filtering) to actually carry one -- a schema-2
+    # binary still writes `stages: null` on a `brain_skip` tick (§11).
+    schema2 = meta.get("observation_schema") == 2
+    has_stages = schema2 and all(_sample_has_stages(s) for s in samples)
+
+    # doc §11: "every observation row names that file [the exact genome that produced
+    # it]" -- SCHEMA-CHANGE-observation_stage2_blocks.md's reasoning for why weights.json
+    # must be exported from THIS file, not unconditionally from the generation's
+    # checkpoint, once real stage blocks are being packed (the recorded being need not be
+    # the fitness champion -- see `_being_selection_text`/DEVIATIONS.md #7).
+    observed_genome_file, observed_genome_sha256 = _stage_genome_info(run_dir, samples, has_stages)
+
+    neural_bytes, blocks, trace_absent = build_neural_trace(samples, meta, profile, schema2, has_stages)
 
     trace_dir.mkdir(parents=True, exist_ok=True)
     neural_trace_path = trace_dir / "neural.trace"
     neural_trace_path.write_bytes(neural_bytes)
     neural_trace_sha256 = _sha256_file(neural_trace_path)
 
-    # weights.json via the Rust exporter -- never reparsed/reimplemented here.
+    # weights.json via the Rust exporter -- never reparsed/reimplemented here. Schema-1
+    # behaviour (no observed_genome_file) is UNCHANGED: always the generation's own
+    # checkpoint (evolve_best_gen<NNNN>.bin).
+    weights_source_path = genome_path if observed_genome_file is None else (run_dir / observed_genome_file)
     weights_path = trace_dir / "weights.json"
-    _run_binary([_binary_path("genome_export"), str(genome_path), str(weights_path)], "genome_export")
+    _run_binary([_binary_path("genome_export"), str(weights_source_path), str(weights_path)], "genome_export")
 
     # track.json via the Rust track exporter -- same VoxelWorld constructor the sim uses.
     absent = list(trace_absent)
@@ -597,13 +768,13 @@ def produce(run_dir: str | Path, gen: int, being: int | None = None, profile: st
         "samples_tick": samples_tick,
         "blocks": blocks,
         "body_schema_version": BODY_SCHEMA_VERSION,
-        "brain_schema_version": BRAIN_SCHEMA_VERSION,
-        "hashes": {
-            "checkpoint": checkpoint_sha256,
-            "replay": replay_sha256,
-            "config": config_sha256,
-            "neural_trace": neural_trace_sha256,
-        },
+        # Bumped to 2 only when the nine schema-2 stage blocks were actually packed
+        # (`has_stages`) -- a schema-2 RUN whose selected samples happen to lack
+        # `stages` (see build_neural_trace's absent reason) still stays at 1, because
+        # this trace-v1 directory itself carries no schema-2 brain-stage blocks.
+        "brain_schema_version": 2 if has_stages else BRAIN_SCHEMA_VERSION,
+        "hashes": _hashes(checkpoint_sha256, replay_sha256, config_sha256, neural_trace_sha256,
+                           observed_genome_file, observed_genome_sha256),
         "universe_commit": run_manifest.get("universe_commit", "unknown"),
         "world_seed": rd.read_replay_header(replay_path)["world_seed"],
         "absent": absent,

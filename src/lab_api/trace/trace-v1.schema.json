@@ -129,6 +129,16 @@
           "type": "string",
           "pattern": "^[0-9a-f]{64}$",
           "description": "sha256 (lowercase hex) of the entire neural.trace file, whole-file (not per-block). A loader checks this once before trusting any block's offset/length/sha256 in the block table below; a mismatch means the file was corrupted or truncated after the manifest was written."
+        },
+        "observed_genome": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "OPTIONAL (added for observation_schema=2; see SCHEMA-CHANGE-observation_stage2_blocks.md in the neuromod-lab repo). sha256 (lowercase hex) of the exact genome file observation.jsonl's recorded samples name in their own 'genome_file' field (Universe/docs/KERNELS-OBSERVATION-L1L2.md §11) -- the genome that ACTUALLY produced the l1_matmul/l1_effective/l1_to_l2/l2_matmul/l2_effective/l2_std/l2_adapted/bypass_adapted/final_intent blocks below. Present only when this trace carries those schema-2 stage blocks; absent for every schema-1 trace, where weights.json keeps coming from 'checkpoint' (the generation's fitness champion) unchanged. May differ from 'checkpoint' -- the recorded being need not be the champion (see 'being_selection')."
+        },
+        "observed_genome_file": {
+          "type": "string",
+          "minLength": 1,
+          "description": "OPTIONAL, present exactly when 'observed_genome' is present. The filename (relative to the run directory, e.g. 'observed_genome_gen0000.bin') that 'observed_genome' is the sha256 of."
         }
       }
     },
@@ -196,7 +206,11 @@
         "name": {
           "type": "string",
           "minLength": 1,
-          "description": "Block identifier, stable across runs, e.g. 'retina', 'wave', 'cfc', 'raw_intent', 'after_head', 'after_modulation', 'final_command', 'pose', 'body'."
+          "enum": [
+            "retina", "wave", "cfc", "raw_intent", "after_head", "after_modulation", "final_command", "pose", "body",
+            "l1_matmul", "l1_effective", "l1_to_l2", "l2_matmul", "l2_effective", "l2_std", "l2_adapted", "bypass_adapted", "final_intent"
+          ],
+          "description": "Block identifier, stable across runs. The first nine are schema_version 1 (S0/S2). The last nine (added for observation_schema=2, see SCHEMA-CHANGE-observation_stage2_blocks.md) are the exact L1/L2 stage arrays Universe/docs/KERNELS-OBSERVATION-L1L2.md §3 names -- every value this producer has ever written into 'blocks[].name' is enumerated here on purpose (user requirement: an unlisted block name must fail schema validation loudly, not pass silently as an arbitrary string)."
         },
         "dtype": {
           "type": "string",
